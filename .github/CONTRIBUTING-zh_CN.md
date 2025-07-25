@@ -22,7 +22,7 @@
    - hotfix/ 紧急修复
    - docs/ 文档更新
 
-   详情参考 [gitflow](./GITFLOW.md)
+   详情参考 [gitflow](./GITHUB_FLOW-zh_CN.md)
 
 3. 提交你的修改
 

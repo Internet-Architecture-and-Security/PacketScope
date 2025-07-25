@@ -1,7 +1,7 @@
 import { IntlProvider } from 'react-intl';
 import zh from '@/locales/zh-CN';
 import en from '@/locales/en-US';
-import LayoutComponent from './LayoutComponent';
+import ServiceReadinessGate from './ServiceReadinessGate';
 import { useSelectLang } from '@/stores/useStore';
 import { ConfigProvider, App } from 'antd';
 // import { AliveScope } from 'react-activation';
@@ -32,7 +32,7 @@ export default function Layout() {
         <Theme>
           {/* <AliveScope> */}
           <App>
-            <LayoutComponent />
+            <ServiceReadinessGate />
           </App>
           {/* </AliveScope> */}
         </Theme>

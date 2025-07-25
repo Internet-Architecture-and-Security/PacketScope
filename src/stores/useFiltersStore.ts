@@ -1,6 +1,7 @@
 // useFilters.ts
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { IntlShape } from 'react-intl';
 import { type MessageInstance } from 'antd/es/message/interface';
 
 export interface Filter {
@@ -28,20 +29,20 @@ export interface Filter {
 
 interface FilterState {
   filters: Filter[];
-  initFilters: (messageApi?: MessageInstance) => Promise<void>;
-  fetchFilters: (messageApi?: MessageInstance) => Promise<void>;
-  addFilter: (filter: Partial<Filter>, messageApi?: MessageInstance) => Promise<void>;
-  updateFilter: (id: number, filter: Partial<Filter>, messageApi?: MessageInstance) => Promise<void>;
-  deleteFilter: (id: number, messageApi?: MessageInstance) => Promise<void>;
-  toggleFilter: (id: number, messageApi?: MessageInstance) => Promise<void>;
+  initFilters: (messageApi?: MessageInstance, intl?: IntlShape) => Promise<void>;
+  fetchFilters: (messageApi?: MessageInstance, intl?: IntlShape) => Promise<void>;
+  addFilter: (filter: Partial<Filter>, messageApi?: MessageInstance, intl?: IntlShape) => Promise<void>;
+  updateFilter: (id: number, filter: Partial<Filter>, messageApi?: MessageInstance, intl?: IntlShape) => Promise<void>;
+  deleteFilter: (id: number, messageApi?: MessageInstance, intl?: IntlShape) => Promise<void>;
+  toggleFilter: (id: number, messageApi?: MessageInstance, intl?: IntlShape) => Promise<void>;
 }
 
 const HOST = 'http://localhost:8080';
 
-export const useFilters = create<FilterState>()(
+export const useFiltersStore = create<FilterState>()(
   devtools((set, get) => ({
     filters: [],
-    initFilters: async (messageApi) => {
+    initFilters: async (messageApi, intl) => {
       try {
         const res = await fetch(`${HOST}/api/filters`);
         if (!res.ok) throw new Error('接口错误');
@@ -54,7 +55,7 @@ export const useFilters = create<FilterState>()(
             icmp_code: 0,
             action: 'drop',
             enabled: false,
-            comment: 'Block all ICMP ping requests (Echo Request)',
+            comment: intl?.formatMessage({ id: 'useFilters.blockIcmpPing' }) || 'Block all ICMP ping requests (Echo Request)',
           });
           await get().addFilter({
             rule_type: 'icmp',
@@ -63,7 +64,7 @@ export const useFilters = create<FilterState>()(
             inner_protocol: 'udp',
             action: 'drop',
             enabled: false,
-            comment: 'Block ICMP Destination Unreachable with inner UDP packets',
+            comment: intl?.formatMessage({ id: 'useFilters.blockIcmpDestUnreachable' }) || 'Block ICMP Destination Unreachable with inner UDP packets',
           });
           await get().addFilter({
             rule_type: 'icmp',
@@ -72,7 +73,7 @@ export const useFilters = create<FilterState>()(
             inner_protocol: 'udp',
             action: 'drop',
             enabled: false,
-            comment: 'Block UDP traceroute attempts (ICMP Time Exceeded)',
+            comment: intl?.formatMessage({ id: 'useFilters.blockUdpTraceroute' }) || 'Block UDP traceroute attempts (ICMP Time Exceeded)',
           });
           await get().addFilter({
             rule_type: 'tcp',
@@ -80,7 +81,7 @@ export const useFilters = create<FilterState>()(
             dst_port: 23,
             action: 'drop',
             enabled: false,
-            comment: 'Block Telnet (insecure remote access)',
+            comment: intl?.formatMessage({ id: 'useFilters.blockTelnet' }) || 'Block Telnet (insecure remote access)',
           });
           await get().addFilter({
             rule_type: 'tcp',
@@ -88,7 +89,7 @@ export const useFilters = create<FilterState>()(
             dst_port: 135,
             action: 'drop',
             enabled: false,
-            comment: 'Block RPC Endpoint Mapper (Windows vulnerability)',
+            comment: intl?.formatMessage({ id: 'useFilters.blockRpcEndpoint' }) || 'Block RPC Endpoint Mapper (Windows vulnerability)',
           });
           await get().addFilter({
             rule_type: 'tcp',
@@ -96,7 +97,7 @@ export const useFilters = create<FilterState>()(
             dst_port: 445,
             action: 'drop',
             enabled: false,
-            comment: 'Block SMB/CIFS (ransomware vector)',
+            comment: intl?.formatMessage({ id: 'useFilters.blockSmbCifs' }) || 'Block SMB/CIFS (ransomware vector)',
           });
           await get().addFilter({
             rule_type: 'tcp',
@@ -104,7 +105,7 @@ export const useFilters = create<FilterState>()(
             dst_port: 139,
             action: 'drop',
             enabled: false,
-            comment: 'Block NetBIOS Session Service',
+            comment: intl?.formatMessage({ id: 'useFilters.blockNetbios' }) || 'Block NetBIOS Session Service',
           });
           await get().addFilter({
             rule_type: 'tcp',
@@ -112,7 +113,7 @@ export const useFilters = create<FilterState>()(
             dst_port: 1433,
             action: 'drop',
             enabled: false,
-            comment: 'Block MS SQL Server (external access)',
+            comment: intl?.formatMessage({ id: 'useFilters.blockMsSqlServer' }) || 'Block MS SQL Server (external access)',
           });
           await get().addFilter({
             rule_type: 'tcp',
@@ -120,7 +121,7 @@ export const useFilters = create<FilterState>()(
             dst_port: 3389,
             action: 'drop',
             enabled: false,
-            comment: 'Block RDP (brute force target)',
+            comment: intl?.formatMessage({ id: 'useFilters.blockRdp' }) || 'Block RDP (brute force target)',
           });
           await get().addFilter({
             rule_type: 'tcp',
@@ -128,16 +129,16 @@ export const useFilters = create<FilterState>()(
             dst_port: 5900,
             action: 'drop',
             enabled: false,
-            comment: 'Block VNC (insecure remote access)',
+            comment: intl?.formatMessage({ id: 'useFilters.blockVnc' }) || 'Block VNC (insecure remote access)',
           });
         }
       } catch (err) {
-        messageApi?.error('获取过滤器失败');
+        messageApi?.error(intl?.formatMessage({ id: 'useFilters.fetchFiltersFailed' }) || '获取过滤器失败');
         console.error(err);
       }
     },
 
-    fetchFilters: async (messageApi) => {
+    fetchFilters: async (messageApi, intl) => {
       try {
         const res = await fetch(`${HOST}/api/filters`);
         if (!res.ok) throw new Error('接口错误');
@@ -147,12 +148,12 @@ export const useFilters = create<FilterState>()(
           .sort((a, b) => b.id - a.id);
         set({ filters: newFilters });
       } catch (err) {
-        messageApi?.error('获取过滤器失败');
+        messageApi?.error(intl?.formatMessage({ id: 'useFilters.fetchFiltersFailed' }) || '获取过滤器失败');
         console.error(err);
       }
     },
 
-    addFilter: async (filter, messageApi) => {
+    addFilter: async (filter, messageApi, intl) => {
       try {
         const res = await fetch(`${HOST}/api/filters`, {
           method: 'POST',
@@ -160,15 +161,15 @@ export const useFilters = create<FilterState>()(
           body: JSON.stringify(filter),
         });
         if (!res.ok) throw new Error('添加失败');
-        messageApi?.success('添加成功');
-        await get().fetchFilters(messageApi);
+        messageApi?.success(intl?.formatMessage({ id: 'useFilters.addSuccess' }) || '添加成功');
+        await get().fetchFilters(messageApi, intl);
       } catch (err) {
-        messageApi?.error('添加过滤器失败');
+        messageApi?.error(intl?.formatMessage({ id: 'useFilters.addFilterFailed' }) || '添加过滤器失败');
         console.error(err);
       }
     },
 
-    updateFilter: async (id, filter, messageApi) => {
+    updateFilter: async (id, filter, messageApi, intl) => {
       try {
         const res = await fetch(`${HOST}/api/filters/${id}`, {
           method: 'PUT',
@@ -176,29 +177,29 @@ export const useFilters = create<FilterState>()(
           body: JSON.stringify(filter),
         });
         if (!res.ok) throw new Error('更新失败');
-        messageApi?.success('更新成功');
-        await get().fetchFilters(messageApi);
+        messageApi?.success(intl?.formatMessage({ id: 'useFilters.updateSuccess' }) || '更新成功');
+        await get().fetchFilters(messageApi, intl);
       } catch (err) {
-        messageApi?.error('更新过滤器失败');
+        messageApi?.error(intl?.formatMessage({ id: 'useFilters.updateFilterFailed' }) || '更新过滤器失败');
         console.error(err);
       }
     },
 
-    deleteFilter: async (id, messageApi) => {
+    deleteFilter: async (id, messageApi, intl) => {
       try {
         const res = await fetch(`${HOST}/api/filters/${id}`, {
           method: 'DELETE',
         });
         if (!res.ok) throw new Error('删除失败');
-        messageApi?.success('删除成功');
-        await get().fetchFilters(messageApi);
+        messageApi?.success(intl?.formatMessage({ id: 'useFilters.deleteSuccess' }) || '删除成功');
+        await get().fetchFilters(messageApi, intl);
       } catch (err) {
-        messageApi?.error('删除过滤器失败');
+        messageApi?.error(intl?.formatMessage({ id: 'useFilters.deleteFilterFailed' }) || '删除过滤器失败');
         console.error(err);
       }
     },
 
-    toggleFilter: async (id, messageApi) => {
+    toggleFilter: async (id, messageApi, intl) => {
       const current = get().filters.find((f) => f.id === id);
       if (!current) return;
 
@@ -208,10 +209,13 @@ export const useFilters = create<FilterState>()(
           method: 'POST',
         });
         if (!res.ok) throw new Error('切换失败');
-        messageApi?.success(`${current.enabled ? '禁用' : '启用'}成功`);
-        await get().fetchFilters(messageApi);
+        const successMessage = current.enabled 
+          ? intl?.formatMessage({ id: 'useFilters.disableSuccess' }) || '禁用成功'
+          : intl?.formatMessage({ id: 'useFilters.enableSuccess' }) || '启用成功';
+        messageApi?.success(successMessage);
+        await get().fetchFilters(messageApi, intl);
       } catch (err) {
-        messageApi?.error('切换过滤器状态失败');
+        messageApi?.error(intl?.formatMessage({ id: 'useFilters.toggleFilterFailed' }) || '切换过滤器状态失败');
         console.error(err);
       }
     },

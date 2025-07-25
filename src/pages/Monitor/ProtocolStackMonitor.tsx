@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Spin } from 'antd';
+import { useIntl } from 'react-intl';
 import {
   Activity,
   AlertCircle,
@@ -15,8 +16,10 @@ import {
   ArrowDownCircle,
 } from 'lucide-react';
 import * as echarts from 'echarts';
+
 // 自定义WebSocket钩子
 const useWebSocketData = (websocketType, queryParams) => {
+  const intl = useIntl();
   const [data, setData] = useState({
     layers: {
       link: { send: null, receive: null },
@@ -168,14 +171,14 @@ const useWebSocketData = (websocketType, queryParams) => {
         }
       } catch (err) {
         console.error(`${websocketType} 数据解析错误:`, err);
-        setError('数据解析失败');
+        setError(intl.formatMessage({ id: 'ProtocolStackMonitor.dataParsingFailed' }));
         setLoading(false);
       }
     };
 
     ws.onerror = (error) => {
       console.error(`${websocketType} WebSocket错误:`, error);
-      setError('连接失败');
+      setError(intl.formatMessage({ id: 'ProtocolStackMonitor.connectionFailed' }));
       setLoading(false);
     };
 
@@ -209,55 +212,63 @@ const useWebSocketData = (websocketType, queryParams) => {
 };
 
 // Loading 组件
-const LoadingCard = ({ title, icon: Icon, color }) => (
-  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-    <div className="flex items-center gap-2 p-3 bg-gray-50 border-b border-gray-100">
-      <Icon className={color} size={16} />
-      <span className="text-sm font-medium text-gray-900">{title}</span>
-      {/* <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 ml-2"></div> */}
-    </div>
-    <div className="flex items-center justify-center h-48">
-      <div className="flex items-center justify-center h-full">
-        <Spin />
-        <span className="ml-2 text-slate-500">正在加载数据...</span>
+const LoadingCard = ({ title, icon: Icon, color }) => {
+  const intl = useIntl();
+  
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="flex items-center gap-2 p-3 bg-gray-50 border-b border-gray-100">
+        <Icon className={color} size={16} />
+        <span className="text-sm font-medium text-gray-900">{title}</span>
+      </div>
+      <div className="flex items-center justify-center h-48">
+        <div className="flex items-center justify-center h-full">
+          <Spin />
+          <span className="ml-2 text-slate-500">{intl.formatMessage({ id: 'ProtocolStackMonitor.loading' })}</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Loading 组件 - 交互卡片版本
-const LoadingInteractionCard = ({ title, fromIcon: FromIcon, toIcon: ToIcon, fromColor, toColor, gradientClass, borderClass }) => (
-  <div className={`${gradientClass} rounded border ${borderClass}`}>
-    <div className="flex items-center gap-2 p-3 border-b border-gray-100">
-      <FromIcon className={fromColor} size={12} />
-      <ArrowRight className="text-gray-400" size={10} />
-      <ToIcon className={toColor} size={12} />
-      <span className="text-xs font-medium text-gray-700 ml-2">{title}</span>
-      {/* <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 ml-2"></div> */}
-    </div>
-    <div className="flex items-center justify-center h-32">
-      <div className="flex items-center justify-center h-full">
-        <Spin />
-        <span className="ml-2 text-slate-500">正在加载数据...</span>
+const LoadingInteractionCard = ({ title, fromIcon: FromIcon, toIcon: ToIcon, fromColor, toColor, gradientClass, borderClass }) => {
+  const intl = useIntl();
+  
+  return (
+    <div className={`${gradientClass} rounded border ${borderClass}`}>
+      <div className="flex items-center gap-2 p-3 border-b border-gray-100">
+        <FromIcon className={fromColor} size={12} />
+        <ArrowRight className="text-gray-400" size={10} />
+        <ToIcon className={toColor} size={12} />
+        <span className="text-xs font-medium text-gray-700 ml-2">{title}</span>
+      </div>
+      <div className="flex items-center justify-center h-32">
+        <div className="flex items-center justify-center h-full">
+          <Spin />
+          <span className="ml-2 text-slate-500">{intl.formatMessage({ id: 'ProtocolStackMonitor.loading' })}</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const DropRateCard = ({ data, history, loading, error, isReady }) => {
+  const intl = useIntl();
+  
   if (loading) {
     return (
       <div key="loading" className="w-full bg-white rounded-md border border-gray-200 p-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <ArrowDownCircle className="text-red-500" size={16} />
-            <span className="text-sm font-medium text-gray-900">丢包率</span>
+            <span className="text-sm font-medium text-gray-900">{intl.formatMessage({ id: 'ProtocolStackMonitor.dropRate' })}</span>
           </div>
           <span className="text-base font-semibold text-red-500">--</span>
         </div>
         <div className="flex items-center justify-center h-16 w-full">
           <Spin />
-          <span className="ml-2 text-slate-500">正在加载数据...</span>
+          <span className="ml-2 text-slate-500">{intl.formatMessage({ id: 'ProtocolStackMonitor.loading' })}</span>
         </div>
       </div>
     );
@@ -352,7 +363,7 @@ const DropRateCard = ({ data, history, loading, error, isReady }) => {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <ArrowDownCircle className="text-red-500" size={16} />
-          <span className="text-sm font-medium text-gray-900">丢包率</span>
+          <span className="text-sm font-medium text-gray-900">{intl.formatMessage({ id: 'ProtocolStackMonitor.dropRate' })}</span>
         </div>
         <span className="text-base font-semibold text-red-500">{dropValue}</span>
       </div>
@@ -360,8 +371,11 @@ const DropRateCard = ({ data, history, loading, error, isReady }) => {
     </div>
   );
 };
+
 // 单个指标组件
 const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, history, loading, error, queryParams, isReady }) => {
+  const intl = useIntl();
+  
   console.log('MetricCard', data, loading, isReady);
   // 如果正在加载且没有数据，显示loading状态
   if (loading) {
@@ -485,7 +499,7 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
       <div className="bg-white rounded-lg border border-red-200 p-4">
         <div className="flex items-center gap-2 mb-2">
           <AlertCircle className="text-red-500" size={16} />
-          <span className="text-sm font-medium text-red-700">{title} - 连接失败</span>
+          <span className="text-sm font-medium text-red-700">{title} - {intl.formatMessage({ id: 'ProtocolStackMonitor.connectionFailed' })}</span>
         </div>
         <div className="text-xs text-red-600">{error}</div>
       </div>
@@ -497,7 +511,6 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
       <div className="flex items-center gap-2 p-3 bg-gray-50 border-b border-gray-100">
         <Icon className={color} size={16} />
         <span className="text-sm font-medium text-gray-900">{title}</span>
-        {/* {loading && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 ml-2"></div>} */}
       </div>
 
       {/* 发送数据组 */}
@@ -506,7 +519,7 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
           <div className="flex-1 p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowUp className="text-blue-500" size={14} />
-              <span className="text-xs font-medium text-gray-700 mr-5">发送</span>
+              <span className="text-xs font-medium text-gray-700 mr-5">{intl.formatMessage({ id: 'ProtocolStackMonitor.send' })}</span>
               {queryParams && (
                 <>
                   <span className="text-xs text-gray-500">
@@ -553,7 +566,7 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
           <div className="flex-1 p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowDown className="text-green-500" size={14} />
-              <span className="text-xs font-medium text-gray-700">接收</span>
+              <span className="text-xs font-medium text-gray-700">{intl.formatMessage({ id: 'ProtocolStackMonitor.receive' })}</span>
               {queryParams && (
                 <>
                   <span className="text-xs text-gray-500">
@@ -616,6 +629,8 @@ const InteractionCard = ({
   error,
   isReady,
 }) => {
+  const intl = useIntl();
+  
   // 如果正在加载且没有数据，显示loading状态
   if (loading) {
     return (
@@ -748,7 +763,7 @@ const InteractionCard = ({
       <div className="bg-white rounded-lg border border-red-200 p-4">
         <div className="flex items-center gap-2 mb-2">
           <AlertCircle className="text-red-500" size={16} />
-          <span className="text-sm font-medium text-red-700">{title} - 连接失败</span>
+          <span className="text-sm font-medium text-red-700">{title} - {intl.formatMessage({ id: 'ProtocolStackMonitor.connectionFailed' })}</span>
         </div>
         <div className="text-xs text-red-600">{error}</div>
       </div>
@@ -762,7 +777,6 @@ const InteractionCard = ({
         <ArrowRight className="text-gray-400" size={10} />
         <ToIcon className={toColor} size={12} />
         <span className="text-xs font-medium text-gray-700 ml-2">{title}</span>
-        {/* {loading && <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 ml-2"></div>} */}
       </div>
 
       {/* 发送数据组 */}
@@ -771,7 +785,7 @@ const InteractionCard = ({
           <div className="flex-1 p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowUp className="text-blue-500" size={12} />
-              <span className="text-xs font-medium text-gray-700">发送</span>
+              <span className="text-xs font-medium text-gray-700">{intl.formatMessage({ id: 'ProtocolStackMonitor.send' })}</span>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {fields.map((field) => (
@@ -807,7 +821,7 @@ const InteractionCard = ({
           <div className="flex-1 p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowDown className="text-green-500" size={12} />
-              <span className="text-xs font-medium text-gray-700">接收</span>
+              <span className="text-xs font-medium text-gray-700">{intl.formatMessage({ id: 'ProtocolStackMonitor.receive' })}</span>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {fields.map((field) => (
@@ -853,6 +867,7 @@ interface ProtocolStackMonitorProps {
 
 // 主组件
 const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams }) => {
+  const intl = useIntl();
   // 使用自定义钩子获取各种数据
   // const packetFlowData = useWebSocketData('PacketFlowCount', queryParams);
   // const linkNetworkData = useWebSocketData('LinkNetworkLatencyFrequency', queryParams);
@@ -867,8 +882,8 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
       <div className="h-full w-full bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Activity className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <div className="text-lg font-semibold text-slate-500 mb-2">协议栈监控器</div>
-          <div className="text-sm text-slate-400">请从数据表中选择 sockect 连接开始监控</div>
+          <div className="text-lg font-semibold text-slate-500 mb-2">{intl.formatMessage({ id: 'ProtocolStackMonitor.title' })}</div>
+          <div className="text-sm text-slate-400">{intl.formatMessage({ id: 'ProtocolStackMonitor.selectConnection' })}</div>
         </div>
       </div>
     );
@@ -881,7 +896,7 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Activity className="text-blue-600" size={20} />
-            <div className="font-semibold text-base text-slate-900">协议栈监控器</div>
+            <div className="font-semibold text-base text-slate-900">{intl.formatMessage({ id: 'ProtocolStackMonitor.title' })}</div>
           </div>
           {/* 右侧丢包率展示 */}
           {/* <div className="flex text-[12px] items-center gap-2 px-3 py-1 rounded-md bg-red-50 border border-red-100">
@@ -901,7 +916,7 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
         <div className="space-y-3">
           {/* 传输层 */}
           <MetricCard
-            title="传输层"
+            title={intl.formatMessage({ id: 'ProtocolStackMonitor.transportLayer' })}
             icon={Zap}
             color="text-purple-500"
             queryParams={queryParams}
@@ -913,12 +928,12 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
             fields={[
               {
                 key: 'num',
-                label: '数据包',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.packets' }),
                 color: 'text-gray-900',
               },
               {
                 key: 'pps',
-                label: 'PPS',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.pps' }),
                 color: 'text-purple-600',
                 format: (val) => parseFloat(val).toFixed(3) + '/s',
               },
@@ -926,14 +941,14 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
             chartConfigs={[
               {
                 key: 'packets',
-                label: '数据包',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.packets' }),
                 dataKey: 'num',
                 sendColor: '#3b82f6',
                 receiveColor: '#10b981',
               },
               {
                 key: 'pps',
-                label: 'PPS',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.pps' }),
                 dataKey: 'pps',
                 sendColor: '#3b82f6',
                 receiveColor: '#10b981',
@@ -943,7 +958,7 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
 
           {/* 网络层 */}
           <MetricCard
-            title="网络层"
+            title={intl.formatMessage({ id: 'ProtocolStackMonitor.networkLayer' })}
             icon={Network}
             color="text-green-500"
             queryParams={queryParams}
@@ -955,12 +970,12 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
             fields={[
               {
                 key: 'num',
-                label: '数据包',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.packets' }),
                 color: 'text-gray-900',
               },
               {
                 key: 'pps',
-                label: 'PPS',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.pps' }),
                 color: 'text-green-600',
                 format: (val) => parseFloat(val).toFixed(3) + '/s',
               },
@@ -968,14 +983,14 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
             chartConfigs={[
               {
                 key: 'packets',
-                label: '数据包',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.packets' }),
                 dataKey: 'num',
                 sendColor: '#3b82f6',
                 receiveColor: '#10b981',
               },
               {
                 key: 'pps',
-                label: 'PPS',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.pps' }),
                 dataKey: 'pps',
                 sendColor: '#3b82f6',
                 receiveColor: '#10b981',
@@ -985,7 +1000,7 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
 
           {/* 链路层 */}
           <MetricCard
-            title="链路层"
+            title={intl.formatMessage({ id: 'ProtocolStackMonitor.linkLayer' })}
             icon={Layers}
             color="text-blue-500"
             queryParams={queryParams}
@@ -997,12 +1012,12 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
             fields={[
               {
                 key: 'num',
-                label: '数据包',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.packets' }),
                 color: 'text-gray-900',
               },
               {
                 key: 'pps',
-                label: 'PPS',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.pps' }),
                 color: 'text-blue-600',
                 format: (val) => parseFloat(val).toFixed(3) + '/s',
               },
@@ -1010,14 +1025,14 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
             chartConfigs={[
               {
                 key: 'packets',
-                label: '数据包',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.packets' }),
                 dataKey: 'num',
                 sendColor: '#3b82f6',
                 receiveColor: '#10b981',
               },
               {
                 key: 'pps',
-                label: 'PPS',
+                label: intl.formatMessage({ id: 'ProtocolStackMonitor.pps' }),
                 dataKey: 'pps',
                 sendColor: '#3b82f6',
                 receiveColor: '#10b981',
@@ -1029,13 +1044,13 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
         {/* 跨层交互 */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center mb-4">
-            <div className="text-sm font-medium text-gray-900">跨层交互</div>
+            <div className="text-sm font-medium text-gray-900">{intl.formatMessage({ id: 'ProtocolStackMonitor.crossLayerInteraction' })}</div>
           </div>
 
           <div className="space-y-3">
             {/* 网络层 ← → 链路层 */}
             <InteractionCard
-              title="网络层 ↔ 链路层"
+              title={intl.formatMessage({ id: 'ProtocolStackMonitor.networkToLink' })}
               fromIcon={Network}
               toIcon={Layers}
               fromColor="text-green-500"
@@ -1052,13 +1067,13 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
               fields={[
                 {
                   key: 'freq',
-                  label: '频率',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.frequency' }),
                   color: 'text-green-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}/s`,
                 },
                 {
                   key: 'lat',
-                  label: '延迟',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.latency' }),
                   color: 'text-red-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}ms`,
                 },
@@ -1066,14 +1081,14 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
               chartConfigs={[
                 {
                   key: 'frequency',
-                  label: '频率',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.frequency' }),
                   dataKey: 'freq',
                   sendColor: '#3b82f6',
                   receiveColor: '#10b981',
                 },
                 {
                   key: 'LAT(ms)',
-                  label: '延迟',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.latency' }),
                   dataKey: 'lat',
                   sendColor: '#ef4444',
                   receiveColor: '#f59e0b',
@@ -1083,7 +1098,7 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
 
             {/* 传输层 ← → 网络层 */}
             <InteractionCard
-              title="传输层 ↔ 网络层"
+              title={intl.formatMessage({ id: 'ProtocolStackMonitor.transportToNetwork' })}
               fromIcon={Zap}
               toIcon={Network}
               fromColor="text-purple-500"
@@ -1100,13 +1115,13 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
               fields={[
                 {
                   key: 'freq',
-                  label: '频率',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.frequency' }),
                   color: 'text-purple-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}/s`,
                 },
                 {
                   key: 'lat',
-                  label: '延迟',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.latency' }),
                   color: 'text-red-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}ms`,
                 },
@@ -1114,14 +1129,14 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
               chartConfigs={[
                 {
                   key: 'frequency',
-                  label: '频率',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.frequency' }),
                   dataKey: 'freq',
                   sendColor: '#3b82f6',
                   receiveColor: '#10b981',
                 },
                 {
                   key: 'LAT(ms)',
-                  label: '延迟',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.latency' }),
                   dataKey: 'lat',
                   sendColor: '#ef4444',
                   receiveColor: '#f59e0b',
@@ -1131,7 +1146,7 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
 
             {/* 传输层 ← → 链路层 */}
             <InteractionCard
-              title="传输层 ↔ 链路层"
+              title={intl.formatMessage({ id: 'ProtocolStackMonitor.transportToLink' })}
               fromIcon={Zap}
               toIcon={Layers}
               fromColor="text-purple-500"
@@ -1148,13 +1163,13 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
               fields={[
                 {
                   key: 'freq',
-                  label: '频率',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.frequency' }),
                   color: 'text-amber-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}/s`,
                 },
                 {
                   key: 'lat',
-                  label: '延迟',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.latency' }),
                   color: 'text-red-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}ms`,
                 },
@@ -1162,14 +1177,14 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
               chartConfigs={[
                 {
                   key: 'frequency(s)',
-                  label: '频率',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.frequency' }),
                   dataKey: 'freq',
                   sendColor: '#3b82f6',
                   receiveColor: '#10b981',
                 },
                 {
                   key: 'LAT(ms)',
-                  label: '延迟',
+                  label: intl.formatMessage({ id: 'ProtocolStackMonitor.latency' }),
                   dataKey: 'lat',
                   sendColor: '#ef4444',
                   receiveColor: '#f59e0b',

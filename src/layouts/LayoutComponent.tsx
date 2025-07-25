@@ -47,7 +47,7 @@ export default function LayoutComponent(props) {
           </Col>
           <Col span={4}>
             <Flex justify="flex-end" align="center" className="h-full" gap={20}>
-              {/* <SelectLang /> */}
+              <SelectLang />
               {/* <DarkModeButton /> */}
             </Flex>
           </Col>

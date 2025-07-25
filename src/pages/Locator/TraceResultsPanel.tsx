@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Table, Tooltip, Spin } from 'antd';
+import { useIntl } from 'react-intl';
 import {
   DeploymentUnitOutlined,
   GlobalOutlined,
@@ -13,6 +14,7 @@ import { DndContext, useDraggable, useSensor, useSensors, PointerSensor, closest
 
 const PANEL_WIDTH_MARGIN = 600;
 const PANEL_HEIGHT_MARGIN = 460;
+
 // 可拖动包装器组件（支持折叠）
 const DraggableWrapper = ({ children, onPositionChange, initialPosition = { x: 100, y: 230 } }) => {
   const [position, setPosition] = useState(initialPosition);
@@ -76,6 +78,7 @@ const DraggableWrapper = ({ children, onPositionChange, initialPosition = { x: 1
 
 // 可拖动项目组件
 const DraggableItem = ({ children, position, isDragging, isCollapsed, onToggleCollapse }) => {
+  const intl = useIntl();
   const { attributes, listeners, setNodeRef, transform, isDragging: dndIsDragging } = useDraggable({ id: 'trace-panel' });
 
   const style = {
@@ -110,15 +113,14 @@ const DraggableItem = ({ children, position, isDragging, isCollapsed, onToggleCo
         "
       >
         <div className="flex items-center gap-2">
-          {/* <DragOutlined className="text-gray-400 text-xs" /> */}
           <h2 className="text-base font-medium text-white flex items-center gap-2">
             <DeploymentUnitOutlined className="text-blue-400 text-sm" />
-            路由追踪信息
+            {intl.formatMessage({ id: 'TraceResultsPanel.title' })}
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-300">可拖拽移动</span>
-          <Tooltip title={isCollapsed ? '展开' : '折叠'}>
+          <span className="text-xs text-gray-300">{intl.formatMessage({ id: 'TraceResultsPanel.draggable' })}</span>
+          <Tooltip title={isCollapsed ? intl.formatMessage({ id: 'TraceResultsPanel.expand' }) : intl.formatMessage({ id: 'TraceResultsPanel.collapse' })}>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -138,6 +140,7 @@ const DraggableItem = ({ children, position, isDragging, isCollapsed, onToggleCo
 
 // 主组件：TraceResultsPanel
 const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
+  const intl = useIntl();
   const tableRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -152,7 +155,7 @@ const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
 
   const columns = [
     {
-      title: <div className="text-gray-200 font-medium text-xs">TTL</div>,
+      title: <div className="text-gray-200 font-medium text-xs">{intl.formatMessage({ id: 'TraceResultsPanel.ttl' })}</div>,
       dataIndex: 'ttl',
       key: 'ttl',
       width: 65,
@@ -160,26 +163,26 @@ const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
       render: (_, __, index) => <span className="font-mono text-xs text-gray-300">{index + 1}</span>,
     },
     {
-      title: <div className="text-gray-200 font-medium text-xs">IP地址</div>,
+      title: <div className="text-gray-200 font-medium text-xs">{intl.formatMessage({ id: 'TraceResultsPanel.ipAddress' })}</div>,
       dataIndex: 'ip',
       key: 'ip',
       width: 140,
       ellipsis: true,
       render: (ip) => (
-        <Tooltip title={ip === '*' ? '请求超时' : ip}>
+        <Tooltip title={ip === '*' ? intl.formatMessage({ id: 'TraceResultsPanel.timeout' }) : ip}>
           <div className="flex items-center gap-1.5">
             {ip === '*' ? <CloseCircleOutlined className="text-red-400 text-xs" /> : <GlobalOutlined className="text-blue-400 text-xs" />}
             <span
               className={`font-mono block w-full overflow-hidden whitespace-nowrap text-ellipsis text-xs ${ip === '*' ? 'text-red-400' : 'text-gray-200'}`}
             >
-              {ip === '*' ? '* (超时)' : ip}
+              {ip === '*' ? `* (${intl.formatMessage({ id: 'TraceResultsPanel.timeoutShort' })})` : ip}
             </span>
           </div>
         </Tooltip>
       ),
     },
     {
-      title: <div className="text-gray-200 font-medium text-xs">延迟</div>,
+      title: <div className="text-gray-200 font-medium text-xs">{intl.formatMessage({ id: 'TraceResultsPanel.latency' })}</div>,
       dataIndex: 'latency',
       key: 'latency',
       width: 100,
@@ -188,7 +191,7 @@ const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
       render: (latency, record) => {
         if (record.packet_loss === '100%') {
           return (
-            <Tooltip title="全部丢包">
+            <Tooltip title={intl.formatMessage({ id: 'TraceResultsPanel.allPacketsLost' })}>
               <span className="text-red-400 font-medium text-xs">-</span>
             </Tooltip>
           );
@@ -211,7 +214,7 @@ const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
       },
     },
     {
-      title: <div className="text-gray-200 font-medium text-xs">ASN</div>,
+      title: <div className="text-gray-200 font-medium text-xs">{intl.formatMessage({ id: 'TraceResultsPanel.asn' })}</div>,
       dataIndex: 'asn',
       key: 'asn',
       width: 100,
@@ -224,23 +227,24 @@ const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
       ),
     },
     {
-      title: <div className="text-gray-200 font-medium text-xs">地理位置</div>,
+      title: <div className="text-gray-200 font-medium text-xs">{intl.formatMessage({ id: 'TraceResultsPanel.location' })}</div>,
       dataIndex: 'location',
       key: 'location',
       ellipsis: true,
       render: (location) => (
-        <Tooltip title={location && location !== 'Unknown' ? location : '未知'}>
+        <Tooltip title={location && location !== 'Unknown' ? location : intl.formatMessage({ id: 'TraceResultsPanel.unknown' })}>
           <div className="text-xs">
             {location && location !== 'Unknown' ? (
               <span className="text-gray-200 px-1.5 py-0.5 block w-full overflow-hidden whitespace-nowrap text-ellipsis">{location}</span>
             ) : (
-              <span className="text-gray-300 italic">未知</span>
+              <span className="text-gray-300 italic">{intl.formatMessage({ id: 'TraceResultsPanel.unknown' })}</span>
             )}
           </div>
         </Tooltip>
       ),
     },
   ];
+
   const dataSource = traceResults.map((hop, index) => ({ ...hop, key: index }));
   if (loading) {
     dataSource.push({ key: 'loading', ip: 'loading' });
@@ -253,12 +257,12 @@ const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
           <div className="px-3 py-1.5 bg-blue-800/50 border-b border-white/10">
             <div className="flex items-center justify-between text-xs">
               <span className="text-gray-300">
-                共 <span className="text-blue-400 font-medium">{traceResults.length}</span> 个跳点
+                {intl.formatMessage({ id: 'TraceResultsPanel.totalHops' }, { count: traceResults.length })}
               </span>
               <div className="flex items-center gap-3">
-                <span className="text-green-400 text-xs">● 正常</span>
-                <span className="text-yellow-400 text-xs">● 延迟高</span>
-                <span className="text-red-400 text-xs">● 超时</span>
+                <span className="text-green-400 text-xs">● {intl.formatMessage({ id: 'TraceResultsPanel.normal' })}</span>
+                <span className="text-yellow-400 text-xs">● {intl.formatMessage({ id: 'TraceResultsPanel.highLatency' })}</span>
+                <span className="text-red-400 text-xs">● {intl.formatMessage({ id: 'TraceResultsPanel.timeoutShort' })}</span>
               </div>
             </div>
           </div>
@@ -268,8 +272,8 @@ const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
           {traceResults.length === 0 && !loading ? (
             <div className="text-gray-300 text-center py-12">
               <DeploymentUnitOutlined className="text-3xl mb-3 opacity-30" />
-              <p className="text-sm">暂无追踪数据</p>
-              <p className="text-xs text-gray-400 mt-1">输入目标地址开始追踪</p>
+              <p className="text-sm">{intl.formatMessage({ id: 'TraceResultsPanel.noData' })}</p>
+              <p className="text-xs text-gray-400 mt-1">{intl.formatMessage({ id: 'TraceResultsPanel.inputTarget' })}</p>
             </div>
           ) : (
             <Table
@@ -295,7 +299,7 @@ const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
                           <td colSpan={columns.length} className="p-4 text-center">
                             <div className="flex flex-col items-center gap-2">
                               <Spin indicator={<LoadingOutlined style={{ fontSize: 20, color: '#60a5fa' }} spin />} />
-                              <p className="text-gray-300 text-xs">正在追踪路由...</p>
+                              <p className="text-gray-300 text-xs">{intl.formatMessage({ id: 'TraceResultsPanel.tracing' })}</p>
                             </div>
                           </td>
                         </tr>
@@ -311,10 +315,9 @@ const TraceResultsPanel = ({ traceResults = [], loading = false }) => {
 
         {(traceResults.length > 0 || loading) && (
           <div className="px-3 py-1.5 bg-blue-800/50 border-t border-white/10 flex items-center justify-between">
-            <div className="text-xs text-gray-300">{loading ? '追踪进行中...' : '追踪完成'}</div>
-            {/* <div className="text-xs text-gray-400">
-              拖拽标题栏可移动面板
-            </div> */}
+            <div className="text-xs text-gray-300">
+              {loading ? intl.formatMessage({ id: 'TraceResultsPanel.tracingInProgress' }) : intl.formatMessage({ id: 'TraceResultsPanel.traceComplete' })}
+            </div>
           </div>
         )}
       </div>

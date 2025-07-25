@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router';
+// import { Outlet } from 'react-router';
 import { Layout, Result, Button, Flex, Typography, Image } from 'antd';
 import { SecurityScanOutlined, WifiOutlined, ReloadOutlined } from '@ant-design/icons';
+import LayoutComponent from './LayoutComponent';
 import { useIntl } from 'react-intl';
 import logo from '@/assets/newlogo.png';
 // import Logo from '@/assets/newlogo.svg?react';
@@ -164,7 +165,7 @@ export default function ServiceReadinessGate() {
 
   // 2. 准备就绪状态: 渲染主应用
   if (isReady) {
-    return <Outlet />;
+    return <LayoutComponent />;
   }
 
   // 3. 加载状态: 富有科技感的等待界面

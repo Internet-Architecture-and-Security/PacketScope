@@ -39,39 +39,19 @@ import {
   SafetyOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import { useFilters } from '@/stores/useFilters';
+import { useIntl } from 'react-intl';
+import { useFilters } from '@/hooks/useFilters';
 import { useModals } from '@/stores/useStore';
 import { useEdit } from '@/stores/useStore';
 import { Funnel } from 'lucide-react';
-import type { Filter } from '@/stores/useFilters';
+import type { Filter } from '@/stores/useFiltersStore';
 
 const { Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
-// TCP标志位选项
-const tcpFlags = [
-  { label: 'FIN (连接终止)', value: 1 },
-  { label: 'SYN (建立连接)', value: 2 },
-  { label: 'RST (重置连接)', value: 4 },
-  { label: 'PSH (推送数据)', value: 8 },
-  { label: 'ACK (确认)', value: 16 },
-  { label: 'URG (紧急数据)', value: 32 },
-];
 
-// ICMP类型选项
-const icmpTypes = [
-  { label: 'Echo Reply (0)', value: 0 },
-  { label: 'Destination Unreachable (3)', value: 3 },
-  { label: 'Redirect (5)', value: 5 },
-  { label: 'Echo Request (8)', value: 8 },
-  { label: 'Router Advertisement (9)', value: 9 },
-  { label: 'Router Selection (10)', value: 10 },
-  { label: 'Time Exceeded (11)', value: 11 },
-  { label: 'Parameter Problem (12)', value: 12 },
-  { label: 'Timestamp (13)', value: 13 },
-  { label: 'Timestamp Reply (14)', value: 14 },
-];
 const Filters: React.FC = () => {
+  const intl = useIntl();
   const { message } = App.useApp();
   const { filters, fetchFilters, addFilter, updateFilter, deleteFilter, toggleFilter } = useFilters();
   const { filterModalVisible, setFilterModalVisible, setAiGenerateModalVisible } = useModals();
@@ -82,6 +62,30 @@ const Filters: React.FC = () => {
   const [filterStatus, setFilterStatus] = React.useState('all');
   const [filterAction, setFilterAction] = React.useState('all');
   const [currentRuleType, setCurrentRuleType] = React.useState('basic');
+
+  // TCP标志位选项
+  const tcpFlags = [
+    { label: intl.formatMessage({ id: 'FiltersManager.tcpFlagFin' }), value: 1 },
+    { label: intl.formatMessage({ id: 'FiltersManager.tcpFlagSyn' }), value: 2 },
+    { label: intl.formatMessage({ id: 'FiltersManager.tcpFlagRst' }), value: 4 },
+    { label: intl.formatMessage({ id: 'FiltersManager.tcpFlagPsh' }), value: 8 },
+    { label: intl.formatMessage({ id: 'FiltersManager.tcpFlagAck' }), value: 16 },
+    { label: intl.formatMessage({ id: 'FiltersManager.tcpFlagUrg' }), value: 32 },
+  ];
+
+  // ICMP类型选项
+  const icmpTypes = [
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpEchoReply' }), value: 0 },
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpDestUnreachable' }), value: 3 },
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpRedirect' }), value: 5 },
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpEchoRequest' }), value: 8 },
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpRouterAdv' }), value: 9 },
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpRouterSelect' }), value: 10 },
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpTimeExceeded' }), value: 11 },
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpParamProblem' }), value: 12 },
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpTimestamp' }), value: 13 },
+    { label: intl.formatMessage({ id: 'FiltersManager.icmpTimestampReply' }), value: 14 },
+  ];
 
   // 过滤和搜索逻辑
   const filteredFilters = React.useMemo(() => {
@@ -108,7 +112,7 @@ const Filters: React.FC = () => {
   }, [filters, searchTerm, filterType, filterStatus, filterAction]);
 
   useEffect(() => {
-    fetchFilters(message);
+    fetchFilters();
   }, []);
 
   const filterColumns: TableProps<Filter>['columns'] = [
@@ -120,16 +124,9 @@ const Filters: React.FC = () => {
       sorter: (a, b) => b.id - a.id,
     },
     {
-      title: '规则类型',
+      title: intl.formatMessage({ id: 'FiltersManager.ruleType' }),
       dataIndex: 'rule_type',
       key: 'rule_type',
-      // filters: [
-      //   { text: '基础规则', value: 'basic' },
-      //   { text: 'TCP规则', value: 'tcp' },
-      //   { text: 'UDP规则', value: 'udp' },
-      //   { text: 'ICMP规则', value: 'icmp' },
-      // ],
-      // onFilter: (value, record) => record.rule_type === value,
       render: (type: string, record: Filter) => (
         <Space>
           <Tag color={type === 'basic' ? 'blue' : type === 'tcp' ? 'green' : type === 'udp' ? 'orange' : 'purple'}>
@@ -144,74 +141,69 @@ const Filters: React.FC = () => {
       ),
     },
     {
-      title: '源IP',
+      title: intl.formatMessage({ id: 'FiltersManager.sourceIp' }),
       dataIndex: 'src_ip',
       key: 'src_ip',
-      // filterSearch: true,
-      // filters: Array.from(new Set(filters.map((f) => f.src_ip).filter(Boolean))).map((ip) => ({
-      //   text: ip || '',
-      //   value: ip || '',
-      // })),
-      // onFilter: (value, record) => record.src_ip === value,
     },
     {
-      title: '协议',
+      title: intl.formatMessage({ id: 'FiltersManager.protocol' }),
       dataIndex: 'protocol',
       key: 'protocol',
-      // filters: [
-      //   { text: 'TCP', value: 'tcp' },
-      //   { text: 'UDP', value: 'udp' },
-      //   { text: 'ICMP', value: 'icmp' },
-      // ],
-      // onFilter: (value, record) => record.protocol === value,
     },
     {
-      title: '动作',
+      title: intl.formatMessage({ id: 'FiltersManager.action' }),
       dataIndex: 'action',
       key: 'action',
-      // filters: [
-      //   { text: '阻断', value: 'drop' },
-      //   { text: '允许', value: 'allow' },
-      // ],
-      // onFilter: (value, record) => record.action === value,
-      render: (action: string) => <Tag color={action === 'drop' ? 'red' : 'green'}>{action === 'drop' ? '阻断' : '允许'}</Tag>,
-    },
-    {
-      title: '状态',
-      dataIndex: 'enabled',
-      key: 'enabled',
-      // filters: [
-      //   { text: '已启用', value: true },
-      //   { text: '已禁用', value: false },
-      // ],
-      // onFilter: (value, record) => record.enabled === value,
-      render: (enabled: boolean, record: Filter) => (
-        <Switch checked={enabled} onChange={() => toggleFilter(record.id, message)} size="small" />
+      render: (action: string) => (
+        <Tag color={action === 'drop' ? 'red' : 'green'}>
+          {action === 'drop' 
+            ? intl.formatMessage({ id: 'FiltersManager.actionDrop' })
+            : intl.formatMessage({ id: 'FiltersManager.actionAllow' })
+          }
+        </Tag>
       ),
     },
     {
-      title: '备注',
+      title: intl.formatMessage({ id: 'FiltersManager.status' }),
+      dataIndex: 'enabled',
+      key: 'enabled',
+      render: (enabled: boolean, record: Filter) => (
+        <Switch checked={enabled} onChange={() => toggleFilter(record.id)} size="small" />
+      ),
+    },
+    {
+      title: intl.formatMessage({ id: 'FiltersManager.comment' }),
       dataIndex: 'comment',
       key: 'comment',
       render: (comment: string, record: Filter) => (
         <div>
           <div>{comment}</div>
           {record.ai_generated && record.ai_confidence && (
-            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>AI置信度: {(record.ai_confidence * 100).toFixed(1)}%</div>
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+              {intl.formatMessage(
+                { id: 'FiltersManager.aiConfidence' },
+                { confidence: (record.ai_confidence * 100).toFixed(1) }
+              )}
+            </div>
           )}
         </div>
       ),
     },
     {
-      title: '操作',
+      title: intl.formatMessage({ id: 'FiltersManager.operations' }),
       key: 'actions',
       render: (_, record: Filter) => (
         <Space>
-          <Tooltip title="编辑">
+          <Tooltip title={intl.formatMessage({ id: 'FiltersManager.edit' })}>
             <Button type="text" icon={<EditOutlined className="w-4 h-4" />} onClick={() => editFilter(record)} />
           </Tooltip>
-          <Popconfirm title="确定要删除这个过滤器吗？" onConfirm={() => deleteFilter(record.id, message)} okText="确定" cancelText="取消">
-            <Tooltip title="删除">
+          <Popconfirm 
+            title={intl.formatMessage({ id: 'FiltersManager.confirmDelete' })} 
+            onConfirm={() => deleteFilter(record.id)} 
+            okText={intl.formatMessage({ id: 'FiltersManager.confirm' })} 
+            cancelText={intl.formatMessage({ id: 'FiltersManager.cancel' })}
+          >
+            <Tooltip title={intl.formatMessage({ id: 'FiltersManager.delete' })}>
               <Button type="text" danger icon={<DeleteOutlined className="w-4 h-4" />} />
             </Tooltip>
           </Popconfirm>
@@ -258,25 +250,21 @@ const Filters: React.FC = () => {
         inner_protocol: values.inner_protocol || 0,
       };
       if (editingFilter) {
-        // 更新过滤器
-        updateFilter(editingFilter.id, values, message);
-        // message.success('过滤器已更新');
+        updateFilter(editingFilter.id, values);
       } else {
-        // 添加新过滤器
         const newFilter = {
           id: Math.max(...filters.map((f) => f.id), 0) + 1,
           ...values,
           ai_generated: false,
         };
-        addFilter(newFilter, message);
-        // message.success('过滤器已添加');
+        addFilter(newFilter);
       }
       setFilterModalVisible(false);
     });
   };
+
   const handleRuleTypeChange = (value: string) => {
     setCurrentRuleType(value);
-    // 重置相关字段
     if (value === 'basic') {
       formRef.setFieldsValue({
         tcp_flags: undefined,
@@ -295,20 +283,31 @@ const Filters: React.FC = () => {
     <>
       <Row gutter={16}>
         <Col span={12}>
-          <Form.Item label="规则类型" name="rule_type" rules={[{ required: true, message: '请选择规则类型' }]}>
-            <Select placeholder="选择规则类型" onChange={handleRuleTypeChange}>
-              <Option value="basic">基础规则</Option>
-              <Option value="tcp">TCP规则</Option>
-              <Option value="udp">UDP规则</Option>
-              <Option value="icmp">ICMP规则</Option>
+          <Form.Item 
+            label={intl.formatMessage({ id: 'FiltersManager.ruleType' })} 
+            name="rule_type" 
+            rules={[{ required: true, message: intl.formatMessage({ id: 'FiltersManager.selectRuleType' }) }]}
+          >
+            <Select 
+              placeholder={intl.formatMessage({ id: 'FiltersManager.selectRuleType' })} 
+              onChange={handleRuleTypeChange}
+            >
+              <Option value="basic">{intl.formatMessage({ id: 'FiltersManager.basicRule' })}</Option>
+              <Option value="tcp">{intl.formatMessage({ id: 'FiltersManager.tcpRule' })}</Option>
+              <Option value="udp">{intl.formatMessage({ id: 'FiltersManager.udpRule' })}</Option>
+              <Option value="icmp">{intl.formatMessage({ id: 'FiltersManager.icmpRule' })}</Option>
             </Select>
           </Form.Item>
         </Col>
         <Col span={12}>
-          <Form.Item label="动作" name="action" rules={[{ required: true, message: '请选择动作' }]}>
-            <Select placeholder="选择动作">
-              <Option value="allow">允许</Option>
-              <Option value="drop">阻断</Option>
+          <Form.Item 
+            label={intl.formatMessage({ id: 'FiltersManager.action' })} 
+            name="action" 
+            rules={[{ required: true, message: intl.formatMessage({ id: 'FiltersManager.selectAction' }) }]}
+          >
+            <Select placeholder={intl.formatMessage({ id: 'FiltersManager.selectAction' })}>
+              <Option value="allow">{intl.formatMessage({ id: 'FiltersManager.actionAllow' })}</Option>
+              <Option value="drop">{intl.formatMessage({ id: 'FiltersManager.actionDrop' })}</Option>
             </Select>
           </Form.Item>
         </Col>
@@ -319,30 +318,30 @@ const Filters: React.FC = () => {
           <Form.Item
             label={
               <span>
-                源IP地址
-                <Tooltip title="留空表示任意IP (0.0.0.0)">
+                {intl.formatMessage({ id: 'FiltersManager.sourceIpAddress' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.sourceIpTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="src_ip"
           >
-            <Input placeholder="例: 192.168.1.100 (留空=任意)" />
+            <Input placeholder={intl.formatMessage({ id: 'FiltersManager.sourceIpPlaceholder' })} />
           </Form.Item>
         </Col>
         <Col span={12}>
           <Form.Item
             label={
               <span>
-                目标IP地址
-                <Tooltip title="留空表示任意IP (0.0.0.0)">
+                {intl.formatMessage({ id: 'FiltersManager.destIpAddress' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.destIpTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="dst_ip"
           >
-            <Input placeholder="例: 8.8.8.8 (留空=任意)" />
+            <Input placeholder={intl.formatMessage({ id: 'FiltersManager.destIpPlaceholder' })} />
           </Form.Item>
         </Col>
       </Row>
@@ -352,35 +351,49 @@ const Filters: React.FC = () => {
           <Form.Item
             label={
               <span>
-                源端口
-                <Tooltip title="0表示任意端口">
+                {intl.formatMessage({ id: 'FiltersManager.sourcePort' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.portTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="src_port"
           >
-            <InputNumber min={0} max={65535} placeholder="0=任意" style={{ width: '100%' }} />
+            <InputNumber 
+              min={0} 
+              max={65535} 
+              placeholder={intl.formatMessage({ id: 'FiltersManager.portPlaceholder' })} 
+              style={{ width: '100%' }} 
+            />
           </Form.Item>
         </Col>
         <Col span={8}>
           <Form.Item
             label={
               <span>
-                目标端口
-                <Tooltip title="0表示任意端口">
+                {intl.formatMessage({ id: 'FiltersManager.destPort' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.portTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="dst_port"
           >
-            <InputNumber min={0} max={65535} placeholder="0=任意" style={{ width: '100%' }} />
+            <InputNumber 
+              min={0} 
+              max={65535} 
+              placeholder={intl.formatMessage({ id: 'FiltersManager.portPlaceholder' })} 
+              style={{ width: '100%' }} 
+            />
           </Form.Item>
         </Col>
         <Col span={8}>
-          <Form.Item label="协议" name="protocol" rules={[{ required: true, message: '请选择协议' }]}>
-            <Select placeholder="选择协议">
+          <Form.Item 
+            label={intl.formatMessage({ id: 'FiltersManager.protocol' })} 
+            name="protocol" 
+            rules={[{ required: true, message: intl.formatMessage({ id: 'FiltersManager.selectProtocol' }) }]}
+          >
+            <Select placeholder={intl.formatMessage({ id: 'FiltersManager.selectProtocol' })}>
               <Option value="tcp">TCP (6)</Option>
               <Option value="udp">UDP (17)</Option>
               <Option value="icmp">ICMP (1)</Option>
@@ -394,24 +407,27 @@ const Filters: React.FC = () => {
   // 渲染TCP特定字段
   const renderTcpFields = () => (
     <>
-      <Alert message="TCP规则特定字段" description="配置TCP标志位匹配条件" type="info" showIcon style={{ marginBottom: 16 }} />
+      <Alert 
+        message={intl.formatMessage({ id: 'FiltersManager.tcpSpecificFields' })} 
+        description={intl.formatMessage({ id: 'FiltersManager.tcpSpecificDescription' })} 
+        type="info" 
+        showIcon 
+        style={{ marginBottom: 16 }} 
+      />
       <Row gutter={16}>
         <Col span={12}>
           <Form.Item
             label={
               <span>
-                TCP标志位
-                <Tooltip title="要匹配的TCP标志位，0表示不检查">
+                {intl.formatMessage({ id: 'FiltersManager.tcpFlags' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.tcpFlagsTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="tcp_flags"
           >
-            <Select
-              // mode="multiple"
-              placeholder="选择要匹配的TCP标志位"
-            >
+            <Select placeholder={intl.formatMessage({ id: 'FiltersManager.selectTcpFlags' })}>
               {tcpFlags.map((flag) => (
                 <Option key={flag.value} value={flag.value}>
                   {flag.label}
@@ -424,18 +440,15 @@ const Filters: React.FC = () => {
           <Form.Item
             label={
               <span>
-                标志位掩码
-                <Tooltip title="指定哪些标志位需要检查，0表示忽略所有标志位">
+                {intl.formatMessage({ id: 'FiltersManager.tcpFlagsMask' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.tcpFlagsMaskTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="tcp_flags_mask"
           >
-            <Select
-              // mode="multiple"
-              placeholder="选择要检查的标志位"
-            >
+            <Select placeholder={intl.formatMessage({ id: 'FiltersManager.selectTcpFlagsMask' })}>
               {tcpFlags.map((flag) => (
                 <Option key={flag.value} value={flag.value}>
                   {flag.label}
@@ -452,8 +465,8 @@ const Filters: React.FC = () => {
   const renderIcmpFields = () => (
     <>
       <Alert
-        message="ICMP规则特定字段"
-        description="配置ICMP类型、代码和内部包过滤条件"
+        message={intl.formatMessage({ id: 'FiltersManager.icmpSpecificFields' })}
+        description={intl.formatMessage({ id: 'FiltersManager.icmpSpecificDescription' })}
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
@@ -463,15 +476,15 @@ const Filters: React.FC = () => {
           <Form.Item
             label={
               <span>
-                ICMP类型
-                <Tooltip title="255表示任意类型">
+                {intl.formatMessage({ id: 'FiltersManager.icmpType' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.icmpTypeTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="icmp_type"
           >
-            <Select placeholder="选择ICMP类型" allowClear>
+            <Select placeholder={intl.formatMessage({ id: 'FiltersManager.selectIcmpType' })} allowClear>
               {icmpTypes.map((type) => (
                 <Option key={type.value} value={type.value}>
                   {type.label}
@@ -484,22 +497,27 @@ const Filters: React.FC = () => {
           <Form.Item
             label={
               <span>
-                ICMP代码
-                <Tooltip title="255表示任意代码">
+                {intl.formatMessage({ id: 'FiltersManager.icmpCode' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.icmpCodeTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="icmp_code"
           >
-            <InputNumber min={0} max={255} placeholder="255=任意" style={{ width: '100%' }} />
+            <InputNumber 
+              min={0} 
+              max={255} 
+              placeholder={intl.formatMessage({ id: 'FiltersManager.icmpCodePlaceholder' })} 
+              style={{ width: '100%' }} 
+            />
           </Form.Item>
         </Col>
       </Row>
 
       <Alert
-        message="内部包过滤 (用于ICMP错误消息)"
-        description="过滤ICMP错误消息中包含的原始包信息"
+        message={intl.formatMessage({ id: 'FiltersManager.innerPacketFilter' })}
+        description={intl.formatMessage({ id: 'FiltersManager.innerPacketDescription' })}
         type="warning"
         showIcon
         style={{ marginBottom: 16 }}
@@ -510,30 +528,30 @@ const Filters: React.FC = () => {
           <Form.Item
             label={
               <span>
-                内部源IP
-                <Tooltip title="ICMP错误消息中原始包的源IP，0.0.0.0表示任意">
+                {intl.formatMessage({ id: 'FiltersManager.innerSourceIp' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.innerSourceIpTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="inner_src_ip"
           >
-            <Input placeholder="例: 192.168.1.100 (留空=任意)" />
+            <Input placeholder={intl.formatMessage({ id: 'FiltersManager.innerSourceIpPlaceholder' })} />
           </Form.Item>
         </Col>
         <Col span={12}>
           <Form.Item
             label={
               <span>
-                内部目标IP
-                <Tooltip title="ICMP错误消息中原始包的目标IP，0.0.0.0表示任意">
+                {intl.formatMessage({ id: 'FiltersManager.innerDestIp' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.innerDestIpTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="inner_dst_ip"
           >
-            <Input placeholder="例: 8.8.8.8 (留空=任意)" />
+            <Input placeholder={intl.formatMessage({ id: 'FiltersManager.innerDestIpPlaceholder' })} />
           </Form.Item>
         </Col>
       </Row>
@@ -543,15 +561,15 @@ const Filters: React.FC = () => {
           <Form.Item
             label={
               <span>
-                内部协议
-                <Tooltip title="ICMP错误消息中原始包的协议，0表示任意">
+                {intl.formatMessage({ id: 'FiltersManager.innerProtocol' })}
+                <Tooltip title={intl.formatMessage({ id: 'FiltersManager.innerProtocolTooltip' })}>
                   <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
                 </Tooltip>
               </span>
             }
             name="inner_protocol"
           >
-            <Select placeholder="选择内部协议" allowClear>
+            <Select placeholder={intl.formatMessage({ id: 'FiltersManager.selectInnerProtocol' })} allowClear>
               <Option value={'ICMP'}>ICMP (1)</Option>
               <Option value={'TCP'}>TCP (6)</Option>
               <Option value={'UDP'}>UDP (17)</Option>
@@ -565,24 +583,18 @@ const Filters: React.FC = () => {
   return (
     <div>
       <div className="mx-auto">
-        {/* 头部 */}
-        {/* <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 bg-blue-600 rounded-lg">
-            <FilterOutlined className="text-3xl text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">网络过滤器管理</h1>
-            <p className="text-gray-400">管理和配置网络流量过滤规则，保护网络安全</p>
-          </div>
-        </div> */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-600 rounded-lg">
               <Funnel className="text-white text-3xl" color="#fff" size={30} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">网络过滤器管理</h1>
-              <p className="text-gray-600">管理和配置网络流量过滤规则，保护网络安全</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {intl.formatMessage({ id: 'FiltersManager.title' })}
+              </h1>
+              <p className="text-gray-600">
+                {intl.formatMessage({ id: 'FiltersManager.subtitle' })}
+              </p>
             </div>
           </div>
         </header>
@@ -598,7 +610,7 @@ const Filters: React.FC = () => {
                 <Statistic
                   title={
                     <Text strong className="text-gray-700/50">
-                      总规则数
+                      {intl.formatMessage({ id: 'FiltersManager.totalRules' })}
                     </Text>
                   }
                   value={filters.length}
@@ -616,7 +628,7 @@ const Filters: React.FC = () => {
                 <Statistic
                   title={
                     <Text strong className="text-gray-700/50">
-                      启用规则
+                      {intl.formatMessage({ id: 'FiltersManager.enabledRules' })}
                     </Text>
                   }
                   value={filters.filter((f) => f.enabled).length}
@@ -634,7 +646,7 @@ const Filters: React.FC = () => {
                 <Statistic
                   title={
                     <Text strong className="text-gray-700/50">
-                      禁用规则
+                      {intl.formatMessage({ id: 'FiltersManager.disabledRules' })}
                     </Text>
                   }
                   value={filters.filter((f) => !f.enabled).length}
@@ -652,7 +664,7 @@ const Filters: React.FC = () => {
                 <Statistic
                   title={
                     <Text strong className="text-gray-700/50">
-                      AI生成规则
+                      {intl.formatMessage({ id: 'FiltersManager.aiGeneratedRules' })}
                     </Text>
                   }
                   value={filters.filter((f) => f.ai_generated).length}
@@ -669,36 +681,51 @@ const Filters: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
               <Input
                 prefix={<SearchOutlined className="text-gray-400" />}
-                placeholder="搜索IP地址或备注..."
+                placeholder={intl.formatMessage({ id: 'FiltersManager.searchPlaceholder' })}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-md"
                 allowClear
               />
               <Space>
-                <Select value={filterType} onChange={setFilterType} style={{ width: 120 }} placeholder="规则类型">
-                  <Option value="all">所有类型</Option>
-                  <Option value="ai">AI生成规则</Option>
-                  <Option value="basic">基础规则</Option>
-                  <Option value="tcp">TCP规则</Option>
-                  <Option value="udp">UDP规则</Option>
-                  <Option value="icmp">ICMP规则</Option>
+                <Select 
+                  value={filterType} 
+                  onChange={setFilterType} 
+                  style={{ width: 120 }} 
+                  placeholder={intl.formatMessage({ id: 'FiltersManager.ruleType' })}
+                >
+                  <Option value="all">{intl.formatMessage({ id: 'FiltersManager.allTypes' })}</Option>
+                  <Option value="ai">{intl.formatMessage({ id: 'FiltersManager.aiGeneratedRules' })}</Option>
+                  <Option value="basic">{intl.formatMessage({ id: 'FiltersManager.basicRule' })}</Option>
+                  <Option value="tcp">{intl.formatMessage({ id: 'FiltersManager.tcpRule' })}</Option>
+                  <Option value="udp">{intl.formatMessage({ id: 'FiltersManager.udpRule' })}</Option>
+                  <Option value="icmp">{intl.formatMessage({ id: 'FiltersManager.icmpRule' })}</Option>
                 </Select>
-                <Select value={filterStatus} onChange={setFilterStatus} style={{ width: 120 }} placeholder="规则状态">
-                  <Option value="all">所有状态</Option>
-                  <Option value="enabled">已启用</Option>
-                  <Option value="disabled">已禁用</Option>
+                <Select 
+                  value={filterStatus} 
+                  onChange={setFilterStatus} 
+                  style={{ width: 120 }} 
+                  placeholder={intl.formatMessage({ id: 'FiltersManager.ruleStatus' })}
+                >
+                  <Option value="all">{intl.formatMessage({ id: 'FiltersManager.allStatus' })}</Option>
+                  <Option value="enabled">{intl.formatMessage({ id: 'FiltersManager.enabled' })}</Option>
+                  <Option value="disabled">{intl.formatMessage({ id: 'FiltersManager.disabled' })}</Option>
                 </Select>
-                <Select value={filterAction} onChange={setFilterAction} style={{ width: 120 }} placeholder="动作">
-                  <Option value="all">所有动作</Option>
-                  <Option value="drop">阻断</Option>
-                  <Option value="allow">允许</Option>
+                <Select 
+                  value={filterAction} 
+                  onChange={setFilterAction} 
+                  style={{ width: 120 }} 
+                  placeholder={intl.formatMessage({ id: 'FiltersManager.action' })}
+                >
+                  <Option value="all">{intl.formatMessage({ id: 'FiltersManager.allActions' })}</Option>
+                  <Option value="drop">{intl.formatMessage({ id: 'FiltersManager.actionDrop' })}</Option>
+                  <Option value="allow">{intl.formatMessage({ id: 'FiltersManager.actionAllow' })}</Option>
                 </Select>
               </Space>
             </div>
             <Space>
               <Button type="primary" icon={<PlusOutlined />} onClick={addNewFilter}>
-                添加过滤器
+                {intl.formatMessage({ id: 'FiltersManager.addFilter' })}
               </Button>
               <Button
                 type="primary"
@@ -706,7 +733,7 @@ const Filters: React.FC = () => {
                 onClick={() => setAiGenerateModalVisible(true)}
                 style={{ background: '#722ed1', borderColor: '#722ed1' }}
               >
-                AI智能生成
+                {intl.formatMessage({ id: 'FiltersManager.aiGenerate' })}
               </Button>
             </Space>
           </div>
@@ -721,7 +748,7 @@ const Filters: React.FC = () => {
               pageSize: 10,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total) => `共 ${total} 条规则`,
+              showTotal: (total) => intl.formatMessage({ id: 'FiltersManager.totalRulesCount' }, { total }),
             }}
             size="small"
             onChange={(pagination, filters, sorter) => {
@@ -731,10 +758,14 @@ const Filters: React.FC = () => {
               emptyText: (
                 <div className="text-center py-12">
                   <FilterOutlined className="text-5xl text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">没有找到过滤器</h3>
-                  <p className="text-gray-500 mb-4">尝试调整搜索条件或创建新的过滤器</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {intl.formatMessage({ id: 'FiltersManager.noFiltersFound' })}
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    {intl.formatMessage({ id: 'FiltersManager.adjustSearchOrCreate' })}
+                  </p>
                   <Button type="primary" icon={<PlusOutlined />} onClick={addNewFilter}>
-                    添加过滤器
+                    {intl.formatMessage({ id: 'FiltersManager.addFilter' })}
                   </Button>
                 </div>
               ),
@@ -744,7 +775,10 @@ const Filters: React.FC = () => {
 
         {/* 添加/编辑模态框 */}
         <Modal
-          title={editingFilter ? '编辑过滤器' : '添加过滤器'}
+          title={editingFilter 
+            ? intl.formatMessage({ id: 'FiltersManager.editFilter' }) 
+            : intl.formatMessage({ id: 'FiltersManager.addFilter' })
+          }
           open={filterModalVisible}
           onOk={handleModalOk}
           onCancel={() => setFilterModalVisible(false)}
@@ -765,20 +799,25 @@ const Filters: React.FC = () => {
             {/* UDP规则说明 */}
             {currentRuleType === 'udp' && (
               <Alert
-                message="UDP规则"
-                description="UDP规则主要使用源端口和目标端口进行过滤，无需额外的特定字段配置。"
+                message={intl.formatMessage({ id: 'FiltersManager.udpRule' })}
+                description={intl.formatMessage({ id: 'FiltersManager.udpRuleDescription' })}
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
             )}
 
-            <Form.Item label="规则说明" name="comment">
-              <TextArea rows={3} placeholder="输入规则说明，建议详细描述规则的用途和生效条件" showCount maxLength={200} />
+            <Form.Item label={intl.formatMessage({ id: 'FiltersManager.ruleDescription' })} name="comment">
+              <TextArea 
+                rows={3} 
+                placeholder={intl.formatMessage({ id: 'FiltersManager.ruleDescriptionPlaceholder' })} 
+                showCount 
+                maxLength={200} 
+              />
             </Form.Item>
 
             <Form.Item name="enabled" valuePropName="checked">
-              <Checkbox>启用规则</Checkbox>
+              <Checkbox>{intl.formatMessage({ id: 'FiltersManager.enableRule' })}</Checkbox>
             </Form.Item>
           </Form>
         </Modal>

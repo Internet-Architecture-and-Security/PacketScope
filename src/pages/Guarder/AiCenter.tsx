@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useIntl } from 'react-intl';
 import {
   Card,
   Button,
@@ -46,6 +47,7 @@ export const DataSwitch = ({ name, label }: { name: string; label: string }) => 
 
 const AiCenter: React.FC = () => {
   const { notification, modal } = App.useApp();
+  const intl = useIntl();
 
   // 使用 useAIStore 替换原有状态管理
   const {
@@ -81,10 +83,10 @@ const AiCenter: React.FC = () => {
   // 显示配置提醒弹窗
   const showConfigRequired = () => {
     modal.warning({
-      title: 'AI服务未配置',
-      content: '请先配置AI服务参数才能使用智能分析功能。是否现在配置？',
-      okText: '立即配置',
-      cancelText: '稍后配置',
+      title: intl.formatMessage({ id: 'AiCenter.aiServiceNotConfiguredTitle' }),
+      content: intl.formatMessage({ id: 'AiCenter.aiServiceNotConfiguredContent' }),
+      okText: intl.formatMessage({ id: 'AiCenter.configureImmediately' }),
+      cancelText: intl.formatMessage({ id: 'AiCenter.configureLater' }),
       onOk: () => {
         setAiConfigModalVisible(true);
       },
@@ -97,14 +99,14 @@ const AiCenter: React.FC = () => {
     try {
       await updateConfig(values);
       notification.success({
-        message: 'AI配置已保存',
-        description: '配置已成功更新',
+        message: intl.formatMessage({ id: 'AiCenter.aiConfigSaved' }),
+        description: intl.formatMessage({ id: 'AiCenter.configUpdatedSuccessfully' }),
       });
       setAiConfigModalVisible(false);
     } catch (error) {
       notification.error({
-        message: '保存AI配置失败',
-        description: error instanceof Error ? error.message : '请检查配置信息后重试',
+        message: intl.formatMessage({ id: 'AiCenter.saveAiConfigFailed' }),
+        description: error instanceof Error ? error.message : intl.formatMessage({ id: 'AiCenter.checkConfigAndRetry' }),
       });
     }
   };
@@ -119,14 +121,14 @@ const AiCenter: React.FC = () => {
     try {
       await analyzeOnly(values);
       notification.success({
-        message: 'AI网络分析完成',
-        description: '分析结果已生成',
+        message: intl.formatMessage({ id: 'AiCenter.aiNetworkAnalysisComplete' }),
+        description: intl.formatMessage({ id: 'AiCenter.analysisResultGenerated' }),
       });
       setAiAnalyzeModalVisible(false);
     } catch (error) {
       notification.error({
-        message: 'AI网络分析失败',
-        description: error instanceof Error ? error.message : '请重试',
+        message: intl.formatMessage({ id: 'AiCenter.aiNetworkAnalysisFailed' }),
+        description: error instanceof Error ? error.message : intl.formatMessage({ id: 'AiCenter.pleaseRetry' }),
       });
     }
   };
@@ -141,14 +143,14 @@ const AiCenter: React.FC = () => {
     try {
       await generateFilters(values);
       notification.success({
-        message: 'AI过滤器生成完成',
-        description: '过滤规则已生成',
+        message: intl.formatMessage({ id: 'AiCenter.aiFilterGenerationComplete' }),
+        description: intl.formatMessage({ id: 'AiCenter.filterRulesGenerated' }),
       });
       setAiGenerateModalVisible(false);
     } catch (error) {
       notification.error({
-        message: 'AI过滤器生成失败',
-        description: error instanceof Error ? error.message : '请重试',
+        message: intl.formatMessage({ id: 'AiCenter.aiFilterGenerationFailed' }),
+        description: error instanceof Error ? error.message : intl.formatMessage({ id: 'AiCenter.pleaseRetry' }),
       });
     }
   };
@@ -182,21 +184,11 @@ const AiCenter: React.FC = () => {
     getConfig();
   }, [getConfig]);
 
-  // 显示错误通知
-  // useEffect(() => {
-  //   if (error) {
-  //     notification.error({
-  //       message: '操作失败',
-  //       description: error,
-  //     });
-  //   }
-  // }, [error, notification]);
-
   const configValid = isAiConfigValid();
 
   return (
     <div>
-      <Spin spinning={isLoading} tip="处理中...">
+      <Spin spinning={isLoading} tip={intl.formatMessage({ id: 'AiCenter.loading' })}>
         <Flex vertical gap={20}>
           <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
@@ -205,9 +197,9 @@ const AiCenter: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  AI智能过滤器生成
+                  {intl.formatMessage({ id: 'AiCenter.title' })}
                 </h1>
-                <p className="text-gray-600">利用人工智能技术自动分析网络流量并生成eBPF过滤规则</p>
+                <p className="text-gray-600">{intl.formatMessage({ id: 'AiCenter.description' })}</p>
               </div>
             </div>
           </header>
@@ -223,12 +215,22 @@ const AiCenter: React.FC = () => {
                 )}
                 <div>
                   <Text strong className={configValid ? 'text-green-800' : 'text-red-800'}>
-                    {configValid ? 'AI服务已配置' : 'AI服务配置不完整'}
+                    {configValid 
+                      ? intl.formatMessage({ id: 'AiCenter.aiServiceConfigured' }) 
+                      : intl.formatMessage({ id: 'AiCenter.aiServiceNotConfigured' })
+                    }
                   </Text>
                   <div className={`text-sm ${configValid ? 'text-green-600' : 'text-red-600'}`}>
                     {configValid
-                      ? `使用模型: ${config?.model} | 端点: ${config?.openai_endpoint?.split('/')[2] || '未知'}`
-                      : '请完善API密钥、端点和模型配置后才能使用AI功能'}
+                      ? intl.formatMessage(
+                          { id: 'AiCenter.aiServiceConfiguredDesc' },
+                          { 
+                            model: config?.model, 
+                            endpoint: config?.openai_endpoint?.split('/')[2] || intl.formatMessage({ id: 'AiCenter.unknown' })
+                          }
+                        )
+                      : intl.formatMessage({ id: 'AiCenter.aiServiceNotConfiguredDesc' })
+                    }
                   </div>
                 </div>
               </div>
@@ -238,7 +240,7 @@ const AiCenter: React.FC = () => {
             action={
               !configValid && (
                 <Button size="small" type="primary" onClick={() => setAiConfigModalVisible(true)}>
-                  立即配置
+                  {intl.formatMessage({ id: 'AiCenter.configureNow' })}
                 </Button>
               )
             }
@@ -252,11 +254,18 @@ const AiCenter: React.FC = () => {
               >
                 <div className="text-center">
                   <SettingOutlined className="text-3xl text-blue-500 mb-3" />
-                  <Title level={4}>AI配置</Title>
-                  <Paragraph>配置OpenAI API密钥、模型参数和请求设置</Paragraph>
+                  <Title level={4}>{intl.formatMessage({ id: 'AiCenter.aiConfig' })}</Title>
+                  <Paragraph>{intl.formatMessage({ id: 'AiCenter.aiConfigDesc' })}</Paragraph>
                   <div className="mt-4">
-                    <Tag color={configValid ? 'green' : 'red'}>{configValid ? '已配置' : '未配置'}</Tag>
-                    <Tag color="blue">{config?.model || '未设置'}</Tag>
+                    <Tag color={configValid ? 'green' : 'red'}>
+                      {configValid 
+                        ? intl.formatMessage({ id: 'AiCenter.configured' }) 
+                        : intl.formatMessage({ id: 'AiCenter.notConfigured' })
+                      }
+                    </Tag>
+                    <Tag color="blue">
+                      {config?.model || intl.formatMessage({ id: 'AiCenter.notSet' })}
+                    </Tag>
                   </div>
                 </div>
               </Card>
@@ -269,16 +278,16 @@ const AiCenter: React.FC = () => {
               >
                 <div className="text-center">
                   <ThunderboltOutlined className="text-3xl text-purple-500 mb-3" />
-                  <Title level={4}>智能生成</Title>
-                  <Paragraph>基于当前网络数据自动生成过滤规则</Paragraph>
+                  <Title level={4}>{intl.formatMessage({ id: 'AiCenter.intelligentGeneration' })}</Title>
+                  <Paragraph>{intl.formatMessage({ id: 'AiCenter.intelligentGenerationDesc' })}</Paragraph>
                   <div className="mt-4">
-                    <Tag color="purple">安全导向</Tag>
-                    <Tag color="orange">性能导向</Tag>
-                    <Tag color="cyan">自定义</Tag>
+                    <Tag color="purple">{intl.formatMessage({ id: 'AiCenter.securityOriented' })}</Tag>
+                    <Tag color="orange">{intl.formatMessage({ id: 'AiCenter.performanceOriented' })}</Tag>
+                    <Tag color="cyan">{intl.formatMessage({ id: 'AiCenter.custom' })}</Tag>
                   </div>
                   {!configValid && (
                     <div className="mt-2">
-                      <Tag color="red">需要配置AI服务</Tag>
+                      <Tag color="red">{intl.formatMessage({ id: 'AiCenter.requiresAiService' })}</Tag>
                     </div>
                   )}
                 </div>
@@ -292,15 +301,15 @@ const AiCenter: React.FC = () => {
               >
                 <div className="text-center">
                   <PackageSearch size={30} className="text-green-500 mb-3 inline-block" strokeWidth={1.75} />
-                  <Title level={4}>网络分析</Title>
-                  <Paragraph>分析网络流量模式，识别潜在威胁</Paragraph>
+                  <Title level={4}>{intl.formatMessage({ id: 'AiCenter.networkAnalysis' })}</Title>
+                  <Paragraph>{intl.formatMessage({ id: 'AiCenter.networkAnalysisDesc' })}</Paragraph>
                   <div className="mt-4">
-                    <Tag color="green">威胁检测</Tag>
-                    <Tag color="blue">流量分析</Tag>
+                    <Tag color="green">{intl.formatMessage({ id: 'AiCenter.threatDetection' })}</Tag>
+                    <Tag color="blue">{intl.formatMessage({ id: 'AiCenter.trafficAnalysis' })}</Tag>
                   </div>
                   {!configValid && (
                     <div className="mt-2">
-                      <Tag color="red">需要配置AI服务</Tag>
+                      <Tag color="red">{intl.formatMessage({ id: 'AiCenter.requiresAiService' })}</Tag>
                     </div>
                   )}
                 </div>
@@ -310,23 +319,23 @@ const AiCenter: React.FC = () => {
 
           <Row gutter={16}>
             <Col span={24}>
-              <Card title="核心特性" className="shadow-sm">
+              <Card title={intl.formatMessage({ id: 'AiCenter.coreFeatures' })} className="shadow-sm">
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   <div>
                     <BulbOutlined className="text-yellow-500 mr-2" />
-                    <Text>智能分析TCP/UDP连接和ICMP流量</Text>
+                    <Text>{intl.formatMessage({ id: 'AiCenter.feature1' })}</Text>
                   </div>
                   <div>
                     <ApiOutlined className="text-blue-500 mr-2" />
-                    <Text>支持多种分析策略和自定义提示</Text>
+                    <Text>{intl.formatMessage({ id: 'AiCenter.feature2' })}</Text>
                   </div>
                   <div>
                     <SecurityScanOutlined className="text-green-500 mr-2" />
-                    <Text>生成详细注释和安全建议</Text>
+                    <Text>{intl.formatMessage({ id: 'AiCenter.feature3' })}</Text>
                   </div>
                   <div>
                     <SettingOutlined className="text-purple-500 mr-2" />
-                    <Text>灵活的OpenAI端点和模型配置</Text>
+                    <Text>{intl.formatMessage({ id: 'AiCenter.feature4' })}</Text>
                   </div>
                 </Space>
               </Card>
@@ -341,28 +350,28 @@ const AiCenter: React.FC = () => {
                   title={
                     <div className="flex items-center gap-2">
                       <ThunderboltOutlined className="text-purple-500" />
-                      <span>AI智能生成结果</span>
+                      <span>{intl.formatMessage({ id: 'AiCenter.intelligentGenerationResult' })}</span>
                     </div>
                   }
                 >
                   {lastGenerationResult.success ? (
                     <div className="space-y-4">
                       <div>
-                        <Text strong>威胁分析：</Text>
+                        <Text strong>{intl.formatMessage({ id: 'AiCenter.threatAnalysis' })}</Text>
                         <div className="mt-2 p-3 bg-gray-50 rounded">
                           <pre className="text-green-600 text-wrap text-justify">{lastGenerationResult.analysis}</pre>
                         </div>
                       </div>
 
                       <div>
-                        <Text strong>安全建议：</Text>
+                        <Text strong>{intl.formatMessage({ id: 'AiCenter.securityRecommendations' })}</Text>
                         <ul className="mt-2 p-3 bg-blue-50 rounded list-disc pl-5 text-blue-800">
                           {lastGenerationResult.suggestions?.map((s, i) => <li key={i}>{s}</li>)}
                         </ul>
                       </div>
 
                       <div>
-                        <Text strong>生成的规则：</Text>
+                        <Text strong>{intl.formatMessage({ id: 'AiCenter.generatedRules' })}</Text>
                         <div className="mt-2 p-3 bg-gray-50 rounded">
                           <pre className="whitespace-pre-wrap">
                             <code>{JSON.stringify(lastGenerationResult.filters, null, 2)}</code>
@@ -370,10 +379,17 @@ const AiCenter: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="text-right text-xs text-gray-400">Token 使用量：{lastGenerationResult.tokens_used}</div>
+                      <div className="text-right text-xs text-gray-400">
+                        {intl.formatMessage({ id: 'AiCenter.tokenUsage' })}{lastGenerationResult.tokens_used}
+                      </div>
                     </div>
                   ) : (
-                    <Alert message="AI过滤器生成失败" description={lastGenerationResult.error} type="error" showIcon />
+                    <Alert 
+                      message={intl.formatMessage({ id: 'AiCenter.generationFailed' })} 
+                      description={lastGenerationResult.error} 
+                      type="error" 
+                      showIcon 
+                    />
                   )}
                 </Card>
               </Col>
@@ -388,13 +404,13 @@ const AiCenter: React.FC = () => {
                   title={
                     <div className="flex items-center gap-2">
                       <SecurityScanOutlined className="text-green-500" />
-                      <span>AI网络分析结果</span>
+                      <span>{intl.formatMessage({ id: 'AiCenter.networkAnalysisResult' })}</span>
                     </div>
                   }
                 >
                   <div className="space-y-4">
                     <div>
-                      <Text strong>网络流量摘要：</Text>
+                      <Text strong>{intl.formatMessage({ id: 'AiCenter.networkTrafficSummary' })}</Text>
                       <div className="mt-2 p-3 bg-gray-50 rounded h-[500px] bg-gray-800 overflow-scroll">
                         <pre className="text-green-600">{lastAnalysisResult.summary}</pre>
                       </div>
@@ -412,7 +428,7 @@ const AiCenter: React.FC = () => {
         title={
           <div>
             <SettingOutlined className="mr-2" />
-            AI配置设置
+            {intl.formatMessage({ id: 'AiCenter.aiConfigSettings' })}
           </div>
         }
         open={aiConfigModalVisible}
@@ -423,24 +439,36 @@ const AiCenter: React.FC = () => {
       >
         <Form form={aiConfigForm} layout="vertical" initialValues={config}>
           <Alert
-            message="配置说明"
-            description="请配置您的OpenAI API密钥和相关参数。这些信息将用于AI分析和规则生成。"
+            message={intl.formatMessage({ id: 'AiCenter.configDescription' })}
+            description={intl.formatMessage({ id: 'AiCenter.configDescriptionText' })}
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
           />
 
-          <Form.Item label="OpenAI端点" name="openai_endpoint" rules={[{ required: true, message: '请输入OpenAI端点' }]}>
+          <Form.Item 
+            label={intl.formatMessage({ id: 'AiCenter.openaiEndpoint' })} 
+            name="openai_endpoint" 
+            rules={[{ required: true, message: intl.formatMessage({ id: 'AiCenter.pleaseEnterOpenaiEndpoint' }) }]}
+          >
             <Input placeholder="https://api.openai.com/v1/chat/completions" />
           </Form.Item>
 
-          <Form.Item label="API密钥" name="api_key" rules={[{ required: true, message: '请输入API密钥' }]}>
-            <Input.Password placeholder="AI API 密钥" />
+          <Form.Item 
+            label={intl.formatMessage({ id: 'AiCenter.apiKey' })} 
+            name="api_key" 
+            rules={[{ required: true, message: intl.formatMessage({ id: 'AiCenter.pleaseEnterApiKey' }) }]}
+          >
+            <Input.Password placeholder={intl.formatMessage({ id: 'AiCenter.apiKeyPlaceholder' })} />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="模型" name="model" rules={[{ required: true, message: '请选择或输入模型名称' }]}>
+              <Form.Item 
+                label={intl.formatMessage({ id: 'AiCenter.model' })} 
+                name="model" 
+                rules={[{ required: true, message: intl.formatMessage({ id: 'AiCenter.pleaseSelectOrEnterModel' }) }]}
+              >
                 <AutoComplete
                   options={[
                     { value: 'gpt-4' },
@@ -449,13 +477,17 @@ const AiCenter: React.FC = () => {
                     { value: 'deepseek-chat' },
                     { value: 'deepseek-reasoner' },
                   ]}
-                  placeholder="请输入或选择模型名称"
+                  placeholder={intl.formatMessage({ id: 'AiCenter.modelPlaceholder' })}
                   filterOption={(inputValue, option) => option!.value.toLowerCase().includes(inputValue.toLowerCase())}
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Temperature" name="temperature" rules={[{ required: true, message: '请输入Temperature值' }]}>
+              <Form.Item 
+                label={intl.formatMessage({ id: 'AiCenter.temperature' })} 
+                name="temperature" 
+                rules={[{ required: true, message: intl.formatMessage({ id: 'AiCenter.pleaseEnterTemperature' }) }]}
+              >
                 <Input type="number" min={0} max={2} step={0.1} placeholder="0.7" />
               </Form.Item>
             </Col>
@@ -463,122 +495,29 @@ const AiCenter: React.FC = () => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="超时时间(秒)" name="timeout" rules={[{ required: true, message: '请输入超时时间' }]}>
+              <Form.Item 
+                label={intl.formatMessage({ id: 'AiCenter.timeout' })} 
+                name="timeout" 
+                rules={[{ required: true, message: intl.formatMessage({ id: 'AiCenter.pleaseEnterTimeout' }) }]}
+              >
                 <InputNumber placeholder="120" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="debug" valuePropName="checked" className="pt-7 pb-0">
-                <DataSwitch label="启用调试模式" name="debug"></DataSwitch>
+                <DataSwitch label={intl.formatMessage({ id: 'AiCenter.enableDebugMode' })} name="debug"></DataSwitch>
               </Form.Item>
             </Col>
           </Row>
         </Form>
       </Modal>
 
-      {/* AI智能生成模态框 */}
-      {/* <Modal
-        title={
-          <div>
-            <ThunderboltOutlined className="mr-2" />
-            AI智能生成过滤器
-          </div>
-        }
-        open={aiGenerateModalVisible}
-        onCancel={() => setAiGenerateModalVisible(false)}
-        width={600}
-        footer={[
-          <Button key="cancel" onClick={() => setAiGenerateModalVisible(false)}>
-            取消
-          </Button>,
-          <Button 
-            key="generate" 
-            type="primary" 
-            icon={<ThunderboltOutlined />}
-            onClick={() => aiGenerateForm.validateFields().then(handleAiGenerate)}
-            loading={isLoading}
-          >
-            开始生成
-          </Button>,
-        ]}
-      >
-        <Form form={aiGenerateForm} layout="vertical" initialValues={{
-          analyze_type: 'security',
-          include_tcp: true,
-          include_udp: true,
-          include_icmp: true,
-          include_stats: true
-        }}>
-          <Alert
-            message="智能生成说明"
-            description="AI将分析当前网络流量并自动生成相应的eBPF过滤规则，包含详细注释和安全建议。"
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-
-          <Form.Item label="分析类型" name="analyze_type" rules={[{ required: true }]}>
-            <Radio.Group>
-              <Space direction="vertical">
-                <Radio value="security">
-                  <div>
-                    <div><strong>安全导向</strong></div>
-                    <div className="text-gray-500 text-sm">重点识别和阻止潜在威胁</div>
-                  </div>
-                </Radio>
-                <Radio value="performance">
-                  <div>
-                    <div><strong>性能导向</strong></div>
-                    <div className="text-gray-500 text-sm">优化网络性能，减少不必要流量</div>
-                  </div>
-                </Radio>
-                <Radio value="custom">
-                  <div>
-                    <div><strong>自定义分析</strong></div>
-                    <div className="text-gray-500 text-sm">根据自定义提示进行分析</div>
-                  </div>
-                </Radio>
-              </Space>
-            </Radio.Group>
-          </Form.Item>
-
-          <Form.Item 
-            noStyle 
-            shouldUpdate={(prevValues, currentValues) => prevValues.analyze_type !== currentValues.analyze_type}
-          >
-            {({ getFieldValue }) =>
-              getFieldValue('analyze_type') === 'custom' ? (
-                <Form.Item 
-                  label="自定义分析提示" 
-                  name="custom_prompt"
-                  rules={[{ required: true, message: '请输入自定义分析提示' }]}
-                >
-                  <TextArea 
-                    rows={3} 
-                    placeholder="例如：重点关注SSH和HTTP服务安全，识别暴力破解攻击" 
-                  />
-                </Form.Item>
-              ) : null
-            }
-          </Form.Item>
-
-          <Form.Item label="包含数据范围">
-            <Space direction="vertical">
-              <DataSwitch label="包含TCP连接" name="include_tcp"></DataSwitch>
-              <DataSwitch label="包含UDP连接" name="include_udp"></DataSwitch>
-              <DataSwitch label="包含ICMP流量" name="include_icmp"></DataSwitch>
-              <DataSwitch label="包含统计数据" name="include_stats"></DataSwitch>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal> */}
-
       {/* AI网络分析模态框 */}
       <Modal
         title={
           <div>
             <SecurityScanOutlined className="mr-2" />
-            AI网络分析
+            {intl.formatMessage({ id: 'AiCenter.aiNetworkAnalysis' })}
           </div>
         }
         open={aiAnalyzeModalVisible}
@@ -586,7 +525,7 @@ const AiCenter: React.FC = () => {
         width={600}
         footer={[
           <Button key="cancel" onClick={() => setAiAnalyzeModalVisible(false)}>
-            取消
+            {intl.formatMessage({ id: 'AiCenter.cancel' })}
           </Button>,
           <Button
             key="analyze"
@@ -595,7 +534,7 @@ const AiCenter: React.FC = () => {
             onClick={() => aiAnalyzeForm.validateFields().then(handleAiAnalyze)}
             loading={isLoading}
           >
-            开始分析
+            {intl.formatMessage({ id: 'AiCenter.startAnalysis' })}
           </Button>,
         ]}
       >
@@ -610,24 +549,27 @@ const AiCenter: React.FC = () => {
           }}
         >
           <Alert
-            message="网络分析说明"
-            description="此功能仅分析当前网络流量模式和威胁情况，不会生成过滤规则。适用于了解网络安全状况。"
+            message={intl.formatMessage({ id: 'AiCenter.analysisDescription' })}
+            description={intl.formatMessage({ id: 'AiCenter.analysisDescriptionText' })}
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
           />
 
-          <Form.Item label="分析范围">
+          <Form.Item label={intl.formatMessage({ id: 'AiCenter.analysisScope' })}>
             <Space direction="vertical">
-              <DataSwitch label="分析TCP连接" name="include_tcp"></DataSwitch>
-              <DataSwitch label="分析UDP连接" name="include_udp"></DataSwitch>
-              <DataSwitch label="分析ICMP流量" name="include_icmp"></DataSwitch>
-              <DataSwitch label="包含统计数据" name="include_stats"></DataSwitch>
+              <DataSwitch label={intl.formatMessage({ id: 'AiCenter.analyzeTcpConnections' })} name="include_tcp"></DataSwitch>
+              <DataSwitch label={intl.formatMessage({ id: 'AiCenter.analyzeUdpConnections' })} name="include_udp"></DataSwitch>
+              <DataSwitch label={intl.formatMessage({ id: 'AiCenter.analyzeIcmpTraffic' })} name="include_icmp"></DataSwitch>
+              <DataSwitch label={intl.formatMessage({ id: 'AiCenter.includeStatistics' })} name="include_stats"></DataSwitch>
             </Space>
           </Form.Item>
 
-          <Form.Item label="自定义分析提示" name="custom_prompt">
-            <TextArea rows={4} placeholder="可选：提供特定的分析指令，如'分析流量模式中的异常行为'..." />
+          <Form.Item label={intl.formatMessage({ id: 'AiCenter.customAnalysisPrompt' })} name="custom_prompt">
+            <TextArea 
+              rows={4} 
+              placeholder={intl.formatMessage({ id: 'AiCenter.customAnalysisPlaceholder' })} 
+            />
           </Form.Item>
         </Form>
       </Modal>

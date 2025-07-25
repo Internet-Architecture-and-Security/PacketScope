@@ -9,6 +9,7 @@ import classnames from 'classnames';
 import stopSvg from '@/assets/stop.svg?react';
 import { useIsAutoScroll } from '@/stores/useStore';
 import { usePollingManager } from '@/stores/usePollingManager';
+import { useIntl } from 'react-intl';
 
 import recordSvg from '@/assets/record.svg?react';
 import clearSvg from '@/assets/clear.svg?react';
@@ -25,6 +26,7 @@ const AutoIcon = (props: Partial<CustomIconComponentProps>) => <Icon component={
 const HelpIcon = (props: Partial<CustomIconComponentProps>) => <Icon component={helpSvg} {...props} />;
 
 const Controls = () => {
+  const intl = useIntl();
   const [isClearing, setIsClearing] = useState(false);
   const pollingManagerStore = usePollingManager();
   const { message } = App.useApp();
@@ -56,13 +58,13 @@ const Controls = () => {
 
       if (response.ok) {
         // 清除本地store中的数据
-        message.success(isEN ? 'Data cleared successfully' : '数据清除成功');
+        message.success(intl.formatMessage({ id: 'controls.clearSuccess' }));
       } else {
-        message.error(isEN ? 'Failed to clear data' : '数据清除失败');
+        message.error(intl.formatMessage({ id: 'controls.clearFailure' }));
       }
     } catch (error) {
       console.error('Clear data error:', error);
-      message.error(isEN ? 'Failed to clear data' : '数据清除失败');
+      message.error(intl.formatMessage({ id: 'controls.clearFailure' }));
     } finally {
       setIsClearing(false);
     }
@@ -79,11 +81,11 @@ const Controls = () => {
         ghost
         icon={
           pollingManagerStore.tasks['socket']?.isPolling ? (
-            <Tooltip title="停止捕获">
+            <Tooltip title={intl.formatMessage({ id: 'controls.stop' })}>
               <StoprecordIcon className="text-red-600" />
             </Tooltip>
           ) : (
-            <Tooltip title="开始捕获">
+            <Tooltip title={intl.formatMessage({ id: 'controls.start' })}>
               <RecordIcon className="text-zinc-700" />
             </Tooltip>
           )
@@ -96,7 +98,7 @@ const Controls = () => {
         loading={isClearing}
         ghost
         icon={
-          <Tooltip title="清除数据">
+          <Tooltip title={intl.formatMessage({ id: 'controls.clear' })}>
             <ClearIcon className="text-zinc-700" />
           </Tooltip>
         }

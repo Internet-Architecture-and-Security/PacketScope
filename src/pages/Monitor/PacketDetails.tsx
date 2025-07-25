@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons';
 import { Play, ArrowLeft, Clock, Hash, Boxes, X, Search, Filter, RotateCcw, PackageSearch } from 'lucide-react';
 import { Link } from 'react-router';
+import { useIntl } from 'react-intl';
 
 interface IPv4PacketData {
   timestamp: string;
@@ -106,11 +107,12 @@ const PacketItem: React.FC<{
   isExpanded: boolean;
   onToggle: () => void;
 }> = ({ packet, index, isExpanded, onToggle }) => {
+  const intl = useIntl();
   const [showHexView, setShowHexView] = useState(false);
   const isIPv4 = 'protocol' in packet;
 
   const getDirectionText = (direction: number): string => {
-    return direction === 0 ? '入包' : '出包';
+    return direction === 0 ? intl.formatMessage({ id: 'PacketDetails.inbound' }) : intl.formatMessage({ id: 'PacketDetails.outbound' });
   };
 
   const getDirectionColor = (direction: number): string => {
@@ -171,69 +173,69 @@ const PacketItem: React.FC<{
 
   const packetDetails = (
     <div className={`ml-6 ${getDirectionBg(packet.direction)}`}>
-      <DetailCard title="抓包详情 (Capture Details)">
-        <DetailRow icon={<ClockCircleOutlined />} label="时间戳">
+      <DetailCard title={intl.formatMessage({ id: 'PacketDetails.captureDetails' })}>
+        <DetailRow icon={<ClockCircleOutlined />} label={intl.formatMessage({ id: 'PacketDetails.timestamp' })}>
           <span className="font-mono text-xs text-gray-700">{packet.timestamp}</span>
         </DetailRow>
-        <DetailRow icon={<GatewayOutlined />} label="网口号">
-          <span className="text-xs text-gray-600">接口 {packet.interface}</span>
+        <DetailRow icon={<GatewayOutlined />} label={intl.formatMessage({ id: 'PacketDetails.interface' })}>
+          <span className="text-xs text-gray-600">{intl.formatMessage({ id: 'PacketDetails.interfaceNumber' }, { number: packet.interface })}</span>
         </DetailRow>
-        <DetailRow icon={<SwapOutlined />} label="方向">
+        <DetailRow icon={<SwapOutlined />} label={intl.formatMessage({ id: 'PacketDetails.direction' })}>
           <span className={`text-xs font-medium ${getDirectionColor(packet.direction)}`}>{getDirectionText(packet.direction)}</span>
         </DetailRow>
-        <DetailRow icon={<NodeIndexOutlined />} label="包长度">
+        <DetailRow icon={<NodeIndexOutlined />} label={intl.formatMessage({ id: 'PacketDetails.packetLength' })}>
           <span className="font-mono text-blue-600 text-xs">{packet.length} bytes</span>
         </DetailRow>
       </DetailCard>
 
-      <DetailCard title={`网络层 (Internet Protocol v${isIPv4 ? '4' : '6'})`}>
-        <DetailRow icon={<GlobalOutlined style={{ color: 'rgb(34, 197, 94)' }} />} label="源地址">
+      <DetailCard title={intl.formatMessage({ id: 'PacketDetails.networkLayer' }, { version: isIPv4 ? '4' : '6' })}>
+        <DetailRow icon={<GlobalOutlined style={{ color: 'rgb(34, 197, 94)' }} />} label={intl.formatMessage({ id: 'PacketDetails.sourceAddress' })}>
           <span className="font-mono text-green-600 text-xs">{packet.srcAddress}</span>
         </DetailRow>
-        <DetailRow icon={<GlobalOutlined style={{ color: 'rgb(239, 68, 68)' }} />} label="目的地址">
+        <DetailRow icon={<GlobalOutlined style={{ color: 'rgb(239, 68, 68)' }} />} label={intl.formatMessage({ id: 'PacketDetails.destinationAddress' })}>
           <div className="flex items-center space-x-2">
             <span className="font-mono text-red-600 text-xs">{packet.dstAddress}</span>
             <Link
               to={`/locator?target=${packet.dstAddress}`}
               className="text-blue-500 hover:text-blue-700 text-xs flex items-center hover:underline"
             >
-              追踪 <ExportOutlined className="ml-1" />
+              {intl.formatMessage({ id: 'PacketDetails.trace' })} <ExportOutlined className="ml-1" />
             </Link>
           </div>
         </DetailRow>
         {isIPv4 && (
           <>
-            <DetailRow icon={<FlagOutlined />} label="协议类型">
+            <DetailRow icon={<FlagOutlined />} label={intl.formatMessage({ id: 'PacketDetails.protocolType' })}>
               <span className="text-purple-600 text-xs font-medium">{packet.protocol}</span>
             </DetailRow>
-            <DetailRow icon={<FieldTimeOutlined />} label="TTL">
+            <DetailRow icon={<FieldTimeOutlined />} label={intl.formatMessage({ id: 'PacketDetails.ttl' })}>
               <span className="font-mono text-xs">{packet.ttl}</span>
             </DetailRow>
-            <DetailRow icon={<ApartmentOutlined />} label="分片信息">
-              <span className="text-xs text-gray-600">{packet.fragInfo || '无'}</span>
+            <DetailRow icon={<ApartmentOutlined />} label={intl.formatMessage({ id: 'PacketDetails.fragmentInfo' })}>
+              <span className="text-xs text-gray-600">{packet.fragInfo || intl.formatMessage({ id: 'PacketDetails.none' })}</span>
             </DetailRow>
-            <DetailRow icon={<ToolOutlined />} label="可选字段">
-              <span className="text-xs text-gray-600">{packet.options || '无'}</span>
+            <DetailRow icon={<ToolOutlined />} label={intl.formatMessage({ id: 'PacketDetails.options' })}>
+              <span className="text-xs text-gray-600">{packet.options || intl.formatMessage({ id: 'PacketDetails.none' })}</span>
             </DetailRow>
           </>
         )}
         {!isIPv4 && (
-          <DetailRow icon={<FlagOutlined />} label="头类型">
+          <DetailRow icon={<FlagOutlined />} label={intl.formatMessage({ id: 'PacketDetails.headerType' })}>
             <span className="text-purple-600 text-xs font-medium">{packet.headerType}</span>
           </DetailRow>
         )}
       </DetailCard>
 
-      <DetailCard title="传输层 (Transport Layer)">
-        <DetailRow icon={<GatewayOutlined style={{ color: 'rgb(34, 197, 94)' }} />} label="源端口">
+      <DetailCard title={intl.formatMessage({ id: 'PacketDetails.transportLayer' })}>
+        <DetailRow icon={<GatewayOutlined style={{ color: 'rgb(34, 197, 94)' }} />} label={intl.formatMessage({ id: 'PacketDetails.sourcePort' })}>
           <span className="font-mono text-green-600 text-xs">{packet.srcPort}</span>
         </DetailRow>
-        <DetailRow icon={<GatewayOutlined style={{ color: 'rgb(239, 68, 68)' }} />} label="目的端口">
+        <DetailRow icon={<GatewayOutlined style={{ color: 'rgb(239, 68, 68)' }} />} label={intl.formatMessage({ id: 'PacketDetails.destinationPort' })}>
           <span className="font-mono text-red-600 text-xs">{packet.dstPort}</span>
         </DetailRow>
       </DetailCard>
 
-      <DetailCard title="包内容 (Content)" defaultCollapsed={true}>
+      <DetailCard title={intl.formatMessage({ id: 'PacketDetails.content' })} defaultCollapsed={true}>
         <div className="px-4 py-3">
           <div className="flex justify-end mb-3">
             <button
@@ -268,6 +270,7 @@ const PacketItem: React.FC<{
 };
 
 const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
+  const intl = useIntl();
   console.log(JSON.stringify(queryParams), 'queryParams');
   const [loading, setLoading] = useState(false);
   const [packetData, setPacketData] = useState<(IPv4PacketData | IPv6PacketData)[]>([]);
@@ -443,8 +446,8 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
       <div className="h-full w-full bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Boxes className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <div className="text-lg font-semibold text-slate-500 mb-2">包分析器</div>
-          <div className="text-sm text-slate-400">请从数据表中选择 sockect 连接开始分析</div>
+          <div className="text-lg font-semibold text-slate-500 mb-2">{intl.formatMessage({ id: 'PacketDetails.analyzer' })}</div>
+          <div className="text-sm text-slate-400">{intl.formatMessage({ id: 'PacketDetails.selectConnection' })}</div>
         </div>
       </div>
     );
@@ -461,7 +464,7 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
           {/* <h3 className="font-bold text-gray-800">会话流摘要</h3> */}
           <div className="flex items-center gap-3">
             <Boxes className="text-blue-600" size={20} />
-            <div className="font-semibold text-base text-slate-900">包分析器</div>
+            <div className="font-semibold text-base text-slate-900">{intl.formatMessage({ id: 'PacketDetails.analyzer' })}</div>
           </div>
           <div className="flex items-center space-x-2">
             <button
@@ -472,12 +475,12 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
               {allExpanded ? (
                 <>
                   <CompressOutlined className="mr-1" />
-                  收起全部
+                  {intl.formatMessage({ id: 'PacketDetails.collapseAll' })}
                 </>
               ) : (
                 <>
                   <ExpandOutlined className="mr-1" />
-                  展开全部
+                  {intl.formatMessage({ id: 'PacketDetails.expandAll' })}
                 </>
               )}
             </button>
@@ -487,7 +490,7 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
               disabled={loading}
             >
               <ReloadOutlined className={`mr-1 ${loading ? 'animate-spin' : ''}`} />
-              刷新
+              {intl.formatMessage({ id: 'PacketDetails.refresh' })}
             </button>
           </div>
         </div>
@@ -505,7 +508,10 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
           <div className="mt-3 text-sm text-gray-600 flex space-x-3">
             <span className="flex items-center">
               <NumberOutlined className="mr-1" />
-              {`${packetData.length === 80 ? '只显示最近' : '找到'} ${packetData.length} 个相关数据包`}
+              {packetData.length === 80 
+                ? intl.formatMessage({ id: 'PacketDetails.showingRecent' }, { count: packetData.length })
+                : intl.formatMessage({ id: 'PacketDetails.foundPackets' }, { count: packetData.length })
+              }
             </span>
             {packetData.length === 80 && (
               <button
@@ -515,7 +521,7 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
                 className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center cursor-pointer"
               >
                 <PackageSearch size={14} className="mr-1" />
-                查看所有包
+                {intl.formatMessage({ id: 'PacketDetails.viewAllPackets' })}
               </button>
             )}
           </div>
@@ -529,7 +535,7 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
             {/* <div className="text-center"> */}
             {/* <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div> */}
             <Spin size="default" className="mr-2" />
-            <p className="text-gray-600">正在加载包详情...</p>
+            <p className="text-gray-600">{intl.formatMessage({ id: 'PacketDetails.loading' })}</p>
             {/* </div> */}
           </div>
         )}
@@ -539,7 +545,7 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
             <div className="flex items-center">
               <div className="text-red-600 mr-3">⚠️</div>
               <div>
-                <h4 className="text-red-800 font-medium">加载失败</h4>
+                <h4 className="text-red-800 font-medium">{intl.formatMessage({ id: 'PacketDetails.loadFailed' })}</h4>
                 <p className="text-red-600 text-sm mt-1">{error}</p>
               </div>
             </div>
@@ -549,8 +555,8 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
         {!loading && !error && packetData.length === 0 && (
           <div className="text-center py-16">
             <div className="text-gray-400 text-6xl mb-4">📭</div>
-            <h4 className="text-lg font-medium text-gray-600 mb-2">未找到数据包</h4>
-            <p className="text-gray-500">指定的会话流中没有找到相关的数据包</p>
+            <h4 className="text-lg font-medium text-gray-600 mb-2">{intl.formatMessage({ id: 'PacketDetails.noPacketsFound' })}</h4>
+            <p className="text-gray-500">{intl.formatMessage({ id: 'PacketDetails.noPacketsDescription' })}</p>
           </div>
         )}
 

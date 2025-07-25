@@ -1,4 +1,8 @@
 import monitor from './monitor';
+import gate from './gate';
+import locator from './locator';
+import guarder from './guarder';
+
 export default {
   sideBar: '侧栏',
   content: 'socket列表',
@@ -9,15 +13,13 @@ export default {
   'sideBar.Locator': 'Locator',
   'fullScreen.exit': '退出全屏',
   'fullScreen.enter': '进入全屏',
-  'Locator.howto': '「如何使用」输入目的地址（ IP 或域名），点击「追踪分析」按钮，便可在地图上显示路由跳转路径。',
-  'Locator.source': '源地址',
-  'Locator.destination': '目标地址',
-  'Locator.sourcePlaceholder': '请输入源地址',
-  'Locator.destinationPlaceholder': '请输入目标地址（ IP 或域名）',
-  'Locator.startBtn': '开始追踪',
-  'Locator.cancelBtn': '终止追踪……',
-  'Locator.list': '路由信息列表',
-  'Locator.history': '历史记录',
-  'Locator.useCache': '启用缓存',
+  'controls.start': '开始捕获',
+  'controls.stop': '停止捕获',
+  'controls.clear': '清除数据',
+  'controls.clearSuccess': '数据清除失败',
+  'controls.clearFailure': '数据清除成功',
   ...monitor,
+  ...gate,
+  ...locator,
+  ...guarder
 };

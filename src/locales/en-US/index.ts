@@ -1,4 +1,7 @@
 import monitor from './monitor';
+import gate from './gate';
+import locator from './locator';
+import guarder from './guarder';
 
 export default {
   sideBar: 'side bar',
@@ -10,14 +13,13 @@ export default {
   'sideBar.Locator': 'Locator',
   'fullScreen.exit': 'exit fullscreen',
   'fullScreen.enter': 'enter fullscreen',
-  'Locator.howto':
-    "To use this feature, enter the source address and destination address, then click the 'Trace Analysis' button. The routing path will be displayed on the map. The source address is optional and defaults to the host address.",
-  'Locator.source': 'Source Address',
-  'Locator.destination': 'Destination Address',
-  'Locator.sourcePlaceholder': 'Please enter the source address',
-  'Locator.destinationPlaceholder': 'Please enter the destination address',
-  'Locator.startBtn': 'Start Tracing',
-  'Locator.list': 'Routing Information List',
-  'Locator.history': 'History',
+  'controls.start': 'Start Capture',
+  'controls.stop': 'Stop Capture',
+  'controls.clear': 'Clear Data',
+  'controls.clearSuccess': 'Failed to clear data',
+  'controls.clearFailure': 'Data cleared successfully',
   ...monitor,
+  ...gate,
+  ...locator,
+  ...guarder
 };

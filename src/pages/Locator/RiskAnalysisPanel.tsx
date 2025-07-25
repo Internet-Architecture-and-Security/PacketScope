@@ -1,5 +1,6 @@
 import React from 'react';
 import { Alert, Typography, Progress, Badge } from 'antd';
+import { useIntl } from 'react-intl';
 import {
   SyncOutlined,
   SecurityScanOutlined,
@@ -19,10 +20,10 @@ const getRiskColor = (score) => {
 };
 
 // 风险状态文字 + Badge 状态
-const getRiskStatus = (score) => {
-  if (score >= 70) return { text: '高风险', status: 'error' };
-  if (score >= 40) return { text: '中风险', status: 'warning' };
-  return { text: '低风险', status: 'success' };
+const getRiskStatus = (score, intl) => {
+  if (score >= 70) return { text: intl.formatMessage({ id: 'RiskAnalysisPanel.highRisk' }), status: 'error' };
+  if (score >= 40) return { text: intl.formatMessage({ id: 'RiskAnalysisPanel.mediumRisk' }), status: 'warning' };
+  return { text: intl.formatMessage({ id: 'RiskAnalysisPanel.lowRisk' }), status: 'success' };
 };
 
 // 异常类型图标
@@ -41,10 +42,22 @@ const getAnomalyIcon = (type) => {
   }
 };
 
+// 获取异常类型的本地化文本
+const getAnomalyTypeText = (type, intl) => {
+  const typeMap = {
+    'PathDeviation': intl.formatMessage({ id: 'RiskAnalysisPanel.pathDeviation' }),
+    'HighLatency': intl.formatMessage({ id: 'RiskAnalysisPanel.highLatency' }),
+    'MaliciousIP': intl.formatMessage({ id: 'RiskAnalysisPanel.maliciousIP' }),
+    'PacketLoss': intl.formatMessage({ id: 'RiskAnalysisPanel.packetLoss' }),
+  };
+  return typeMap[type] || type;
+};
+
 const RiskAnalysisPanel = ({ riskData, loading }) => {
+  const intl = useIntl();
   const isEmpty = !riskData;
   const { riskScore = 0, anomalies = [], alerts = [] } = riskData || {};
-  const riskStatus = getRiskStatus(riskScore);
+  const riskStatus = getRiskStatus(riskScore, intl);
   const riskColor = getRiskColor(riskScore);
 
   return (
@@ -53,7 +66,7 @@ const RiskAnalysisPanel = ({ riskData, loading }) => {
         {/* 标题始终展示 */}
         <Title level={4} className="mb-4">
           <SecurityScanOutlined className="mr-2" />
-          路由风险分析
+          {intl.formatMessage({ id: 'RiskAnalysisPanel.title' })}
         </Title>
 
         {/* 内容区统一样式容器 */}
@@ -62,20 +75,20 @@ const RiskAnalysisPanel = ({ riskData, loading }) => {
           {loading ? (
             <div className="text-center">
               <SyncOutlined spin className="mr-2" />
-              <Text>正在分析路由风险...</Text>
+              <Text>{intl.formatMessage({ id: 'RiskAnalysisPanel.analyzing' })}</Text>
             </div>
           ) : isEmpty ? (
             // 无数据状态
             <div className="text-center text-gray-500">
               <SecurityScanOutlined className="text-2xl mb-2" />
-              <div>暂无风险分析数据</div>
+              <div>{intl.formatMessage({ id: 'RiskAnalysisPanel.noData' })}</div>
             </div>
           ) : (
             <>
               {/* 风险评分 */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <Text strong>综合风险评分</Text>
+                  <Text strong>{intl.formatMessage({ id: 'RiskAnalysisPanel.comprehensiveRiskScore' })}</Text>
                   <Badge status={riskStatus.status} text={riskStatus.text} className="font-medium" />
                 </div>
                 <Progress
@@ -85,14 +98,16 @@ const RiskAnalysisPanel = ({ riskData, loading }) => {
                   strokeWidth={12}
                   format={(percent) => `${percent}/100`}
                 />
-                <div className="mt-2 text-sm text-gray-600">基于路由异常、延迟、安全威胁等多维度分析</div>
+                <div className="mt-2 text-sm text-gray-600">
+                  {intl.formatMessage({ id: 'RiskAnalysisPanel.analysisDescription' })}
+                </div>
               </div>
 
               {/* 异常检测 */}
               {anomalies.length > 0 && (
                 <div className="mb-6">
                   <Text strong className="block mb-2">
-                    检测到的异常
+                    {intl.formatMessage({ id: 'RiskAnalysisPanel.detectedAnomalies' })}
                   </Text>
                   <div className="space-y-2">
                     {anomalies.map((anomaly, index) => (
@@ -100,10 +115,7 @@ const RiskAnalysisPanel = ({ riskData, loading }) => {
                         {getAnomalyIcon(anomaly.type)}
                         <div className="flex-1">
                           <div className="font-medium text-orange-800">
-                            {anomaly.type === 'PathDeviation' && '路径偏离'}
-                            {anomaly.type === 'HighLatency' && '高延迟'}
-                            {anomaly.type === 'MaliciousIP' && '恶意IP'}
-                            {anomaly.type === 'PacketLoss' && '丢包异常'}
+                            {getAnomalyTypeText(anomaly.type, intl)}
                           </div>
                           <div className="text-orange-700 text-sm mt-1">{anomaly.detail}</div>
                         </div>
@@ -117,7 +129,7 @@ const RiskAnalysisPanel = ({ riskData, loading }) => {
               {alerts.length > 0 && (
                 <div className="mb-6">
                   <Text strong className="block mb-2">
-                    安全警报
+                    {intl.formatMessage({ id: 'RiskAnalysisPanel.securityAlerts' })}
                   </Text>
                   <div className="space-y-2">
                     {alerts.map((alert, index) => (
@@ -131,8 +143,12 @@ const RiskAnalysisPanel = ({ riskData, loading }) => {
               {anomalies.length === 0 && alerts.length === 0 && riskScore < 40 && (
                 <div className="text-center">
                   <CheckCircleOutlined className="text-green-500 text-3xl mb-2" />
-                  <div className="text-green-600 font-medium">路由状态正常</div>
-                  <div className="text-gray-500 text-sm mt-1">未检测到异常或安全威胁</div>
+                  <div className="text-green-600 font-medium">
+                    {intl.formatMessage({ id: 'RiskAnalysisPanel.routeNormal' })}
+                  </div>
+                  <div className="text-gray-500 text-sm mt-1">
+                    {intl.formatMessage({ id: 'RiskAnalysisPanel.noThreatsDetected' })}
+                  </div>
                 </div>
               )}
             </>

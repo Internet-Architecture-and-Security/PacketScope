@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, Button, Space, Table, Input, App } from 'antd';
 import { Activity, Shield, Globe, Zap, Eye, Search, Download, RefreshCw, RotateCcw } from 'lucide-react';
+import { useIntl } from 'react-intl';
 import usePolling from '@/hooks/usePolling';
 
 // 类型定义
@@ -32,7 +33,9 @@ const RETRY_DELAY = 2000;
 const MIN_TABLE_HEIGHT = 300;
 
 const Connections: React.FC = () => {
+  const intl = useIntl();
   const { notification: notificationFn } = App.useApp();
+  
   // 状态管理
   const [connections, setConnections] = useState<Connection[]>([]);
   const [filteredConnections, setFilteredConnections] = useState<Connection[]>([]);
@@ -116,22 +119,31 @@ const Connections: React.FC = () => {
     retryDelay: RETRY_DELAY,
     onError: (error) => {
       notificationFn.error({
-        message: '数据获取失败',
-        description: `无法获取数据：${error.message}${retryCount > 0 ? ` (重试 ${retryCount}/${MAX_RETRIES})` : ''}`,
+        message: intl.formatMessage({ id: 'ConnectionsMonitor.dataFetchError' }),
+        description: intl.formatMessage(
+          { id: 'ConnectionsMonitor.dataFetchErrorDescription' },
+          { 
+            error: error.message, 
+            retry: retryCount > 0 ? intl.formatMessage(
+              { id: 'ConnectionsMonitor.retryInfo' },
+              { current: retryCount, total: MAX_RETRIES }
+            ) : ''
+          }
+        ),
         duration: 4,
       });
     },
     onStart: () => {
       notificationFn.success({
-        message: '监控已开启',
-        description: '开始实时监控网络连接',
+        message: intl.formatMessage({ id: 'ConnectionsMonitor.monitoringStarted' }),
+        description: intl.formatMessage({ id: 'ConnectionsMonitor.monitoringStartedDescription' }),
         duration: 2,
       });
     },
     onStop: () => {
       notificationFn.info({
-        message: '监控已停止',
-        description: '已停止实时监控',
+        message: intl.formatMessage({ id: 'ConnectionsMonitor.monitoringStopped' }),
+        description: intl.formatMessage({ id: 'ConnectionsMonitor.monitoringStoppedDescription' }),
         duration: 2,
       });
     },
@@ -142,8 +154,8 @@ const Connections: React.FC = () => {
     try {
       await manualRefresh();
       notificationFn.success({
-        message: '刷新成功',
-        description: '数据已更新',
+        message: intl.formatMessage({ id: 'ConnectionsMonitor.refreshSuccess' }),
+        description: intl.formatMessage({ id: 'ConnectionsMonitor.refreshSuccessDescription' }),
         duration: 2,
       });
     } catch (error) {
@@ -173,8 +185,8 @@ const Connections: React.FC = () => {
     URL.revokeObjectURL(url);
 
     notificationFn.success({
-      message: '导出成功',
-      description: '数据已保存到本地文件',
+      message: intl.formatMessage({ id: 'ConnectionsMonitor.exportSuccess' }),
+      description: intl.formatMessage({ id: 'ConnectionsMonitor.exportSuccessDescription' }),
       duration: 2,
     });
   };
@@ -253,23 +265,43 @@ const Connections: React.FC = () => {
 
   // 统计数据配置
   const statsConfig = [
-    { label: '总数据包', value: stats.TotalPackets, icon: <Globe />, color: 'green' },
-    { label: '总字节数', value: formatBytes(stats.TotalBytes), icon: <Zap />, color: 'blue' },
-    { label: '丢弃的数据包', value: stats.DroppedPackets, icon: <Activity />, color: 'purple' },
-    { label: '格式错误的数据包', value: stats.MalformedPackets, icon: <Shield />, color: 'red' },
+    { 
+      label: intl.formatMessage({ id: 'ConnectionsMonitor.totalPackets' }), 
+      value: stats.TotalPackets, 
+      icon: <Globe />, 
+      color: 'green' 
+    },
+    { 
+      label: intl.formatMessage({ id: 'ConnectionsMonitor.totalBytes' }), 
+      value: formatBytes(stats.TotalBytes), 
+      icon: <Zap />, 
+      color: 'blue' 
+    },
+    { 
+      label: intl.formatMessage({ id: 'ConnectionsMonitor.droppedPackets' }), 
+      value: stats.DroppedPackets, 
+      icon: <Activity />, 
+      color: 'purple' 
+    },
+    { 
+      label: intl.formatMessage({ id: 'ConnectionsMonitor.malformedPackets' }), 
+      value: stats.MalformedPackets, 
+      icon: <Shield />, 
+      color: 'red' 
+    },
   ];
 
   // 表格列配置
   const columns = [
     {
-      title: '连接信息',
+      title: intl.formatMessage({ id: 'ConnectionsMonitor.connectionInfo' }),
       key: 'key',
       width: 200,
       dataIndex: 'key',
       render: (key: string) => <div className="text-sm font-medium text-gray-600">{key}</div>,
     },
     {
-      title: '详细信息',
+      title: intl.formatMessage({ id: 'ConnectionsMonitor.detailInfo' }),
       key: 'info',
       dataIndex: 'info',
       render: (info: string) => <div className="text-sm font-medium text-gray-600">{info}</div>,
@@ -286,8 +318,12 @@ const Connections: React.FC = () => {
               <Activity className="text-white" size={30} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">网络连接监控</h1>
-              <p className="text-gray-600">实时监控网络连接状态和流量数据</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {intl.formatMessage({ id: 'ConnectionsMonitor.title' })}
+              </h1>
+              <p className="text-gray-600">
+                {intl.formatMessage({ id: 'ConnectionsMonitor.subtitle' })}
+              </p>
             </div>
           </div>
         </header>
@@ -305,7 +341,7 @@ const Connections: React.FC = () => {
             <div className="flex-1">
               <Input
                 prefix={<Search className="text-gray-400 w-4 h-4" />}
-                placeholder="搜索 IP 地址或协议..."
+                placeholder={intl.formatMessage({ id: 'ConnectionsMonitor.searchPlaceholder' })}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-md"
@@ -319,17 +355,20 @@ const Connections: React.FC = () => {
                 icon={isPolling ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
                 onClick={togglePolling}
               >
-                {isPolling ? '停止监控' : '开始监控'}
+                {isPolling 
+                  ? intl.formatMessage({ id: 'ConnectionsMonitor.stopMonitoring' })
+                  : intl.formatMessage({ id: 'ConnectionsMonitor.startMonitoring' })
+                }
               </Button>
               <Button
                 onClick={handleRefresh}
                 icon={<RotateCcw className="w-4 h-4" />}
                 // loading={isLoading}
               >
-                立即刷新
+                {intl.formatMessage({ id: 'ConnectionsMonitor.refreshNow' })}
               </Button>
               <Button onClick={handleExport} icon={<Download className="w-4 h-4" />}>
-                导出数据
+                {intl.formatMessage({ id: 'ConnectionsMonitor.exportData' })}
               </Button>
             </Space>
           </div>
@@ -338,8 +377,15 @@ const Connections: React.FC = () => {
         {/* 连接列表表格 */}
         <section ref={tableContainerRef} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <header className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">连接详情</h3>
-            <p className="text-sm text-gray-600">共 {filteredConnections.length} 条连接记录</p>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {intl.formatMessage({ id: 'ConnectionsMonitor.connectionDetails' })}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {intl.formatMessage(
+                { id: 'ConnectionsMonitor.totalConnections' },
+                { count: filteredConnections.length }
+              )}
+            </p>
           </header>
           <Table
             className="pb-[2px]"
@@ -355,8 +401,12 @@ const Connections: React.FC = () => {
               emptyText: (
                 <div className="text-center py-12 text-gray-500">
                   <Search className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                  <p className="text-lg font-medium">未找到匹配的连接</p>
-                  <p>尝试调整搜索条件</p>
+                  <p className="text-lg font-medium">
+                    {intl.formatMessage({ id: 'ConnectionsMonitor.noMatchingConnections' })}
+                  </p>
+                  <p>
+                    {intl.formatMessage({ id: 'ConnectionsMonitor.adjustSearchCriteria' })}
+                  </p>
                 </div>
               ),
             }}

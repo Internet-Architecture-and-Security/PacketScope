@@ -437,12 +437,12 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
                         : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
                     }`}
                   >
-                    <Option value="all">{intl.formatMessage({ id: 'SocketViewer.filter.reset' })}</Option>
+                    {intl.formatMessage({ id: 'SocketViewer.filter.reset' })}
                   </Button>
                   {hasActiveFilters && (
                     <div className="flex items-center gap-1 bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
                       <FilterOutlined className="text-xs" />
-                      <Option value="all">{intl.formatMessage({ id: 'SocketViewer.filter.active' })}</Option>
+                      {intl.formatMessage({ id: 'SocketViewer.filter.active' })}
                     </div>
                   )}
                 </div>
@@ -465,9 +465,9 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
               ) : (
                 <div className="py-16 text-center flex items-center flex-col">
                   <Logs size={70} className="text-gray-300 mb-6" />
-                  <h4 className="text-lg font-semibold text-slate-500 mb-2">Socket连接监控</h4>
-                  <p className="text-gray-500 text-sm mb-2">单击按钮开始网络连接监控</p>
-                  <p className="text-gray-400 text-xs mb-8">捕获Socket连接信息流</p>
+                  <h4 className="text-lg font-semibold text-slate-500 mb-2">{intl.formatMessage({ id: 'SocketViewer.empty.title' })}</h4>
+                  <p className="text-gray-500 text-sm mb-2">{intl.formatMessage({ id: 'SocketViewer.empty.description' })}</p>
+                  <p className="text-gray-400 text-xs mb-8">{intl.formatMessage({ id: 'SocketViewer.empty.subtitle' })}</p>
 
                   <Button
                     type="primary"
@@ -479,13 +479,16 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
                     }}
                     className="bg-blue-600 hover:bg-blue-700 border-0 rounded-full px-8 py-2 h-auto"
                   >
-                    {pollingManagerStore.tasks['socket']?.isPolling ? '正在启动监控...' : '开始网络连接监控'}
+                    {pollingManagerStore.tasks['socket']?.isPolling 
+                      ? intl.formatMessage({ id: 'SocketViewer.button.starting' })
+                      : intl.formatMessage({ id: 'SocketViewer.button.start' })
+                    }
                   </Button>
 
                   {pollingManagerStore.tasks['socket']?.isPolling && (
                     <div className="mt-6 text-sm text-gray-500 animate-pulse">
                       <div className="flex items-center justify-center space-x-2">
-                        <span>正在初始化Socket连接</span>
+                        <span>{intl.formatMessage({ id: 'SocketViewer.status.initializing' })}</span>
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
                           <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
