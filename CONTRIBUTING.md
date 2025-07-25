@@ -22,7 +22,7 @@ Welcome to contribute to this project! Please take a few minutes to read this gu
    - hotfix/ Hotfix
    - docs/ Documentation update
 
-   See details in [gitflow](./.github/GITFLOW.md)
+   See details in [github flow](./.github/GITHUB_FLOW.md)
 
 3. Commit your changes
 

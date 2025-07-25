@@ -11,7 +11,8 @@ import HistoryPanel from './HistoryPanel';
 
 const OFFSET_CENTER = 136;
 const DEFAULT_CENTER = [18 - OFFSET_CENTER, 0];
-// 工具函数
+
+// Utility function
 function getMapViewOptions(coords) {
   const defaultCenter = DEFAULT_CENTER;
   const defaultZoom = 1.2;
@@ -34,11 +35,11 @@ function getMapViewOptions(coords) {
 
   const spanLon = maxLon - minLon;
   const spanLat = maxLat - minLat;
-  const center = [(minLon + maxLon) / 2 - OFFSET_CENTER, (minLat + maxLat) / 2];
+  const center = [(minLon + maxLon) / 2 - OFFSET_CENTER, (minLat + maxLat) / 2 - 40];
 
   const maxSpan = Math.max(spanLon, spanLat);
   let zoom = defaultZoom;
-  if (maxSpan > 100) zoom = 0.8;
+  if (maxSpan > 100) zoom = defaultZoom;
   else if (maxSpan > 60) zoom = 1.1;
   else if (maxSpan > 30) zoom = 1.4;
   else if (maxSpan > 15) zoom = 1.8;
@@ -116,93 +117,191 @@ function fetchTraceWithCancel(target, useCache = false, onHop) {
 }
 
 function extractMapData(data) {
-  const hopsWithGeo = data
-    .map((hop) => {
-      if (
-        hop.geo &&
-        hop.geo !== 'Unknown' &&
-        typeof hop.geo === 'object' &&
-        typeof hop.geo.lat === 'number' &&
-        typeof hop.geo.lon === 'number'
-      ) {
-        return hop;
-      }
-      return null;
-    })
-    .filter((hop) => hop !== null);
+  const hopsWithGeo = [];
+  const allHops = [];
+  
+  // 处理所有跳点，包括无地理位置的
+  data.forEach((hop, index) => {
+    const processedHop = {
+      ...hop,
+      hopIndex: index + 1,
+      hasGeo: hop.geo && 
+               hop.geo !== 'Unknown' && 
+               typeof hop.geo === 'object' && 
+               typeof hop.geo.lat === 'number' && 
+               typeof hop.geo.lon === 'number'
+    };
+    
+    allHops.push(processedHop);
+    
+    if (processedHop.hasGeo) {
+      hopsWithGeo.push(processedHop);
+    }
+  });
 
+  // 生成连线数据，考虑中间的未知节点
+  const linesData = [];
   const polylineCoords = [];
-  const coordSet = new Set();
-
-  for (const hop of hopsWithGeo) {
-    polylineCoords.push([hop.geo.lon, hop.geo.lat]);
-    coordSet.add(`${hop.geo.lon},${hop.geo.lat},${hop.location}`);
+  
+  if (hopsWithGeo.length > 1) {
+    for (let i = 0; i < hopsWithGeo.length - 1; i++) {
+      const startHop = hopsWithGeo[i];
+      const endHop = hopsWithGeo[i + 1];
+      
+      // 检查两个有地理位置的节点之间是否存在未知节点
+      const startIndex = allHops.findIndex(hop => hop === startHop);
+      const endIndex = allHops.findIndex(hop => hop === endHop);
+      const hasUnknownBetween = endIndex - startIndex > 1;
+      
+      const lineData = {
+        coords: [
+          [startHop.geo.lon, startHop.geo.lat],
+          [endHop.geo.lon, endHop.geo.lat]
+        ],
+        lineStyle: {
+          width: 2,
+          color: '#FF9800',
+          opacity: 0.8,
+          curveness: 0.2,
+          type: hasUnknownBetween ? 'dashed' : 'solid' // 如果中间有未知节点，使用虚线
+        },
+        // 添加标签显示中间跳过的节点数
+        label: hasUnknownBetween ? {
+          show: true,
+          position: 'middle',
+          offset: [0, -4],
+          formatter: `跳过 ${endIndex - startIndex - 1} 个节点`,
+          fontSize: 10,
+          color: '#fff',
+          backgroundColor: 'rgba(229, 140, 13, 1)',
+          // borderColor: 'rgba(229, 140, 13, 1)',
+          // borderWidth: 1,
+          shadowColor: 'rgba(0,0,0,.2)',
+          shadowBlur: 2,
+          shadowOffsetX:1,
+          shadowOffsetY:1,
+          borderRadius: 3,
+          padding: [3, 6]
+        } : { show: false }
+      };
+      
+      linesData.push(lineData);
+      polylineCoords.push([startHop.geo.lon, startHop.geo.lat]);
+    }
+    
+    // 添加最后一个点
+    if (hopsWithGeo.length > 0) {
+      const lastHop = hopsWithGeo[hopsWithGeo.length - 1];
+      polylineCoords.push([lastHop.geo.lon, lastHop.geo.lat]);
+    }
   }
 
-  const countries = Array.from(coordSet).map((coordStr) => {
-    const [lonStr, latStr] = coordStr.split(',');
-    return [parseFloat(lonStr), parseFloat(latStr)];
-  });
+  // 生成国家/城市数据点
+  const coordSet = new Set();
+  const countriesData = [];
 
-  const countriesData = Array.from(coordSet).map((coordStr, index) => {
-    const [lonStr, latStr, location] = coordStr.split(',');
-    const lon = parseFloat(lonStr);
-    const lat = parseFloat(latStr);
-    let rippleEffectNumber = 0;
-    let labelPosition = 'top';
+  hopsWithGeo.forEach((hop, index) => {
+    const coordKey = `${hop.geo.lon},${hop.geo.lat}`;
+    if (!coordSet.has(coordKey)) {
+      coordSet.add(coordKey);
+      
+      let rippleEffectNumber = 0;
+      let labelPosition = 'top';
+      let color = '#13256b';
+      
+      if (index === 0) {
+        color = '#91CC75'; // 起始点 - 绿色
+        rippleEffectNumber = 2;
+        labelPosition = 'bottom';
+      } else if (index === hopsWithGeo.length - 1) {
+        color = '#EE6666'; // 终点 - 红色
+        rippleEffectNumber = 2;
+        labelPosition = 'bottom';
+      }
 
-    let color = '#13256b';
-    if (index === 0) {
-      color = '#91CC75';
-      rippleEffectNumber = 2;
-      labelPosition = 'bottom';
-    } else if (index === coordSet.size - 1) {
-      color = '#EE6666';
-      rippleEffectNumber = 2;
-      labelPosition = 'bottom';
+      // 格式化hover信息
+      const formatHoverInfo = (hop) => {
+        console.log(hop, 'formatHoverInfo');
+        const lines = [
+          `跳点 ${hop.hopIndex}: ${hop.ip}`,
+          `位置: ${hop.location || 'Unknown'}`,
+          `延迟: ${hop.latency ? hop.latency.toFixed(2) + 'ms' : 'N/A'}`,
+          `抖动: ${hop.jitter !== 'None' ? hop.jitter + 'ms' : 'N/A'}`,
+          `丢包率: ${hop.packet_loss || 'N/A'}`,
+          `带宽: ${hop.bandwidth_mbps !== 'None' ? hop.bandwidth_mbps.toFixed(2) + ' Mbps' : 'N/A'}`,
+          `ISP: ${hop.isp || 'Unknown'}`,
+          `ASN: ${hop.asn || 'Unknown'}`
+        ];
+        return lines.join('<br/>');
+      };
+
+      countriesData.push({
+        value: [hop.geo.lon, hop.geo.lat, hop.hopIndex],
+        label: {
+          show: true,
+          position: labelPosition,
+          formatter: () => {
+            return '';
+            // const [city, country] = hop.location.split(',');
+            // return city === "None" ? country : city;
+            // const locationName = hop.location && hop.location !== 'None' ? 
+            //   hop.location.split(',')[0] : `跳点${hop.hopIndex}`;
+            //   console.log('locationName:', locationName, hop)
+            // return locationName;
+          },
+          fontSize: 11,
+          fontWeight: 'bold',
+          color: '#333'
+        },
+        itemStyle: {
+          color,
+          borderWidth: 2,
+          borderColor: '#fff',
+          shadowColor: 'rgba(0, 0, 0, 0.3)',
+          shadowOffsetX: 1,
+          shadowOffsetY: 1,
+          shadowBlur: 3,
+        },
+        rippleEffect: {
+          number: rippleEffectNumber,
+          color,
+          scale: 4,
+          brushType: 'stroke',
+        },
+        // 添加详细的tooltip信息
+        tooltip: {
+          formatter: formatHoverInfo(hop),
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          borderColor: color,
+          borderWidth: 1,
+          textStyle: {
+            color: '#fff',
+            fontSize: 12
+          }
+        },
+        // 存储原始数据供其他地方使用
+        rawData: hop
+      });
     }
-
-    return {
-      value: [lon, lat, location],
-      label: {
-        show: true,
-        position: labelPosition,
-        formatter: () => (location === 'None' ? '' : location),
-      },
-      itemStyle: {
-        color,
-        borderWidth: 1,
-        borderColor: '#fff',
-        shadowColor: 'rgba(0, 0, 0, 0.5)',
-        shadowOffsetX: 1,
-        shadowOffsetY: 1,
-        shadowBlur: 2,
-      },
-      rippleEffect: {
-        number: rippleEffectNumber,
-        color,
-        scale: 4,
-        brushType: 'stroke',
-      },
-    };
   });
 
-  return { polylineCoords, countries, countriesData };
+  // 计算地图视图的坐标范围
+  const countries = hopsWithGeo.map(hop => [hop.geo.lon, hop.geo.lat]);
+
+  return { 
+    polylineCoords, 
+    countries, 
+    countriesData, 
+    linesData, 
+    allHops, 
+    hopsWithGeo,
+    hasUnknownNodes: allHops.some(hop => !hop.hasGeo)
+  };
 }
 
 async function fetchRiskAnalysis(target, useCache = true) {
   const url = `http://127.0.0.1:8000/api/analyze?target=${target}&cache=${useCache}`;
   const response = (await fetch(url)).json();
-
-  // const mockRiskData = {
-  //   anomalies: [
-  //     { type: 'PathDeviation', detail: '跳点 4 出现新IP 203.0.113.1' },
-  //     { type: 'HighLatency', detail: '跳点 2 (101.40.0.1) 延迟过高 227.567ms' },
-  //   ],
-  //   alerts: ['跳点 203.0.113.1 被列为恶意IP: listed on Spamhaus DROP', '跳点 2 (101.40.0.1) 延迟过高 227.567ms'],
-  //   riskScore: 70,
-  // };
-  // await new Promise((resolve) => setTimeout(resolve, 1000));
   return response;
 }
 
@@ -231,7 +330,7 @@ const Locator = () => {
       handleTraceRoute(searchParams.get('target'));
     }
   }, [searchParams]);
-  console.log(searchParams.get('target'));
+
   // 获取历史记录
   const fetchHistoryData = async () => {
     try {
@@ -335,7 +434,7 @@ const Locator = () => {
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const { polylineCoords, countries, countriesData } = extractMapData(traceResults);
+    const { polylineCoords, countries, countriesData, linesData, hasUnknownNodes } = extractMapData(traceResults);
 
     if (!mapRef.current) {
       echarts.registerMap('world', worldGeoJson);
@@ -358,6 +457,18 @@ const Locator = () => {
     }
 
     const mapOption = {
+      // 启用tooltip
+      tooltip: {
+        trigger: 'item',
+        showDelay: 0,
+        transitionDuration: 0.2,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        borderColor: '#ccc',
+        borderWidth: 1,
+        textStyle: {
+          color: '#fff'
+        }
+      },
       geo: {
         id: 'world',
         top: '20%',
@@ -368,6 +479,9 @@ const Locator = () => {
         scaleLimit: { min: 0.5, max: 4 },
         zoom: currentZoom,
         label: { show: false },
+        tooltip: {
+          show: false
+        },
         itemStyle: {
           normal: {
             borderColor: '#d6e4ff',
@@ -395,40 +509,88 @@ const Locator = () => {
         },
       },
       series: [
+        // 路径连线系列
         {
           type: 'lines',
-          coordinateSystem: 'geo',
-          polyline: true,
-          data: polylineCoords.length > 1 ? [{ coords: polylineCoords }] : [],
-          lineStyle: {
-            width: 2,
-            color: '#FF9800',
-            opacity: 0.8,
-            curveness: 0.2,
+          tooltip: {
+            show: false
           },
+          coordinateSystem: 'geo',
+          data: linesData,
+          // 移除了polyline: true，因为我们现在使用单独的线段
           effect: {
-            show: polylineCoords.length > 1,
+            show: linesData.length > 0,
             period: 4,
             trailLength: 0,
             color: '#ff6b6b',
-            symbolSize: 12,
+            symbolSize: 10,
             symbol: 'arrow',
           },
           z: 3,
         },
+        // 节点散点系列
         {
           type: 'effectScatter',
           coordinateSystem: 'geo',
-          symbolSize: 8,
+          tooltip: {
+            show: true
+          },
+          symbolSize: function(val, params) {
+            // 起始点和终点稍大一些
+            const data = params.data;
+            if (data.rippleEffect && data.rippleEffect.number > 0) {
+              return 12;
+            }
+            return 8;
+          },
           labelLayout: { moveOverlap: 'shiftY' },
           data: countriesData,
-          z: 2,
+          z: 4,
+          // 启用hover效果
+          emphasis: {
+            scale: 1.2,
+            itemStyle: {
+              shadowBlur: 10,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          }
         },
+        
       ],
     };
 
+    // 如果存在未知节点，在地图上添加提示
+    if (hasUnknownNodes && traceResults.length > 0) {
+      mapOption.graphic = [{
+        type: 'text',
+        right: 20,
+        top: 30,
+        style: {
+          text: '注意：路径中包含无法定位的节点（显示为虚线）',
+          fontSize: 12,
+          fill: '#ff6b00',
+          backgroundColor: 'rgba(255,255,255,0.9)',
+          borderRadius: 4,
+          padding: [4, 8]
+        }
+      }];
+    }
+
     mapRef.current.setOption(mapOption, { notMerge: false });
 
+    // 添加点击事件处理
+    mapRef.current.off('click');
+    mapRef.current.on('click', function (params) {
+      if (params.componentType === 'series' && params.seriesType === 'effectScatter') {
+        const hopData = params.data.rawData;
+        if (hopData) {
+          console.log('点击的跳点详情:', hopData);
+          // 这里可以添加更多的点击处理逻辑，比如显示详细面板等
+        }
+      }
+    });
+
+    // 处理窗口大小变化
     const handleResize = () => {
       if (mapRef.current) {
         mapRef.current.resize();
@@ -436,12 +598,18 @@ const Locator = () => {
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (mapRef.current) {
+        mapRef.current.off('click');
+      }
+    };
   }, [traceResults]);
 
   useEffect(() => {
     fetchHistoryData();
   }, []);
+
   return (
     <Flex vertical gap={0} className="w-full min-h-full pt-6 px-10 pb-40 bg-gradient-to-br from-slate-50 to-blue-50 ">
       <Alert className="mb-5" description={<p>{intl.formatMessage({ id: 'Locator.howto' })}</p>} type="info" showIcon />
@@ -453,6 +621,7 @@ const Locator = () => {
             placeholder={intl.formatMessage({ id: 'Locator.destinationPlaceholder' })}
             value={destinationAddress}
             onChange={(e) => setDestinationAddress(e.target.value)}
+            onPressEnter={() => {handleTraceRoute()}} 
             className="w-full"
           />
         </div>

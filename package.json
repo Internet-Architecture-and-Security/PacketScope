@@ -45,6 +45,7 @@
     "@types/react-dom": "^18.3.5",
     "@types/react-resizable": "^3.0.8",
     "@vitejs/plugin-react": "^4.3.4",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.21.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-react-hooks": "^5.1.0",
@@ -65,5 +66,10 @@
     "*": [
       "prettier --write --ignore-unknown"
     ]
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }

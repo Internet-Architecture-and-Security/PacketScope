@@ -95,7 +95,6 @@ const RiskAnalysisPanel = ({ riskData, loading }) => {
                   percent={riskScore}
                   strokeColor={riskColor}
                   trailColor="#f0f0f0"
-                  strokeWidth={12}
                   format={(percent) => `${percent}/100`}
                 />
                 <div className="mt-2 text-sm text-gray-600">

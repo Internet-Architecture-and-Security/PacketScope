@@ -6,6 +6,7 @@ import socket
 from datetime import datetime
 import geoip2.database
 from flask_cors import CORS, cross_origin
+import requests
 
 # 历史记录存储路径
 HISTORY_DIR = "history"
@@ -75,25 +76,66 @@ def list_history():
 
 def get_ip_info(ip):
     """ 获取 IP 地址的地理位置、ASN 和 ISP 信息 """
+    
+    # 优先使用 ip-api.com 接口
+    try:
+        api_url = f"http://ip-api.com/json/{ip}"
+        response = requests.get(api_url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            
+            if data.get('status') == 'success':
+                # 解析 ASN 信息
+                as_info = data.get('as', '')
+                asn_number = None
+                if as_info.startswith('AS'):
+                    asn_number = as_info.split(' ')[0][2:]  # 提取 AS 后面的数字
+                
+                location_data = {
+                    "lat": data.get('lat'),
+                    "lon": data.get('lon'),
+                    "radius_km": None,  # ip-api.com 不提供精度半径
+                    "timezone": data.get('timezone')
+                }
+                
+                return {
+                    "location": f"{data.get('city', 'Unknown')}, {data.get('country', 'Unknown')}",
+                    "geo": location_data,
+                    "asn": asn_number,
+                    "isp": data.get('isp', 'Unknown')
+                }
+    except Exception as e:
+        print(f"API 请求失败: {e}")
+    
+    # 如果 API 请求失败，使用默认的 GeoIP 数据库方法
     try:
         geo_info = geoip_reader.city(ip)
         asn_info = asn_reader.asn(ip)
         geo_location = geo_info.location
+        
         location_data = {
             "lat": geo_location.latitude,
             "lon": geo_location.longitude,
             "radius_km": geo_location.accuracy_radius,
             "timezone": geo_location.time_zone
         }
-        print(geo_info)
+        
+        # print(f"使用本地数据库: {geo_info}")
+        
         return {
             "location": f"{geo_info.city.name}, {geo_info.country.name}",
             "geo": location_data,
             "asn": asn_info.autonomous_system_number,
             "isp": asn_info.autonomous_system_organization
         }
-    except:
-        return {"location": "Unknown", "asn": "Unknown", "isp": "Unknown", "geo": "Unknown"}
+    except Exception as e:
+        # print(f"本地数据库查询失败: {e}")
+        return {
+            "location": "Unknown", 
+            "asn": "Unknown", 
+            "isp": "Unknown", 
+            "geo": "Unknown"
+        }
 
 def run_traceroute(target: str):
     """ 逐行执行 traceroute 并流式返回 JSON 数据 """

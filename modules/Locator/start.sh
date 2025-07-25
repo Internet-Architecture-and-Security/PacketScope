@@ -4,7 +4,7 @@
 # ulimit -n 32768
 
 # 切换到项目目录
-cd /home/ubuntu/packetscope-web-app/modules/Locator/ || exit 1
+cd /home/ubuntu/packetscope/modules/Locator/ || exit 1
 
 # 激活虚拟环境
 source .venv/bin/activate
