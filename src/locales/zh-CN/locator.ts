@@ -35,6 +35,19 @@ const TraceResultsPanel ={
   'TraceResultsPanel.tracing': '正在追踪路由...',
   'TraceResultsPanel.tracingInProgress': '追踪进行中...',
   'TraceResultsPanel.traceComplete': '追踪完成',
+  "TraceResultsPanel.map.hop": "跳点 {index}: {ip}",
+  "TraceResultsPanel.map.location": "位置: {location}",
+  "TraceResultsPanel.map.latency": "延迟: {latency} ms",
+  "TraceResultsPanel.map.jitter": "抖动: {jitter} ms",
+  "TraceResultsPanel.map.packetLoss": "丢包率: {loss}",
+  "TraceResultsPanel.map.bandwidth": "带宽: {bandwidth} Mbps",
+  "TraceResultsPanel.map.isp": "ISP: {isp}",
+  "TraceResultsPanel.map.asn": "ASN: {asn}",
+  "TraceResultsPanel.map.sourcePoint": "起始点",
+  "TraceResultsPanel.map.destinationPoint": "终点",
+  "TraceResultsPanel.map.skippedHops": "跳过 {count} 个节点",
+  "TraceResultsPanel.map.unknownHops": "注意：路径中包含无法定位的节点（显示为虚线）",
+  "TraceResultsPanel.map.unknown": "未知"
 }
 
 const RiskAnalysisPanel = {

@@ -35,6 +35,19 @@ const TraceResultsPanel ={
   'TraceResultsPanel.tracing': 'Tracing route...',
   'TraceResultsPanel.tracingInProgress': 'Tracing in progress...',
   'TraceResultsPanel.traceComplete': 'Trace completed',
+  "TraceResultsPanel.map.hop": "Hop {index}: {ip}",
+  "TraceResultsPanel.map.location": "Location: {location}",
+  "TraceResultsPanel.map.latency": "Latency: {latency} ms",
+  "TraceResultsPanel.map.jitter": "Jitter: {jitter} ms",
+  "TraceResultsPanel.map.packetLoss": "Packet Loss: {loss}",
+  "TraceResultsPanel.map.bandwidth": "Bandwidth: {bandwidth} Mbps",
+  "TraceResultsPanel.map.isp": "ISP: {isp}",
+  "TraceResultsPanel.map.asn": "ASN: {asn}",
+  "TraceResultsPanel.map.sourcePoint": "Source",
+  "TraceResultsPanel.map.destinationPoint": "Destination",
+  "TraceResultsPanel.map.skippedHops": "Skipped {count} hops",
+  "TraceResultsPanel.map.unknownHops": "Note: The path contains undetectable hops (shown as dashed lines)",
+  "TraceResultsPanel.map.unknown": "Unknown"
 }
 
 const RiskAnalysisPanel = {

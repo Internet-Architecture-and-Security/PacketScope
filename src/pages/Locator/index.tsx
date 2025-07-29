@@ -116,24 +116,23 @@ function fetchTraceWithCancel(target, useCache = false, onHop) {
   return { promise, cancel };
 }
 
-function extractMapData(data) {
+function extractMapData(data, intl) {
   const hopsWithGeo = [];
   const allHops = [];
-  
   // 处理所有跳点，包括无地理位置的
   data.forEach((hop, index) => {
     const processedHop = {
       ...hop,
       hopIndex: index + 1,
-      hasGeo: hop.geo && 
-               hop.geo !== 'Unknown' && 
-               typeof hop.geo === 'object' && 
-               typeof hop.geo.lat === 'number' && 
-               typeof hop.geo.lon === 'number'
+      hasGeo: hop.geo &&
+        hop.geo !== 'Unknown' &&
+        typeof hop.geo === 'object' &&
+        typeof hop.geo.lat === 'number' &&
+        typeof hop.geo.lon === 'number'
     };
-    
+
     allHops.push(processedHop);
-    
+
     if (processedHop.hasGeo) {
       hopsWithGeo.push(processedHop);
     }
@@ -142,17 +141,17 @@ function extractMapData(data) {
   // 生成连线数据，考虑中间的未知节点
   const linesData = [];
   const polylineCoords = [];
-  
+
   if (hopsWithGeo.length > 1) {
     for (let i = 0; i < hopsWithGeo.length - 1; i++) {
       const startHop = hopsWithGeo[i];
       const endHop = hopsWithGeo[i + 1];
-      
+
       // 检查两个有地理位置的节点之间是否存在未知节点
       const startIndex = allHops.findIndex(hop => hop === startHop);
       const endIndex = allHops.findIndex(hop => hop === endHop);
       const hasUnknownBetween = endIndex - startIndex > 1;
-      
+
       const lineData = {
         coords: [
           [startHop.geo.lon, startHop.geo.lat],
@@ -170,7 +169,7 @@ function extractMapData(data) {
           show: true,
           position: 'middle',
           offset: [0, -4],
-          formatter: `跳过 ${endIndex - startIndex - 1} 个节点`,
+          formatter: intl.formatMessage({ id: 'TraceResultsPanel.map.skippedHops' }, { count: endIndex - startIndex - 1 }),
           fontSize: 10,
           color: '#fff',
           backgroundColor: 'rgba(229, 140, 13, 1)',
@@ -178,17 +177,17 @@ function extractMapData(data) {
           // borderWidth: 1,
           shadowColor: 'rgba(0,0,0,.2)',
           shadowBlur: 2,
-          shadowOffsetX:1,
-          shadowOffsetY:1,
+          shadowOffsetX: 1,
+          shadowOffsetY: 1,
           borderRadius: 3,
           padding: [3, 6]
         } : { show: false }
       };
-      
+
       linesData.push(lineData);
       polylineCoords.push([startHop.geo.lon, startHop.geo.lat]);
     }
-    
+
     // 添加最后一个点
     if (hopsWithGeo.length > 0) {
       const lastHop = hopsWithGeo[hopsWithGeo.length - 1];
@@ -204,11 +203,11 @@ function extractMapData(data) {
     const coordKey = `${hop.geo.lon},${hop.geo.lat}`;
     if (!coordSet.has(coordKey)) {
       coordSet.add(coordKey);
-      
+
       let rippleEffectNumber = 0;
       let labelPosition = 'top';
       let color = '#13256b';
-      
+
       if (index === 0) {
         color = '#91CC75'; // 起始点 - 绿色
         rippleEffectNumber = 2;
@@ -223,14 +222,14 @@ function extractMapData(data) {
       const formatHoverInfo = (hop) => {
         console.log(hop, 'formatHoverInfo');
         const lines = [
-          `跳点 ${hop.hopIndex}: ${hop.ip}`,
-          `位置: ${hop.location || 'Unknown'}`,
-          `延迟: ${hop.latency ? hop.latency.toFixed(2) + 'ms' : 'N/A'}`,
-          `抖动: ${hop.jitter !== 'None' ? hop.jitter + 'ms' : 'N/A'}`,
-          `丢包率: ${hop.packet_loss || 'N/A'}`,
-          `带宽: ${hop.bandwidth_mbps !== 'None' ? hop.bandwidth_mbps.toFixed(2) + ' Mbps' : 'N/A'}`,
-          `ISP: ${hop.isp || 'Unknown'}`,
-          `ASN: ${hop.asn || 'Unknown'}`
+          intl.formatMessage({ id: 'TraceResultsPanel.map.hop' }, { index: hop.hopIndex, ip: hop.ip }),
+          intl.formatMessage({ id: 'TraceResultsPanel.map.location' }, { location: hop.location || intl.formatMessage({ id: 'TraceResultsPanel.map.unknown' }) }),
+          intl.formatMessage({ id: 'TraceResultsPanel.map.latency' }, { latency: hop.latency ? hop.latency.toFixed(2) : 'N/A' }),
+          intl.formatMessage({ id: 'TraceResultsPanel.map.jitter' }, { jitter: hop.jitter !== 'None' ? hop.jitter : 'N/A' }),
+          intl.formatMessage({ id: 'TraceResultsPanel.map.packetLoss' }, { loss: hop.packet_loss || 'N/A' }),
+          intl.formatMessage({ id: 'TraceResultsPanel.map.bandwidth' }, { bandwidth: hop.bandwidth_mbps !== 'None' ? hop.bandwidth_mbps.toFixed(2) : 'N/A' }),
+          intl.formatMessage({ id: 'TraceResultsPanel.map.isp' }, { isp: hop.isp || intl.formatMessage({ id: 'TraceResultsPanel.map.unknown' }) }),
+          intl.formatMessage({ id: 'TraceResultsPanel.map.asn' }, { asn: hop.asn || intl.formatMessage({ id: 'TraceResultsPanel.map.unknown' }) })
         ];
         return lines.join('<br/>');
       };
@@ -288,16 +287,16 @@ function extractMapData(data) {
   // 计算地图视图的坐标范围
   const countries = hopsWithGeo.map(hop => [hop.geo.lon, hop.geo.lat]);
 
-  return { 
-    polylineCoords, 
-    countries, 
-    countriesData, 
-    linesData, 
-    allHops, 
+  return {
+    polylineCoords,
+    countries,
+    countriesData,
+    linesData,
+    allHops,
     hopsWithGeo,
     hasUnknownNodes: allHops.some(hop => !hop.hasGeo)
   };
-}
+};
 
 async function fetchRiskAnalysis(target, useCache = true) {
   const url = `http://127.0.0.1:8000/api/analyze?target=${target}&cache=${useCache}`;
@@ -322,7 +321,11 @@ const Locator = () => {
 
   const intl = useIntl();
 
+
+
   const [searchParams, setSearchParams] = useSearchParams();
+
+
 
   useEffect(() => {
     if (searchParams.get('target')) {
@@ -414,7 +417,7 @@ const Locator = () => {
         zoom = Math.max(scaleLimit.min, geo.zoom - 0.5);
         break;
       case 'restore':
-        const { center: defaultCenter, zoom: defaultZoom } = getMapViewOptions(extractMapData(traceResults).countries);
+        const { center: defaultCenter, zoom: defaultZoom } = getMapViewOptions(extractMapData(traceResults, intl).countries);
         zoom = defaultZoom;
         center = defaultCenter;
         break;
@@ -434,7 +437,7 @@ const Locator = () => {
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const { polylineCoords, countries, countriesData, linesData, hasUnknownNodes } = extractMapData(traceResults);
+    const { polylineCoords, countries, countriesData, linesData, hasUnknownNodes } = extractMapData(traceResults, intl);
 
     if (!mapRef.current) {
       echarts.registerMap('world', worldGeoJson);
@@ -535,7 +538,7 @@ const Locator = () => {
           tooltip: {
             show: true
           },
-          symbolSize: function(val, params) {
+          symbolSize: function (val, params) {
             // 起始点和终点稍大一些
             const data = params.data;
             if (data.rippleEffect && data.rippleEffect.number > 0) {
@@ -555,7 +558,7 @@ const Locator = () => {
             }
           }
         },
-        
+
       ],
     };
 
@@ -566,7 +569,8 @@ const Locator = () => {
         right: 20,
         top: 30,
         style: {
-          text: '注意：路径中包含无法定位的节点（显示为虚线）',
+          // text: '注意：路径中包含无法定位的节点（显示为虚线）',
+          text: intl.formatMessage({ id: 'TraceResultsPanel.map.unknownHops' }),
           fontSize: 12,
           fill: '#ff6b00',
           backgroundColor: 'rgba(255,255,255,0.9)',
@@ -604,7 +608,7 @@ const Locator = () => {
         mapRef.current.off('click');
       }
     };
-  }, [traceResults]);
+  }, [traceResults, intl]);
 
   useEffect(() => {
     fetchHistoryData();
@@ -621,7 +625,7 @@ const Locator = () => {
             placeholder={intl.formatMessage({ id: 'Locator.destinationPlaceholder' })}
             value={destinationAddress}
             onChange={(e) => setDestinationAddress(e.target.value)}
-            onPressEnter={() => {handleTraceRoute()}} 
+            onPressEnter={() => { handleTraceRoute() }}
             className="w-full"
           />
         </div>
