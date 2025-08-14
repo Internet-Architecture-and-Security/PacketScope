@@ -323,8 +323,8 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
 
                 {/* Display statistics */}
                 <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 rounded-lg px-3 py-2 border border-violet-100/60 shadow-sm">
-                  <div className="text-center relative w-[80px]">
-                    <div className="flex items-baseline justify-center gap-0.5 relative top-2">
+                  <div className="text-center relative min-w-[80px]">
+                    <div className="flex items-baseline justify-center gap-0.5 relative top-2 whitespace-nowrap">
                       <span className="text-lg font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
                         {filteredData.length}
                       </span>
@@ -338,9 +338,9 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
 
                 {/* Network interface */}
                 <div className="bg-gradient-to-br from-green-50 via-green-50 to-green-50 rounded-lg px-3 py-2 border border-green-100/60 shadow-sm">
-                  <div className="text-center relative w-[80px]">
+                  <div className="text-center relative min-w-[80px]">
                     <div className="flex items-baseline justify-center gap-0.5 relative top-2">
-                      <span className="text-lg font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
+                      <span className="text-lg font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text whitespace-nowrap text-transparent">
                         {summaryInfo.interface ?? 'N/A'}
                       </span>
                     </div>
