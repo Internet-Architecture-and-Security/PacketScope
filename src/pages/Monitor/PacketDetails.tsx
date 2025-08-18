@@ -22,6 +22,8 @@ import {
 import { Play, ArrowLeft, Clock, Hash, Boxes, X, Search, Filter, RotateCcw, PackageSearch } from 'lucide-react';
 import { Link } from 'react-router';
 import { useIntl } from 'react-intl';
+import { useTheme } from '@/stores/useStore';
+import classNames from 'classnames';
 
 interface IPv4PacketData {
   timestamp: string;
@@ -64,15 +66,34 @@ interface PacketDetailsProps {
 }
 
 // 辅助组件：详情行 - IDE风格
-const DetailRow: React.FC<{ icon: React.ReactNode; label: string; children: React.ReactNode }> = ({ icon, label, children }) => (
-  <div className="flex items-center px-4 py-1.5 hover:bg-gray-50/30 transition-colors duration-100">
-    <div className="flex items-center text-xs text-gray-500 w-32 flex-shrink-0">
-      <span className="w-4 text-center mr-2 text-gray-400">{icon}</span>
-      <span>{label}</span>
+const DetailRow: React.FC<{ icon: React.ReactNode; label: string; children: React.ReactNode }> = ({ icon, label, children }) => {
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
+  
+  return (
+    <div className={classNames(
+      "flex items-center px-4 py-1.5 transition-colors duration-100",
+      isDark 
+        ? "hover:bg-gray-800/30" 
+        : "hover:bg-gray-50/30"
+    )}>
+      <div className={classNames(
+        "flex items-center text-xs w-32 flex-shrink-0",
+        isDark ? "text-gray-400" : "text-gray-500"
+      )}>
+        <span className={classNames(
+          "w-4 text-center mr-2",
+          isDark ? "text-gray-500" : "text-gray-400"
+        )}>{icon}</span>
+        <span>{label}</span>
+      </div>
+      <div className={classNames(
+        "text-xs flex items-center",
+        isDark ? "text-gray-300" : "text-gray-700"
+      )}>{children}</div>
     </div>
-    <div className="text-xs text-gray-700 flex items-center">{children}</div>
-  </div>
-);
+  );
+};
 
 // 辅助组件：可折叠详情区块 - IDE风格
 const DetailCard: React.FC<{ title: string; children: React.ReactNode; defaultCollapsed?: boolean }> = ({
@@ -81,6 +102,8 @@ const DetailCard: React.FC<{ title: string; children: React.ReactNode; defaultCo
   defaultCollapsed = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -89,10 +112,18 @@ const DetailCard: React.FC<{ title: string; children: React.ReactNode; defaultCo
   return (
     <div>
       <div
-        className="flex items-center px-4 py-2 text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-100/50 transition-colors duration-100 select-none"
+        className={classNames(
+          "flex items-center px-4 py-2 text-xs font-medium cursor-pointer transition-colors duration-100 select-none",
+          isDark 
+            ? "text-gray-400 hover:bg-gray-800/50" 
+            : "text-gray-600 hover:bg-gray-100/50"
+        )}
         onClick={toggleExpand}
       >
-        {isExpanded ? <CaretDownOutlined className="mr-2 text-gray-400" /> : <CaretRightOutlined className="mr-2 text-gray-400" />}
+        {isExpanded ? 
+          <CaretDownOutlined className={classNames("mr-2", isDark ? "text-gray-500" : "text-gray-400")} /> : 
+          <CaretRightOutlined className={classNames("mr-2", isDark ? "text-gray-500" : "text-gray-400")} />
+        }
         <span className="uppercase tracking-wide">{title}</span>
       </div>
       {isExpanded && <div>{children}</div>}
@@ -109,6 +140,8 @@ const PacketItem: React.FC<{
 }> = ({ packet, index, isExpanded, onToggle }) => {
   const intl = useIntl();
   const [showHexView, setShowHexView] = useState(false);
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
   const isIPv4 = 'protocol' in packet;
 
   const getDirectionText = (direction: number): string => {
@@ -116,10 +149,16 @@ const PacketItem: React.FC<{
   };
 
   const getDirectionColor = (direction: number): string => {
-    return direction === 0 ? 'text-green-400' : 'text-blue-400';
+    if (isDark) {
+      return direction === 0 ? 'text-green-400' : 'text-blue-400';
+    }
+    return direction === 0 ? 'text-green-600' : 'text-blue-600';
   };
 
   const getDirectionBg = (direction: number): string => {
+    if (isDark) {
+      return direction === 0 ? 'bg-green-500/10' : 'bg-blue-500/10';
+    }
     return direction === 0 ? 'bg-green-600/10' : 'bg-blue-600/10';
   };
 
@@ -146,26 +185,53 @@ const PacketItem: React.FC<{
 
   // 数据包摘要信息 - IDE风格
   const packetSummary = (
-    <div className="flex items-center justify-between px-4 py-2 hover:bg-gray-50/50 cursor-pointer transition-colors duration-100 select-none">
+    <div className={classNames(
+      "flex items-center justify-between px-4 py-2 cursor-pointer transition-colors duration-100 select-none",
+      isDark 
+        ? "hover:bg-gray-800/50" 
+        : "hover:bg-gray-50/50"
+    )}>
       <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-2">
-          <span className="text-xs font-mono text-gray-500 w-8">#{index + 1}</span>
+          <span className={classNames(
+            "text-xs font-mono w-8",
+            isDark ? "text-gray-400" : "text-gray-500"
+          )}>#{index + 1}</span>
           <span className={`text-xs font-medium ${getDirectionColor(packet.direction)}`}>{getDirectionText(packet.direction)}</span>
         </div>
         <div className="flex items-center space-x-3 text-xs">
-          <span className="font-mono text-gray-600">{packet.timestamp}</span>
-          <span className="text-gray-400">|</span>
-          <span className="font-mono text-blue-600">{packet.length}B</span>
-          <span className="text-gray-400">|</span>
-          <span className="text-purple-600 font-medium">{isIPv4 ? packet.protocol : packet.headerType}</span>
+          <span className={classNames(
+            "font-mono",
+            isDark ? "text-gray-300" : "text-gray-600"
+          )}>{packet.timestamp}</span>
+          <span className={classNames(
+            isDark ? "text-gray-500" : "text-gray-400"
+          )}>|</span>
+          <span className={classNames(
+            "font-mono font-medium",
+            isDark ? "text-blue-400" : "text-blue-600"
+          )}>{packet.length}B</span>
+          <span className={classNames(
+            isDark ? "text-gray-500" : "text-gray-400"
+          )}>|</span>
+          <span className={classNames(
+            "font-medium",
+            isDark ? "text-purple-400" : "text-purple-600"
+          )}>{isIPv4 ? packet.protocol : packet.headerType}</span>
         </div>
       </div>
       <div className="flex items-center space-x-3">
-        <span className="text-xs font-mono text-gray-600">
+        <span className={classNames(
+          "text-xs font-mono",
+          isDark ? "text-gray-300" : "text-gray-600"
+        )}>
           {packet.srcAddress}:{packet.srcPort} → {packet.dstAddress}:{packet.dstPort}
         </span>
         <div className="w-4 h-4 flex items-center justify-center">
-          {isExpanded ? <CaretDownOutlined className="text-gray-400 text-xs" /> : <CaretRightOutlined className="text-gray-400 text-xs" />}
+          {isExpanded ? 
+            <CaretDownOutlined className={classNames("text-xs", isDark ? "text-gray-500" : "text-gray-400")} /> : 
+            <CaretRightOutlined className={classNames("text-xs", isDark ? "text-gray-500" : "text-gray-400")} />
+          }
         </div>
       </div>
     </div>
@@ -175,29 +241,49 @@ const PacketItem: React.FC<{
     <div className={`ml-6 ${getDirectionBg(packet.direction)}`}>
       <DetailCard title={intl.formatMessage({ id: 'PacketDetails.captureDetails' })}>
         <DetailRow icon={<ClockCircleOutlined />} label={intl.formatMessage({ id: 'PacketDetails.timestamp' })}>
-          <span className="font-mono text-xs text-gray-700">{packet.timestamp}</span>
+          <span className={classNames(
+            "font-mono text-xs",
+            isDark ? "text-gray-300" : "text-gray-700"
+          )}>{packet.timestamp}</span>
         </DetailRow>
         <DetailRow icon={<GatewayOutlined />} label={intl.formatMessage({ id: 'PacketDetails.interface' })}>
-          <span className="text-xs text-gray-600">{intl.formatMessage({ id: 'PacketDetails.interfaceNumber' }, { number: packet.interface })}</span>
+          <span className={classNames(
+            "text-xs",
+            isDark ? "text-gray-300" : "text-gray-600"
+          )}>{intl.formatMessage({ id: 'PacketDetails.interfaceNumber' }, { number: packet.interface })}</span>
         </DetailRow>
         <DetailRow icon={<SwapOutlined />} label={intl.formatMessage({ id: 'PacketDetails.direction' })}>
           <span className={`text-xs font-medium ${getDirectionColor(packet.direction)}`}>{getDirectionText(packet.direction)}</span>
         </DetailRow>
         <DetailRow icon={<NodeIndexOutlined />} label={intl.formatMessage({ id: 'PacketDetails.packetLength' })}>
-          <span className="font-mono text-blue-600 text-xs">{packet.length} bytes</span>
+          <span className={classNames(
+            "font-mono text-xs",
+            isDark ? "text-blue-400" : "text-blue-600"
+          )}>{packet.length} bytes</span>
         </DetailRow>
       </DetailCard>
 
       <DetailCard title={intl.formatMessage({ id: 'PacketDetails.networkLayer' }, { version: isIPv4 ? '4' : '6' })}>
-        <DetailRow icon={<GlobalOutlined style={{ color: 'rgb(34, 197, 94)' }} />} label={intl.formatMessage({ id: 'PacketDetails.sourceAddress' })}>
-          <span className="font-mono text-green-600 text-xs">{packet.srcAddress}</span>
+        <DetailRow icon={<GlobalOutlined style={{ color: isDark ? 'rgb(74, 222, 128)' : 'rgb(34, 197, 94)' }} />} label={intl.formatMessage({ id: 'PacketDetails.sourceAddress' })}>
+          <span className={classNames(
+            "font-mono text-xs",
+            isDark ? "text-green-400" : "text-green-600"
+          )}>{packet.srcAddress}</span>
         </DetailRow>
-        <DetailRow icon={<GlobalOutlined style={{ color: 'rgb(239, 68, 68)' }} />} label={intl.formatMessage({ id: 'PacketDetails.destinationAddress' })}>
+        <DetailRow icon={<GlobalOutlined style={{ color: isDark ? 'rgb(248, 113, 113)' : 'rgb(239, 68, 68)' }} />} label={intl.formatMessage({ id: 'PacketDetails.destinationAddress' })}>
           <div className="flex items-center space-x-2">
-            <span className="font-mono text-red-600 text-xs">{packet.dstAddress}</span>
+            <span className={classNames(
+              "font-mono text-xs",
+              isDark ? "text-red-400" : "text-red-600"
+            )}>{packet.dstAddress}</span>
             <Link
               to={`/locator?target=${packet.dstAddress}`}
-              className="text-blue-500 hover:text-blue-700 text-xs flex items-center hover:underline"
+              className={classNames(
+                "text-xs flex items-center hover:underline transition-colors",
+                isDark 
+                  ? "text-blue-400 hover:text-blue-300" 
+                  : "text-blue-500 hover:text-blue-700"
+              )}
             >
               {intl.formatMessage({ id: 'PacketDetails.trace' })} <ExportOutlined className="ml-1" />
             </Link>
@@ -206,32 +292,50 @@ const PacketItem: React.FC<{
         {isIPv4 && (
           <>
             <DetailRow icon={<FlagOutlined />} label={intl.formatMessage({ id: 'PacketDetails.protocolType' })}>
-              <span className="text-purple-600 text-xs font-medium">{packet.protocol}</span>
+              <span className={classNames(
+                "text-xs font-medium",
+                isDark ? "text-purple-400" : "text-purple-600"
+              )}>{packet.protocol}</span>
             </DetailRow>
             <DetailRow icon={<FieldTimeOutlined />} label={intl.formatMessage({ id: 'PacketDetails.ttl' })}>
               <span className="font-mono text-xs">{packet.ttl}</span>
             </DetailRow>
             <DetailRow icon={<ApartmentOutlined />} label={intl.formatMessage({ id: 'PacketDetails.fragmentInfo' })}>
-              <span className="text-xs text-gray-600">{packet.fragInfo || intl.formatMessage({ id: 'PacketDetails.none' })}</span>
+              <span className={classNames(
+                "text-xs",
+                isDark ? "text-gray-300" : "text-gray-600"
+              )}>{packet.fragInfo || intl.formatMessage({ id: 'PacketDetails.none' })}</span>
             </DetailRow>
             <DetailRow icon={<ToolOutlined />} label={intl.formatMessage({ id: 'PacketDetails.options' })}>
-              <span className="text-xs text-gray-600">{packet.options || intl.formatMessage({ id: 'PacketDetails.none' })}</span>
+              <span className={classNames(
+                "text-xs",
+                isDark ? "text-gray-300" : "text-gray-600"
+              )}>{packet.options || intl.formatMessage({ id: 'PacketDetails.none' })}</span>
             </DetailRow>
           </>
         )}
         {!isIPv4 && (
           <DetailRow icon={<FlagOutlined />} label={intl.formatMessage({ id: 'PacketDetails.headerType' })}>
-            <span className="text-purple-600 text-xs font-medium">{packet.headerType}</span>
+            <span className={classNames(
+              "text-xs font-medium",
+              isDark ? "text-purple-400" : "text-purple-600"
+            )}>{packet.headerType}</span>
           </DetailRow>
         )}
       </DetailCard>
 
       <DetailCard title={intl.formatMessage({ id: 'PacketDetails.transportLayer' })}>
-        <DetailRow icon={<GatewayOutlined style={{ color: 'rgb(34, 197, 94)' }} />} label={intl.formatMessage({ id: 'PacketDetails.sourcePort' })}>
-          <span className="font-mono text-green-600 text-xs">{packet.srcPort}</span>
+        <DetailRow icon={<GatewayOutlined style={{ color: isDark ? 'rgb(74, 222, 128)' : 'rgb(34, 197, 94)' }} />} label={intl.formatMessage({ id: 'PacketDetails.sourcePort' })}>
+          <span className={classNames(
+            "font-mono text-xs",
+            isDark ? "text-green-400" : "text-green-600"
+          )}>{packet.srcPort}</span>
         </DetailRow>
-        <DetailRow icon={<GatewayOutlined style={{ color: 'rgb(239, 68, 68)' }} />} label={intl.formatMessage({ id: 'PacketDetails.destinationPort' })}>
-          <span className="font-mono text-red-600 text-xs">{packet.dstPort}</span>
+        <DetailRow icon={<GatewayOutlined style={{ color: isDark ? 'rgb(248, 113, 113)' : 'rgb(239, 68, 68)' }} />} label={intl.formatMessage({ id: 'PacketDetails.destinationPort' })}>
+          <span className={classNames(
+            "font-mono text-xs",
+            isDark ? "text-red-400" : "text-red-600"
+          )}>{packet.dstPort}</span>
         </DetailRow>
       </DetailCard>
 
@@ -240,20 +344,37 @@ const PacketItem: React.FC<{
           <div className="flex justify-end mb-3">
             <button
               onClick={() => setShowHexView(!showHexView)}
-              className={`px-2 py-1 text-xs font-medium transition-colors ${
-                showHexView ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={classNames(
+                "px-2 py-1 text-xs font-medium transition-colors",
+                showHexView 
+                  ? (isDark ? "bg-blue-500 text-white" : "bg-blue-600 text-white")
+                  : (isDark 
+                      ? "bg-gray-700 text-gray-300 hover:bg-gray-600" 
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    )
+              )}
             >
               {showHexView ? 'Raw' : 'Hex'}
             </button>
           </div>
           {showHexView ? (
-            <div className="bg-gray-900 text-green-400 p-3 font-mono text-xs overflow-x-auto">
+            <div className={classNames(
+              "p-3 font-mono text-xs overflow-x-auto",
+              isDark 
+                ? "bg-gray-900 text-green-400" 
+                : "bg-gray-900 text-green-400"
+            )}>
               <pre>{formatHexContent(packet.content)}</pre>
             </div>
           ) : (
-            <div className="bg-gray-50 p-3">
-              <div className="font-mono text-xs break-all leading-relaxed text-gray-700">{packet.content}</div>
+            <div className={classNames(
+              "p-3",
+              isDark ? "bg-gray-800" : "bg-gray-50"
+            )}>
+              <div className={classNames(
+                "font-mono text-xs break-all leading-relaxed",
+                isDark ? "text-gray-300" : "text-gray-700"
+              )}>{packet.content}</div>
             </div>
           )}
         </div>
@@ -262,7 +383,12 @@ const PacketItem: React.FC<{
   );
 
   return (
-    <div className="border-l-2 border-transparent hover:border-blue-300 transition-colors duration-100">
+    <div className={classNames(
+      "border-l-2 border-transparent transition-colors duration-100",
+      isDark 
+        ? "hover:border-blue-400" 
+        : "hover:border-blue-300"
+    )}>
       <div onClick={onToggle}>{packetSummary}</div>
       {isExpanded && packetDetails}
     </div>
@@ -271,6 +397,9 @@ const PacketItem: React.FC<{
 
 const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
   const intl = useIntl();
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
+  
   console.log(JSON.stringify(queryParams), 'queryParams');
   const [loading, setLoading] = useState(false);
   const [packetData, setPacketData] = useState<(IPv4PacketData | IPv6PacketData)[]>([]);
@@ -443,11 +572,23 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
 
   if (!queryParams) {
     return (
-      <div className="h-full w-full bg-gray-50 flex items-center justify-center">
+      <div className={classNames(
+        "h-full w-full flex items-center justify-center",
+        isDark ? "bg-gray-900" : "bg-gray-50"
+      )}>
         <div className="text-center">
-          <Boxes className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <div className="text-lg font-semibold text-slate-500 mb-2">{intl.formatMessage({ id: 'PacketDetails.analyzer' })}</div>
-          <div className="text-sm text-slate-400">{intl.formatMessage({ id: 'PacketDetails.selectConnection' })}</div>
+          <Boxes className={classNames(
+            "w-12 h-12 mx-auto mb-4",
+            isDark ? "text-gray-600" : "text-gray-300"
+          )} />
+          <div className={classNames(
+            "text-lg font-semibold mb-2",
+            isDark ? "text-gray-400" : "text-slate-500"
+          )}>{intl.formatMessage({ id: 'PacketDetails.analyzer' })}</div>
+          <div className={classNames(
+            "text-sm",
+            isDark ? "text-gray-500" : "text-slate-400"
+          )}>{intl.formatMessage({ id: 'PacketDetails.selectConnection' })}</div>
         </div>
       </div>
     );
@@ -457,19 +598,38 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
   const allExpanded = packetData.length > 0 && expandedPackets.size === packetData.length;
 
   return (
-    <div className="h-full w-full flex flex-col bg-gray-50 min-w-[500px] border-l border-gray-200">
+    <div className={classNames(
+      "h-full w-full flex flex-col min-w-[500px] border-l",
+      isDark 
+        ? "bg-gray-900 border-gray-700" 
+        : "bg-gray-50 border-gray-200"
+    )}>
       {/* 头部摘要 */}
-      <div className="bg-white border-b border-gray-200 p-2">
+      <div className={classNames(
+        "border-b p-2",
+        isDark 
+          ? "bg-gray-800 border-gray-700" 
+          : "bg-white border-gray-200"
+      )}>
         <div className="flex items-center justify-between mb-3">
-          {/* <h3 className="font-bold text-gray-800">会话流摘要</h3> */}
           <div className="flex items-center gap-3">
-            <Boxes className="text-blue-600" size={20} />
-            <div className="font-semibold text-base text-slate-900">{intl.formatMessage({ id: 'PacketDetails.analyzer' })}</div>
+            <Boxes className={classNames(
+              isDark ? "text-blue-400" : "text-blue-600"
+            )} size={20} />
+            <div className={classNames(
+              "font-semibold text-base",
+              isDark ? "text-gray-200" : "text-slate-900"
+            )}>{intl.formatMessage({ id: 'PacketDetails.analyzer' })}</div>
           </div>
           <div className="flex items-center space-x-2">
             <button
               onClick={toggleAllPackets}
-              className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors flex items-center"
+              className={classNames(
+                "px-3 py-1 text-xs rounded transition-colors flex items-center",
+                isDark
+                  ? "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30"
+                  : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+              )}
               disabled={packetData.length === 0}
             >
               {allExpanded ? (
@@ -486,7 +646,12 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
             </button>
             <button
               onClick={() => handleRefresh()}
-              className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center"
+              className={classNames(
+                "px-3 py-1 text-xs rounded transition-colors flex items-center",
+                isDark
+                  ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              )}
               disabled={loading}
             >
               <ReloadOutlined className={`mr-1 ${loading ? 'animate-spin' : ''}`} />
@@ -495,17 +660,38 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
           </div>
         </div>
         <div className="flex items-center space-x-3 text-sm">
-          <span className="flex items-center bg-green-50 text-green-800 px-3 py-1 rounded-full font-mono">
+          <span className={classNames(
+            "flex items-center px-3 py-1 rounded-full font-mono",
+            isDark 
+              ? "bg-green-500/20 text-green-400" 
+              : "bg-green-50 text-green-800"
+          )}>
             {queryParams.srcip}:{queryParams.srcport}
           </span>
-          <span className="text-gray-400 font-sans text-lg">→</span>
-          <span className="flex items-center bg-red-50 text-red-800 px-3 py-1 rounded-full font-mono">
+          <span className={classNames(
+            "font-sans text-lg",
+            isDark ? "text-gray-500" : "text-gray-400"
+          )}>→</span>
+          <span className={classNames(
+            "flex items-center px-3 py-1 rounded-full font-mono",
+            isDark 
+              ? "bg-red-500/20 text-red-400" 
+              : "bg-red-50 text-red-800"
+          )}>
             {queryParams.dstip}:{queryParams.dstport}
           </span>
-          <span className="ml-auto bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-semibold text-xs">IPv{queryParams.ipver}</span>
+          <span className={classNames(
+            "ml-auto px-3 py-1 rounded-full font-semibold text-xs",
+            isDark 
+              ? "bg-gray-700 text-gray-300" 
+              : "bg-gray-100 text-gray-700"
+          )}>IPv{queryParams.ipver}</span>
         </div>
         {packetData.length > 0 && (
-          <div className="mt-3 text-sm text-gray-600 flex space-x-3">
+          <div className={classNames(
+            "mt-3 text-sm flex space-x-3",
+            isDark ? "text-gray-400" : "text-gray-600"
+          )}>
             <span className="flex items-center">
               <NumberOutlined className="mr-1" />
               {packetData.length === 80 
@@ -518,7 +704,12 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
                 onClick={() => {
                   handleRefresh({ ...queryParams, count: 20000 });
                 }}
-                className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors flex items-center cursor-pointer"
+                className={classNames(
+                  "px-3 py-1 text-xs rounded transition-colors flex items-center cursor-pointer",
+                  isDark
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                )}
               >
                 <PackageSearch size={14} className="mr-1" />
                 {intl.formatMessage({ id: 'PacketDetails.viewAllPackets' })}
@@ -532,21 +723,34 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
       <div className="flex-1 overflow-auto p-4">
         {loading && (
           <div className="flex items-center justify-center h-64">
-            {/* <div className="text-center"> */}
-            {/* <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div> */}
             <Spin size="default" className="mr-2" />
-            <p className="text-gray-600">{intl.formatMessage({ id: 'PacketDetails.loading' })}</p>
-            {/* </div> */}
+            <p className={classNames(
+              isDark ? "text-gray-400" : "text-gray-600"
+            )}>{intl.formatMessage({ id: 'PacketDetails.loading' })}</p>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className={classNames(
+            "border rounded-lg p-4 mb-4",
+            isDark 
+              ? "bg-red-900/20 border-red-800/50" 
+              : "bg-red-50 border-red-200"
+          )}>
             <div className="flex items-center">
-              <div className="text-red-600 mr-3">⚠️</div>
+              <div className={classNames(
+                "mr-3",
+                isDark ? "text-red-400" : "text-red-600"
+              )}>⚠️</div>
               <div>
-                <h4 className="text-red-800 font-medium">{intl.formatMessage({ id: 'PacketDetails.loadFailed' })}</h4>
-                <p className="text-red-600 text-sm mt-1">{error}</p>
+                <h4 className={classNames(
+                  "font-medium",
+                  isDark ? "text-red-400" : "text-red-800"
+                )}>{intl.formatMessage({ id: 'PacketDetails.loadFailed' })}</h4>
+                <p className={classNames(
+                  "text-sm mt-1",
+                  isDark ? "text-red-300" : "text-red-600"
+                )}>{error}</p>
               </div>
             </div>
           </div>
@@ -554,9 +758,17 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
 
         {!loading && !error && packetData.length === 0 && (
           <div className="text-center py-16">
-            <div className="text-gray-400 text-6xl mb-4">📭</div>
-            <h4 className="text-lg font-medium text-gray-600 mb-2">{intl.formatMessage({ id: 'PacketDetails.noPacketsFound' })}</h4>
-            <p className="text-gray-500">{intl.formatMessage({ id: 'PacketDetails.noPacketsDescription' })}</p>
+            <div className={classNames(
+              "text-6xl mb-4",
+              isDark ? "text-gray-600" : "text-gray-400"
+            )}>📭</div>
+            <h4 className={classNames(
+              "text-lg font-medium mb-2",
+              isDark ? "text-gray-400" : "text-gray-600"
+            )}>{intl.formatMessage({ id: 'PacketDetails.noPacketsFound' })}</h4>
+            <p className={classNames(
+              isDark ? "text-gray-500" : "text-gray-500"
+            )}>{intl.formatMessage({ id: 'PacketDetails.noPacketsDescription' })}</p>
           </div>
         )}
 

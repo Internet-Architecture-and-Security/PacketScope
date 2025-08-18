@@ -23,7 +23,7 @@ const SelectLang = () => {
 
   return (
     <span
-      className={classNames('cursor-pointer text-2xl', currentTheme === 'dark' ? 'text-[#fafafb]' : 'text-[#4096ff]')}
+      className={classNames('cursor-pointer text-2xl', currentTheme === 'dark' ? 'text-[#e6f7ff]' : 'text-[#4096ff]')}
       onClick={clickCallback}
     >
       {isEN ? <EnIcon /> : <CnIcon />}

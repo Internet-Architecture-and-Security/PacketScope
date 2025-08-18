@@ -10,6 +10,7 @@ import stopSvg from '@/assets/stop.svg?react';
 import { useIsAutoScroll } from '@/stores/useStore';
 import { usePollingManager } from '@/stores/usePollingManager';
 import { useIntl } from 'react-intl';
+import { Link } from 'react-router';
 
 import recordSvg from '@/assets/record.svg?react';
 import clearSvg from '@/assets/clear.svg?react';
@@ -34,7 +35,7 @@ const Controls = () => {
   // const isAutoScrollStore = useIsAutoScroll();
   // const { locale, formatMessage } = useIntl();
   const { currentLang, setCurrentLang } = useSelectLang();
-  // const { currentTheme } = useTheme();
+  const { currentTheme } = useTheme();
   const isEN = currentLang === 'en-US';
 
   useEffect(() => {
@@ -82,11 +83,11 @@ const Controls = () => {
         icon={
           pollingManagerStore.tasks['socket']?.isPolling ? (
             <Tooltip title={intl.formatMessage({ id: 'controls.stop' })}>
-              <StoprecordIcon className="text-red-600" />
+              <StoprecordIcon className={classnames(currentTheme === 'dark' ? 'text-red-400' : 'text-red-600')} />
             </Tooltip>
           ) : (
             <Tooltip title={intl.formatMessage({ id: 'controls.start' })}>
-              <RecordIcon className="text-zinc-700" />
+              <RecordIcon className={classnames(currentTheme === 'dark' ? 'text-zinc-300' : 'text-zinc-700')} />
             </Tooltip>
           )
         }
@@ -99,7 +100,7 @@ const Controls = () => {
         ghost
         icon={
           <Tooltip title={intl.formatMessage({ id: 'controls.clear' })}>
-            <ClearIcon className="text-zinc-700" />
+            <ClearIcon className={classnames(currentTheme === 'dark' ? 'text-zinc-300' : 'text-zinc-700')} />
           </Tooltip>
         }
       />
@@ -112,17 +113,22 @@ const Controls = () => {
         ghost
         icon={<AutoIcon className={classnames(isAutoScrollStore.isAutoScroll ? 'text-blue-600' : 'text-zinc-700')} />}
       /> */}
-      {/* <Divider type="vertical" className="h-[20px]" />
-      <Button
-        shape="circle"
-        className="border-0 text-[24px]"
-        ghost
-        icon={
-          <Tooltip title="帮助">
-            <HelpIcon className="text-zinc-700" />
-          </Tooltip>
-        }
-      /> */}
+      <Divider type="vertical" className="h-[20px]" />
+      <Link
+        to="https://internet-architecture-and-security.github.io/packetScope-website/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Button
+          shape="circle"
+          className="border-0 text-[24px]"
+          ghost
+          icon={
+            <Tooltip title={intl.formatMessage({ id: 'controls.help' })}>
+              <HelpIcon className={classnames(currentTheme === 'dark' ? 'text-zinc-300' : 'text-zinc-700')} />
+            </Tooltip>
+          }
+        /></Link>
     </Flex>
   );
 };

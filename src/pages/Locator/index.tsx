@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Input, Button, Alert, Flex, Checkbox } from 'antd';
+import { Input, Button, Alert, Flex, Checkbox, ConfigProvider } from 'antd';
 import { useSearchParams } from 'react-router';
 import * as echarts from 'echarts';
 import { SendOutlined, StopOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import worldGeoJson from '@/assets/worldGeo.json';
 import { useIntl } from 'react-intl';
+import { useTheme } from '@/stores/useStore';
+import classNames from 'classnames';
 import RiskAnalysisPanel from './RiskAnalysisPanel';
 import TraceResultsPanel from './TraceResultsPanel';
 import HistoryPanel from './HistoryPanel';
@@ -320,12 +322,10 @@ const Locator = () => {
   const mapRef = useRef(null);
 
   const intl = useIntl();
-
-
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
 
   const [searchParams, setSearchParams] = useSearchParams();
-
-
 
   useEffect(() => {
     if (searchParams.get('target')) {
@@ -615,84 +615,118 @@ const Locator = () => {
   }, []);
 
   return (
-    <Flex vertical gap={0} className="w-full min-h-full pt-6 px-10 pb-40 bg-gradient-to-br from-slate-50 to-blue-50 ">
-      <Alert className="mb-5" description={<p>{intl.formatMessage({ id: 'Locator.howto' })}</p>} type="info" showIcon />
+    <ConfigProvider
+      theme={{
+        components: {
+        }
+      }}
+    >
+      <Flex vertical gap={0} className={classNames(
+        "relative w-full min-h-full pt-6 px-10 pb-40",
+        isDark ? "bg-gradient-to-br from-gray-900 to-gray-800" : "bg-gradient-to-br from-slate-50 to-blue-50"
+      )}>
+        <Alert 
+          // className={classNames(
+          //   "mb-5 border-0",
+          //   isDark ? "bg-gray-800" : ""
+          // )}
+          className="mb-5"
+          description={<p>{intl.formatMessage({ id: 'Locator.howto' })}</p>} 
+          type="info" 
+          showIcon 
+        />
 
-      <Flex gap={30} className="mb-2.5">
-        <div className="flex-1">
-          <h2 className="text-lg font-medium mb-2">{intl.formatMessage({ id: 'Locator.destination' })}</h2>
-          <Input
-            placeholder={intl.formatMessage({ id: 'Locator.destinationPlaceholder' })}
-            value={destinationAddress}
-            onChange={(e) => setDestinationAddress(e.target.value)}
-            onPressEnter={() => { handleTraceRoute() }}
-            className="w-full"
-          />
-        </div>
-        <Flex gap={20} align="end">
-          <Button
-            type={loading ? 'default' : 'primary'}
-            danger={loading}
-            icon={loading ? <StopOutlined /> : <SendOutlined />}
-            onClick={() => handleTraceRoute()}
-          >
-            {intl.formatMessage({ id: loading ? 'Locator.cancelBtn' : 'Locator.startBtn' })}
-          </Button>
-          <Checkbox checked={useCache} onChange={(e) => setUseCache(e.target.checked)} disabled={loading}>
-            {intl.formatMessage({ id: 'Locator.useCache' })}
-          </Checkbox>
+        <Flex gap={30} className="mb-2.5">
+          <div className="flex-1">
+            <h2 className={classNames(
+              "text-lg font-medium mb-2",
+              isDark ? "text-gray-200" : ""
+            )}>
+              {intl.formatMessage({ id: 'Locator.destination' })}
+            </h2>
+            <Input
+              placeholder={intl.formatMessage({ id: 'Locator.destinationPlaceholder' })}
+              value={destinationAddress}
+              onChange={(e) => setDestinationAddress(e.target.value)}
+              onPressEnter={() => { handleTraceRoute() }}
+              className={classNames(
+                "w-full",
+                // isDark ? "placeholder:text-gray-500 text-gray-300 bg-gray-800" : "placeholder:text-gray-400"
+              )}
+            />
+          </div>
+          <Flex gap={20} align="end">
+            <Button
+              type={loading ? 'default' : 'primary'}
+              danger={loading}
+              icon={loading ? <StopOutlined /> : <SendOutlined />}
+              onClick={() => handleTraceRoute()}
+              className={classNames(
+                isDark ? (loading ? "bg-[#374151] text-red-400 border-red-400" : "") : ""
+              )}
+            >
+              {intl.formatMessage({ id: loading ? 'Locator.cancelBtn' : 'Locator.startBtn' })}
+            </Button>
+            <Checkbox 
+              checked={useCache} 
+              onChange={(e) => setUseCache(e.target.checked)} 
+              disabled={loading}
+            >
+              {intl.formatMessage({ id: 'Locator.useCache' })}
+            </Checkbox>
+          </Flex>
         </Flex>
-      </Flex>
 
-      {/* Map and Overlay Container */}
-      <div className="w-full h-[500px] relative">
-        {/* ECharts Map will render here */}
-        <div className="w-full h-full" ref={mapContainerRef}></div>
+        {/* Map and Overlay Container */}
+        <div className="w-full h-[500px] relative">
+          {/* ECharts Map will render here */}
+          <div className="w-full h-full" ref={mapContainerRef}></div>
 
-        {/* Zoom buttons - 保持原有的缩放按钮 */}
-        <div className="absolute top-1/2 right-0.5 flex flex-col z-10 overflow-hidden rounded-md backdrop-blur-md opacity-50 transition-opacity duration-300 hover:opacity-100">
-          <Button
-            className="text-[12px] rounded-none border-none bg-[rgba(57,135,230,0.4)] hover:bg-[rgba(57,135,230,0.8)] p-0 mb-[1px] text-blue-50"
-            size="small"
-            onClick={() => setZoomBtns('in')}
-            type="text"
-            disabled={isDdisabledzoomInBtn}
-            icon={<PlusOutlined />}
-          />
-          <Button
-            className="text-[10px] rounded-none border-none bg-[rgba(57,135,230,0.4)] hover:bg-[rgba(57,135,230,0.8)] p-0 mb-[1px] [&>span]:scale-80 text-blue-50"
-            size="small"
-            onClick={() => setZoomBtns('restore')}
-            type="text"
-          >
-            1 : 1
-          </Button>
-          <Button
-            className="text-[12px] rounded-none border-none bg-[rgba(57,135,230,0.4)] hover:bg-[rgba(57,135,230,0.8)] text-blue-50"
-            size="small"
-            disabled={isDdisabledzoomOutBtn}
-            onClick={() => setZoomBtns('out')}
-            type="text"
-            icon={<MinusOutlined />}
-          />
+          {/* Zoom buttons - 保持原有的缩放按钮 */}
+          <div className="absolute top-1/2 right-0.5 flex flex-col z-10 overflow-hidden rounded-md backdrop-blur-md opacity-50 transition-opacity duration-300 hover:opacity-100">
+            <Button
+              className="text-[12px] rounded-none border-none bg-[rgba(57,135,230,0.4)] hover:bg-[rgba(57,135,230,0.8)] p-0 mb-[1px] text-blue-50"
+              size="small"
+              onClick={() => setZoomBtns('in')}
+              type="text"
+              disabled={isDdisabledzoomInBtn}
+              icon={<PlusOutlined />}
+            />
+            <Button
+              className="text-[10px] rounded-none border-none bg-[rgba(57,135,230,0.4)] hover:bg-[rgba(57,135,230,0.8)] p-0 mb-[1px] [&>span]:scale-80 text-blue-50"
+              size="small"
+              onClick={() => setZoomBtns('restore')}
+              type="text"
+            >
+              1 : 1
+            </Button>
+            <Button
+              className="text-[12px] rounded-none border-none bg-[rgba(57,135,230,0.4)] hover:bg-[rgba(57,135,230,0.8)] text-blue-50"
+              size="small"
+              disabled={isDdisabledzoomOutBtn}
+              onClick={() => setZoomBtns('out')}
+              type="text"
+              icon={<MinusOutlined />}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Risk Analysis Panel (remains below the map) */}
-      <RiskAnalysisPanel riskData={riskData} loading={riskLoading} />
+        {/* Risk Analysis Panel (remains below the map) */}
+        <RiskAnalysisPanel riskData={riskData} loading={riskLoading} />
 
-      {/* History Panel (remains at the bottom) */}
-      <HistoryPanel
-        historyData={historyData}
-        onHistoryItemClick={handleHistoryItemClick}
-        onRefresh={fetchHistoryData}
-        loading={loading}
-        intl={intl}
-      />
+        {/* History Panel (remains at the bottom) */}
+        <HistoryPanel
+          historyData={historyData}
+          onHistoryItemClick={handleHistoryItemClick}
+          onRefresh={fetchHistoryData}
+          loading={loading}
+          intl={intl}
+        />
 
-      {/* MODIFICATION: 现在 TraceResultsPanel 自带拖拽功能，直接使用 */}
-      <TraceResultsPanel traceResults={traceResults} loading={loading} />
-    </Flex>
+        {/* MODIFICATION: 现在 TraceResultsPanel 自带拖拽功能，直接使用 */}
+        <TraceResultsPanel traceResults={traceResults} loading={loading} />
+      </Flex>
+    </ConfigProvider>
   );
 };
 

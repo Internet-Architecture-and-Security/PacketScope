@@ -18,6 +18,7 @@ export default {
   'controls.clear': 'Clear Data',
   'controls.clearSuccess': 'Data cleared successfully',
   'controls.clearFailure': 'Failed to clear data',
+  'controls.help': 'Help',
   ...monitor,
   ...gate,
   ...locator,

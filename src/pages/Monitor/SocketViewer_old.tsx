@@ -4,56 +4,87 @@ import { Card, Descriptions, Table, Input, Select, Button, Row, Col, ConfigProvi
 import { SearchOutlined, ClearOutlined, FilterOutlined, Loading3QuartersOutlined } from '@ant-design/icons';
 import { usePollingManager } from '@/stores/usePollingManager';
 import { WifiOff, RefreshCw, Logs, Monitor, Activity } from 'lucide-react';
+import { useTheme } from '@/stores/useStore';
+import classNames from 'classnames';
 
 const { Option } = Select;
 
-// Protocol color mapping for better maintainability
+// Protocol color mapping for both light and dark modes
 const PROTOCOL_COLORS = {
-  TCP: 'bg-green-100 text-green-800',
-  UDP: 'bg-orange-100 text-orange-800',
-  RAW: 'bg-red-100 text-red-800',
-  ICMP: 'bg-cyan-100 text-cyan-800',
-  default: 'bg-gray-100 text-gray-800',
+  light: {
+    TCP: 'bg-green-100 text-green-800',
+    UDP: 'bg-orange-100 text-orange-800',
+    RAW: 'bg-red-100 text-red-800',
+    ICMP: 'bg-cyan-100 text-cyan-800',
+    default: 'bg-gray-100 text-gray-800',
+  },
+  dark: {
+    TCP: 'bg-green-900/50 text-green-300 border border-green-800/50',
+    UDP: 'bg-orange-900/50 text-orange-300 border border-orange-800/50',
+    RAW: 'bg-red-900/50 text-red-300 border border-red-800/50',
+    ICMP: 'bg-cyan-900/50 text-cyan-300 border border-cyan-800/50',
+    default: 'bg-gray-800/50 text-gray-300 border border-gray-700/50',
+  },
 };
 
-// State color mapping for better maintainability
+// State color mapping for both light and dark modes
 const STATE_COLORS = {
-  ESTABLISHED: 'bg-green-100 text-green-800',
-  LISTEN: 'bg-blue-100 text-blue-800',
-  TIME_WAIT: 'bg-yellow-100 text-yellow-800',
-  SYN_SENT: 'bg-purple-100 text-purple-800',
-  SYN_RECV: 'bg-indigo-100 text-indigo-800',
-  FIN_WAIT1: 'bg-orange-100 text-orange-800',
-  FIN_WAIT2: 'bg-orange-100 text-orange-800',
-  CLOSE: 'bg-gray-100 text-gray-800',
-  CLOSE_WAIT: 'bg-red-100 text-red-800',
-  LAST_ACK: 'bg-red-100 text-red-800',
-  CLOSING: 'bg-red-100 text-red-800',
-  UNDEFINED: 'bg-slate-100 text-slate-800',
-  default: 'bg-gray-100 text-gray-800',
+  light: {
+    ESTABLISHED: 'bg-green-100 text-green-800',
+    LISTEN: 'bg-blue-100 text-blue-800',
+    TIME_WAIT: 'bg-yellow-100 text-yellow-800',
+    SYN_SENT: 'bg-purple-100 text-purple-800',
+    SYN_RECV: 'bg-indigo-100 text-indigo-800',
+    FIN_WAIT1: 'bg-orange-100 text-orange-800',
+    FIN_WAIT2: 'bg-orange-100 text-orange-800',
+    CLOSE: 'bg-gray-100 text-gray-800',
+    CLOSE_WAIT: 'bg-red-100 text-red-800',
+    LAST_ACK: 'bg-red-100 text-red-800',
+    CLOSING: 'bg-red-100 text-red-800',
+    UNDEFINED: 'bg-slate-100 text-slate-800',
+    default: 'bg-gray-100 text-gray-800',
+  },
+  dark: {
+    ESTABLISHED: 'bg-green-900/50 text-green-300 border border-green-800/50',
+    LISTEN: 'bg-blue-900/50 text-blue-300 border border-blue-800/50',
+    TIME_WAIT: 'bg-yellow-900/50 text-yellow-300 border border-yellow-800/50',
+    SYN_SENT: 'bg-purple-900/50 text-purple-300 border border-purple-800/50',
+    SYN_RECV: 'bg-indigo-900/50 text-indigo-300 border border-indigo-800/50',
+    FIN_WAIT1: 'bg-orange-900/50 text-orange-300 border border-orange-800/50',
+    FIN_WAIT2: 'bg-orange-900/50 text-orange-300 border border-orange-800/50',
+    CLOSE: 'bg-gray-800/50 text-gray-300 border border-gray-700/50',
+    CLOSE_WAIT: 'bg-red-900/50 text-red-300 border border-red-800/50',
+    LAST_ACK: 'bg-red-900/50 text-red-300 border border-red-800/50',
+    CLOSING: 'bg-red-900/50 text-red-300 border border-red-800/50',
+    UNDEFINED: 'bg-slate-800/50 text-slate-300 border border-slate-700/50',
+    default: 'bg-gray-800/50 text-gray-300 border border-gray-700/50',
+  },
 };
 
-// Utility function to get protocol color
-const getProtocolColor = (protocol: string): string => {
-  return PROTOCOL_COLORS[protocol] || PROTOCOL_COLORS.default;
+// Utility function to get protocol color based on theme
+const getProtocolColor = (protocol: string, isDark: boolean): string => {
+  const colors = isDark ? PROTOCOL_COLORS.dark : PROTOCOL_COLORS.light;
+  return colors[protocol] || colors.default;
 };
 
-// Utility function to get state color
-const getStateColor = (state: string): string => {
+// Utility function to get state color based on theme
+const getStateColor = (state: string, isDark: boolean): string => {
+  const colors = isDark ? STATE_COLORS.dark : STATE_COLORS.light;
+  
   // Check for hex state codes and named states
-  if (state.includes('01') || state.includes('ESTABLISHED')) return STATE_COLORS.ESTABLISHED;
-  if (state.includes('0A') || state.includes('LISTEN')) return STATE_COLORS.LISTEN;
-  if (state.includes('06') || state.includes('TIME_WAIT')) return STATE_COLORS.TIME_WAIT;
-  if (state.includes('02') || state.includes('SYN_SENT')) return STATE_COLORS.SYN_SENT;
-  if (state.includes('03') || state.includes('SYN_RECV')) return STATE_COLORS.SYN_RECV;
-  if (state.includes('04') || state.includes('FIN_WAIT1')) return STATE_COLORS.FIN_WAIT1;
-  if (state.includes('05') || state.includes('FIN_WAIT2')) return STATE_COLORS.FIN_WAIT2;
-  if (state.includes('07') || state.includes('CLOSE')) return STATE_COLORS.CLOSE;
-  if (state.includes('08') || state.includes('CLOSE_WAIT')) return STATE_COLORS.CLOSE_WAIT;
-  if (state.includes('09') || state.includes('LAST_ACK')) return STATE_COLORS.LAST_ACK;
-  if (state.includes('0B') || state.includes('CLOSING')) return STATE_COLORS.CLOSING;
-  if (state.includes('UNDEFINED')) return STATE_COLORS.UNDEFINED;
-  return STATE_COLORS.default;
+  if (state.includes('01') || state.includes('ESTABLISHED')) return colors.ESTABLISHED;
+  if (state.includes('0A') || state.includes('LISTEN')) return colors.LISTEN;
+  if (state.includes('06') || state.includes('TIME_WAIT')) return colors.TIME_WAIT;
+  if (state.includes('02') || state.includes('SYN_SENT')) return colors.SYN_SENT;
+  if (state.includes('03') || state.includes('SYN_RECV')) return colors.SYN_RECV;
+  if (state.includes('04') || state.includes('FIN_WAIT1')) return colors.FIN_WAIT1;
+  if (state.includes('05') || state.includes('FIN_WAIT2')) return colors.FIN_WAIT2;
+  if (state.includes('07') || state.includes('CLOSE')) return colors.CLOSE;
+  if (state.includes('08') || state.includes('CLOSE_WAIT')) return colors.CLOSE_WAIT;
+  if (state.includes('09') || state.includes('LAST_ACK')) return colors.LAST_ACK;
+  if (state.includes('0B') || state.includes('CLOSING')) return colors.CLOSING;
+  if (state.includes('UNDEFINED')) return colors.UNDEFINED;
+  return colors.default;
 };
 
 // Define component props interface
@@ -79,6 +110,8 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }) => {
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
   const pollingManagerStore = usePollingManager();
   const socketData = pollingManagerStore.tasks['socket']?.data;
   const [selectedRowKey, setSelectedRowKey] = useState<string | number | null>(null);
@@ -106,7 +139,13 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
       render: (type: string) => (
         <span
           className={`px-2 py-1 rounded text-xs font-medium ${
-            type === 'ipv4' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+            type === 'ipv4' 
+              ? isDark 
+                ? 'bg-blue-900/50 text-blue-300 border border-blue-800/50' 
+                : 'bg-blue-100 text-blue-800'
+              : isDark 
+                ? 'bg-purple-900/50 text-purple-300 border border-purple-800/50' 
+                : 'bg-purple-100 text-purple-800'
           }`}
         >
           {type.toUpperCase()}
@@ -120,14 +159,20 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
       width: 60,
       align: 'center' as const,
       render: (protocol: string) => (
-        <span className={`px-2 py-1 rounded text-xs font-medium ${getProtocolColor(protocol)}`}>{protocol}</span>
+        <span className={`px-2 py-1 rounded text-xs font-medium ${getProtocolColor(protocol, isDark)}`}>
+          {protocol}
+        </span>
       ),
     },
     {
       title: intl.formatMessage({ id: 'SocketViewer.column.timestamp' }),
       dataIndex: 'timestamp',
       key: 'timestamp',
-      render: (ts: number) => <span className="text-gray-600 text-sm">{new Date(ts * 1000).toLocaleString()}</span>,
+      render: (ts: number) => (
+        <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          {new Date(ts * 1000).toLocaleString()}
+        </span>
+      ),
       width: 180,
     },
     {
@@ -136,7 +181,11 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
       key: 'src',
       width: 220,
       sorter: (a: any, b: any) => a.src.localeCompare(b.src),
-      render: (src: string) => <span className="font-mono text-sm text-blue-600">{src}</span>,
+      render: (src: string) => (
+        <span className={`font-mono text-sm ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+          {src}
+        </span>
+      ),
     },
     {
       title: intl.formatMessage({ id: 'SocketViewer.column.dist' }),
@@ -144,7 +193,11 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
       key: 'dist',
       width: 220,
       sorter: (a: any, b: any) => a.dist.localeCompare(b.dist),
-      render: (dist: string) => <span className="font-mono text-sm text-green-600">{dist}</span>,
+      render: (dist: string) => (
+        <span className={`font-mono text-sm ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+          {dist}
+        </span>
+      ),
     },
     {
       title: intl.formatMessage({ id: 'SocketViewer.column.state' }),
@@ -152,7 +205,11 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
       key: 'state',
       width: 120,
       sorter: (a: any, b: any) => a.state.localeCompare(b.state),
-      render: (state: string) => <span className={`px-2 py-1 rounded text-xs font-medium ${getStateColor(state)}`}>{state}</span>,
+      render: (state: string) => (
+        <span className={`px-2 py-1 rounded text-xs font-medium ${getStateColor(state, isDark)}`}>
+          {state}
+        </span>
+      ),
     },
   ];
 
@@ -261,7 +318,7 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
   // Check if there are active filters
   const hasActiveFilters = filters.searchText || filters.protocol !== 'all' || filters.type !== 'all' || filters.state !== 'all';
 
-  // Protocol statistics component
+  // Protocol statistics component with dark mode support
   const ProtocolStats = ({ label, count, colorClass }: { label: string; count: number; colorClass: string }) => (
     <div className={`${colorClass} rounded-lg px-2.5 py-1.5 border shadow-sm text-center min-w-0`}>
       <div className="text-sm font-bold leading-tight">{count}</div>
@@ -269,18 +326,56 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
     </div>
   );
 
+  // Define theme-aware colors
+  const getStatsColors = (type: string) => {
+    const baseColors = {
+      tcp: isDark 
+        ? 'bg-gradient-to-br from-emerald-900/40 to-green-900/40 border-emerald-700/50 text-emerald-300'
+        : 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-100/60 text-emerald-600',
+      udp: isDark
+        ? 'bg-gradient-to-br from-orange-900/40 to-amber-900/40 border-orange-700/50 text-orange-300'
+        : 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-100/60 text-orange-600',
+      raw: isDark
+        ? 'bg-gradient-to-br from-red-900/40 to-rose-900/40 border-red-700/50 text-red-300'
+        : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-100/60 text-red-600',
+      icmp: isDark
+        ? 'bg-gradient-to-br from-cyan-900/40 to-teal-900/40 border-cyan-700/50 text-cyan-300'
+        : 'bg-gradient-to-br from-cyan-50 to-teal-50 border-cyan-100/60 text-cyan-600',
+      count: isDark
+        ? 'bg-gradient-to-br from-violet-900/40 via-purple-900/40 to-indigo-900/40 border-violet-700/50'
+        : 'bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 border-violet-100/60',
+      interface: isDark
+        ? 'bg-gradient-to-br from-green-900/40 via-green-900/40 to-green-900/40 border-green-700/50'
+        : 'bg-gradient-to-br from-green-50 via-green-50 to-green-50 border-green-100/60',
+    };
+    return baseColors[type];
+  };
+
   return (
     <div className="h-full w-full flex flex-col">
       <div className="flex-grow overflow-hidden">
         {/* Header section with dual-row layout */}
-        <div className="bg-white border-b border-gray-200/80 backdrop-blur-sm" style={{ height: '90px' }}>
+        <div 
+          className={classNames(
+            "border-b backdrop-blur-sm", 
+            isDark 
+              ? "bg-[#141414] border-gray-600/50" 
+              : "bg-white border-gray-200/80"
+          )}  
+          style={{ height: '90px' }}
+        >
           <div className="px-6 py-3 h-full relative">
             {/* First row: Title and statistics */}
             <div className="flex items-center justify-between">
               {/* Left: Title area */}
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className={classNames(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shadow-lg",
+                    isDark
+                      ? "bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700"
+                      : "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600"
+                  )}>
                     <div className="w-4 h-4 bg-white rounded-full opacity-90"></div>
                     {pollingManagerStore.tasks['socket']?.isPolling && (
                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
@@ -288,10 +383,20 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent leading-tight">
+                  <h1 className={classNames(
+                    "text-lg font-bold bg-clip-text text-transparent leading-tight",
+                    isDark
+                      ? "bg-gradient-to-r from-gray-200 to-gray-400"
+                      : "bg-gradient-to-r from-gray-800 to-gray-600"
+                  )}>
                     {intl.formatMessage({ id: 'SocketViewer.title' })}
                   </h1>
-                  <p className="text-xs text-gray-500 font-medium tracking-wide">{intl.formatMessage({ id: 'SocketViewer.subtitle' })}</p>
+                  <p className={classNames(
+                    "text-xs font-medium tracking-wide",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>
+                    {intl.formatMessage({ id: 'SocketViewer.subtitle' })}
+                  </p>
                 </div>
               </div>
 
@@ -302,49 +407,70 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
                   <ProtocolStats
                     label="TCP"
                     count={(summaryInfo.TCPv4 || 0) + (summaryInfo.TCPv6 || 0)}
-                    colorClass="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-100/60 text-emerald-600"
+                    colorClass={getStatsColors('tcp')}
                   />
                   <ProtocolStats
                     label="UDP"
                     count={(summaryInfo.UDPv4 || 0) + (summaryInfo.UDPv6 || 0)}
-                    colorClass="bg-gradient-to-br from-orange-50 to-amber-50 border-orange-100/60 text-orange-600"
+                    colorClass={getStatsColors('udp')}
                   />
                   <ProtocolStats
                     label="RAW"
                     count={(summaryInfo.RAWv4 || 0) + (summaryInfo.RAWv6 || 0)}
-                    colorClass="bg-gradient-to-br from-red-50 to-rose-50 border-red-100/60 text-red-600"
+                    colorClass={getStatsColors('raw')}
                   />
                   <ProtocolStats
                     label="ICMP"
                     count={(summaryInfo.ICMPv4 || 0) + (summaryInfo.ICMPv6 || 0)}
-                    colorClass="bg-gradient-to-br from-cyan-50 to-teal-50 border-cyan-100/60 text-cyan-600"
+                    colorClass={getStatsColors('icmp')}
                   />
                 </div>
 
                 {/* Display statistics */}
-                <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 rounded-lg px-3 py-2 border border-violet-100/60 shadow-sm">
+                <div className={`${getStatsColors('count')} rounded-lg px-3 py-2 border shadow-sm`}>
                   <div className="text-center relative min-w-[80px]">
                     <div className="flex items-baseline justify-center gap-0.5 relative top-2 whitespace-nowrap">
-                      <span className="text-lg font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                      <span className={classNames(
+                        "text-lg font-bold bg-clip-text text-transparent",
+                        isDark
+                          ? "bg-gradient-to-r from-violet-300 to-purple-300"
+                          : "bg-gradient-to-r from-violet-600 to-purple-600"
+                      )}>
                         {filteredData.length}
                       </span>
-                      <span className="text-xs text-violet-500 font-medium">/{tableData.length}</span>
+                      <span className={classNames(
+                        "text-xs font-medium",
+                        isDark ? "text-violet-400" : "text-violet-500"
+                      )}>
+                        /{tableData.length}
+                      </span>
                     </div>
-                    <div className="absolute text-xs font-semibold text-violet-700/40 left-[-5px] top-[-6px]">
+                    <div className={classNames(
+                      "absolute text-xs font-semibold left-[-5px] top-[-6px]",
+                      isDark ? "text-violet-400/60" : "text-violet-700/40"
+                    )}>
                       {intl.formatMessage({ id: 'SocketViewer.entryCount' })}
                     </div>
                   </div>
                 </div>
 
                 {/* Network interface */}
-                <div className="bg-gradient-to-br from-green-50 via-green-50 to-green-50 rounded-lg px-3 py-2 border border-green-100/60 shadow-sm">
+                <div className={`${getStatsColors('interface')} rounded-lg px-3 py-2 border shadow-sm`}>
                   <div className="text-center relative min-w-[80px]">
                     <div className="flex items-baseline justify-center gap-0.5 relative top-2">
-                      <span className="text-lg font-bold bg-gradient-to-r from-green-600 to-green-800 bg-clip-text whitespace-nowrap text-transparent">
+                      <span className={classNames(
+                        "text-lg font-bold bg-clip-text whitespace-nowrap text-transparent",
+                        isDark
+                          ? "bg-gradient-to-r from-green-300 to-green-500"
+                          : "bg-gradient-to-r from-green-600 to-green-800"
+                      )}>
                         {summaryInfo.interface ?? 'N/A'}
                       </span>
                     </div>
-                    <div className="absolute text-xs font-semibold text-green-800/40 left-[-5px] top-[-6px]">
+                    <div className={classNames(
+                      "absolute text-xs font-semibold left-[-5px] top-[-6px]",
+                      isDark ? "text-green-400/60" : "text-green-800/40"
+                    )}>
                       {intl.formatMessage({ id: 'SocketViewer.interface' })}
                     </div>
                   </div>
@@ -361,7 +487,10 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
               >
                 {/* Search area */}
                 <div className="flex items-center gap-2 rounded-lg px-3 py-1.5">
-                  <SearchOutlined className="text-blue-500 text-sm" />
+                  <SearchOutlined className={classNames(
+                    "text-sm",
+                    isDark ? "text-blue-400" : "text-blue-500"
+                  )} />
                   <Input
                     placeholder={intl.formatMessage({ id: 'SocketViewer.search.placeholder' })}
                     value={filters.searchText}
@@ -370,7 +499,12 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
                     size="small"
                     bordered={false}
                     style={{ width: 200 }}
-                    className="placeholder:text-gray-400 border-0"
+                    className={classNames(
+                      "border-0",
+                      isDark 
+                        ? "placeholder:text-gray-500 text-gray-300 bg-transparent"
+                        : "placeholder:text-gray-400"
+                    )}
                   />
                 </div>
 
@@ -431,16 +565,26 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
                     size="small"
                     type="text"
                     disabled={!hasActiveFilters}
-                    className={`rounded-lg transition-all duration-200 ${
+                    className={classNames(
+                      "rounded-lg transition-all duration-200",
                       hasActiveFilters
-                        ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                        : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
-                    }`}
+                        ? isDark
+                          ? 'text-red-400 hover:bg-red-900/30 hover:text-red-300'
+                          : 'text-red-600 hover:bg-red-50 hover:text-red-700'
+                        : isDark
+                          ? 'text-gray-500 hover:bg-gray-800/50 hover:text-gray-400'
+                          : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
+                    )}
                   >
                     {intl.formatMessage({ id: 'SocketViewer.filter.reset' })}
                   </Button>
                   {hasActiveFilters && (
-                    <div className="flex items-center gap-1 bg-blue-500 text-white px-2 py-1 rounded-md text-xs font-medium">
+                    <div className={classNames(
+                      "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium",
+                      isDark
+                        ? "bg-blue-900/50 text-blue-300 border border-blue-800/50"
+                        : "bg-blue-500 text-white"
+                    )}>
                       <FilterOutlined className="text-xs" />
                       {intl.formatMessage({ id: 'SocketViewer.filter.active' })}
                     </div>
@@ -449,7 +593,10 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
               </div>
 
               {/* Real-time status indicator */}
-              <div className="text-xs text-gray-500 w-[130px] ml-3 absolute right-2 scale-85 origin-right">
+              <div className={classNames(
+                "text-xs w-[130px] ml-3 absolute right-2 scale-85 origin-right",
+                isDark ? "text-gray-400" : "text-gray-500"
+              )}>
                 {intl.formatMessage({ id: 'SocketViewer.updateTime' })}: {new Date().toLocaleTimeString()}
               </div>
             </div>
@@ -459,15 +606,44 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
         {/* Table section */}
         <div className="h-full overflow-auto">
           <ConfigProvider
+            theme={{
+              components: {
+                Table: {
+                  headerBorderRadius: 0,
+                  // headerBg: isDark ? '#1a1a1a' : undefined,
+                  // headerColor: isDark ? '#e8e8e8' : undefined,
+                  // borderColor: isDark ? '#404040' : undefined,
+                  // rowHoverBg: isDark ? '#262626' : undefined,
+                },
+              },
+            }}
             renderEmpty={() =>
               pollingManagerStore.tasks['socket']?.data ? (
                 <Empty className="py-16"></Empty>
               ) : (
                 <div className="py-16 text-center flex items-center flex-col">
-                  <Logs size={70} className="text-gray-300 mb-6" />
-                  <h4 className="text-lg font-semibold text-slate-500 mb-2">{intl.formatMessage({ id: 'SocketViewer.empty.title' })}</h4>
-                  <p className="text-gray-500 text-sm mb-2">{intl.formatMessage({ id: 'SocketViewer.empty.description' })}</p>
-                  <p className="text-gray-400 text-xs mb-8">{intl.formatMessage({ id: 'SocketViewer.empty.subtitle' })}</p>
+                  <Logs size={70} className={classNames(
+                    "mb-6",
+                    isDark ? "text-gray-600" : "text-gray-300"
+                  )} />
+                  <h4 className={classNames(
+                    "text-lg font-semibold mb-2",
+                    isDark ? "text-gray-400" : "text-slate-500"
+                  )}>
+                    {intl.formatMessage({ id: 'SocketViewer.empty.title' })}
+                  </h4>
+                  <p className={classNames(
+                    "text-sm mb-2",
+                    isDark ? "text-gray-500" : "text-gray-500"
+                  )}>
+                    {intl.formatMessage({ id: 'SocketViewer.empty.description' })}
+                  </p>
+                  <p className={classNames(
+                    "text-xs mb-8",
+                    isDark ? "text-gray-600" : "text-gray-400"
+                  )}>
+                    {intl.formatMessage({ id: 'SocketViewer.empty.subtitle' })}
+                  </p>
 
                   <Button
                     type="primary"
@@ -477,7 +653,12 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
                     onClick={() => {
                       pollingManagerStore.startPolling('socket');
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 border-0 rounded-full px-8 py-2 h-auto"
+                    className={classNames(
+                      "border-0 rounded-full px-8 py-2 h-auto",
+                      isDark 
+                        ? "bg-blue-700 hover:bg-blue-600" 
+                        : "bg-blue-600 hover:bg-blue-700"
+                    )}
                   >
                     {pollingManagerStore.tasks['socket']?.isPolling 
                       ? intl.formatMessage({ id: 'SocketViewer.button.starting' })
@@ -486,13 +667,30 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
                   </Button>
 
                   {pollingManagerStore.tasks['socket']?.isPolling && (
-                    <div className="mt-6 text-sm text-gray-500 animate-pulse">
+                    <div className="mt-6 text-sm animate-pulse">
                       <div className="flex items-center justify-center space-x-2">
-                        <span>{intl.formatMessage({ id: 'SocketViewer.status.initializing' })}</span>
+                        <span className={isDark ? "text-gray-400" : "text-gray-500"}>
+                          {intl.formatMessage({ id: 'SocketViewer.status.initializing' })}
+                        </span>
                         <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className={classNames(
+                            "w-2 h-2 rounded-full animate-bounce",
+                            isDark ? "bg-blue-400" : "bg-blue-500"
+                          )}></div>
+                          <div 
+                            className={classNames(
+                              "w-2 h-2 rounded-full animate-bounce",
+                              isDark ? "bg-blue-400" : "bg-blue-500"
+                            )} 
+                            style={{ animationDelay: '0.1s' }}
+                          ></div>
+                          <div 
+                            className={classNames(
+                              "w-2 h-2 rounded-full animate-bounce",
+                              isDark ? "bg-blue-400" : "bg-blue-500"
+                            )} 
+                            style={{ animationDelay: '0.2s' }}
+                          ></div>
                         </div>
                       </div>
                     </div>
@@ -500,13 +698,6 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
                 </div>
               )
             }
-            theme={{
-              components: {
-                Table: {
-                  headerBorderRadius: 0,
-                },
-              },
-            }}
           >
             <Table
               dataSource={filteredData}
@@ -516,7 +707,7 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
               rowClassName={(record: any) => {
                 const classNames = ['transition-all duration-100'];
                 if (record.key === selectedRowKey) {
-                  classNames.push('bg-blue-300/60');
+                  classNames.push(isDark ? 'bg-blue-900/40' : 'bg-blue-300/60');
                 }
                 return classNames.join(' ');
               }}

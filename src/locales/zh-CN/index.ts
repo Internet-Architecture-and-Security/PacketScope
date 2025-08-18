@@ -18,6 +18,7 @@ export default {
   'controls.clear': '清除数据',
   'controls.clearSuccess': '数据清除成功',
   'controls.clearFailure': '数据清除失败',
+  'controls.help': '帮助',
   ...monitor,
   ...gate,
   ...locator,

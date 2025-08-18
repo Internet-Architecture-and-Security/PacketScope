@@ -301,9 +301,9 @@ const AiCenter = {
   'AiCenter.aiNetworkAnalysisFailed': 'AI Network Analysis Failed',
   'AiCenter.pleaseRetry': 'Please retry',
   
-  'AiCenter.aiFilterGenerationComplete': 'AI Filter Generation Complete',
-  'AiCenter.filterRulesGenerated': 'Filter rules generated',
-  'AiCenter.aiFilterGenerationFailed': 'AI Filter Generation Failed'
+  // 'AiCenter.aiFilterGenerationComplete': 'AI Filter Generation Complete',
+  // 'AiCenter.filterRulesGenerated': 'Filter rules generated',
+  // 'AiCenter.aiFilterGenerationFailed': 'AI Filter Generation Failed'
 };
 
 const useFilters = {

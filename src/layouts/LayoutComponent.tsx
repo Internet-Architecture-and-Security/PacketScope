@@ -32,7 +32,7 @@ export default function LayoutComponent(props) {
       <Header
         className={classnames(
           `fixed top-0 leading-1 w-full px-3 border-b h-[var(--header-height)] z-10`,
-          currentTheme === 'light' ? 'bg-slate-200 border-b-slate-300' : 'bg-gray-500 border-b-gray-400 text-slate-50',
+          currentTheme === 'light' ? 'bg-slate-200 border-b-slate-300' : 'bg-slate-700 border-b-slate-600 text-slate-50',
         )}
       >
         {/* 顶栏 */}
@@ -48,7 +48,7 @@ export default function LayoutComponent(props) {
           <Col span={4}>
             <Flex justify="flex-end" align="center" className="h-full" gap={20}>
               <SelectLang />
-              {/* <DarkModeButton /> */}
+              <DarkModeButton />
             </Flex>
           </Col>
         </Row>
@@ -59,7 +59,7 @@ export default function LayoutComponent(props) {
           gap={0}
           className={classnames(
             'w-14 items-center font-bold text-3xl h-full border-r-[0]',
-            currentTheme === 'light' ? 'bg-slate-200 border-r-slate-300' : 'bg-gray-500 border-r-gray-400 text-cyan-50',
+            currentTheme === 'light' ? 'bg-slate-200 border-r-slate-300' : 'bg-slate-700 border-b-slate-600 text-cyan-50',
           )}
         >
           {' '}

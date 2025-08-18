@@ -19,7 +19,6 @@ const DarkModeButton: FC<SwitchProps> = (props) => {
       unCheckedChildren={<DarkIcon style={{ fontSize: 16 }} />}
       defaultChecked={currentTheme === 'light'}
       onChange={(value) => {
-        console.log(currentTheme, 'currentTheme');
         setCurrentTheme(value ? 'light' : 'dark');
       }}
       {...props}
