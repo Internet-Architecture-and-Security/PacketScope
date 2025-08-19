@@ -72,7 +72,7 @@ const FilterTable: React.FC<FilterTableProps> = ({
       dataIndex: 'action',
       key: 'action',
       render: (action: string) => (
-        <Tag color={action === 'drop' ? 'red' : 'green'}>
+        <Tag color={action === 'drop' ? isDark ? 'volcano' : 'red' : isDark ? 'lime' :'green'}>
           {action === 'drop' 
             ? intl.formatMessage({ id: 'FiltersManager.actionDrop' })
             : intl.formatMessage({ id: 'FiltersManager.actionAllow' })

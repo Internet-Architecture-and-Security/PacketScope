@@ -77,7 +77,7 @@ const FeatureCards: React.FC = () => {
               {intl.formatMessage({ id: 'AiCenter.aiConfigDesc' })}
             </Paragraph>
             <div className="mt-4">
-              <Tag color={configValid ? 'green' : 'red'}>
+              <Tag color={configValid ? isDark ? 'lime' : 'green' : isDark ? 'volcano' : 'red'}>
                 {configValid 
                   ? intl.formatMessage({ id: 'AiCenter.configured' }) 
                   : intl.formatMessage({ id: 'AiCenter.notConfigured' })
@@ -114,7 +114,7 @@ const FeatureCards: React.FC = () => {
             </div>
             {!configValid && (
               <div className="mt-2">
-                <Tag color="red">{intl.formatMessage({ id: 'AiCenter.requiresAiService' })}</Tag>
+                <Tag color={isDark ? 'volcano' : 'red'}>{intl.formatMessage({ id: 'AiCenter.requiresAiService' })}</Tag>
               </div>
             )}
           </div>
@@ -143,7 +143,7 @@ const FeatureCards: React.FC = () => {
             </div>
             {!configValid && (
               <div className="mt-2">
-                <Tag color="red">{intl.formatMessage({ id: 'AiCenter.requiresAiService' })}</Tag>
+                <Tag color={isDark ? 'volcano' : 'red'}>{intl.formatMessage({ id: 'AiCenter.requiresAiService' })}</Tag>
               </div>
             )}
           </div>

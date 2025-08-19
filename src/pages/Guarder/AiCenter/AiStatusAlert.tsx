@@ -25,13 +25,13 @@ const AiStatusAlert: React.FC = () => {
           {configValid ? (
             <CheckCircleOutlined className="text-xl text-green-600/90" />
           ) : (
-            <ExclamationCircleOutlined className="text-xl text-red-500/90" />
+            <ExclamationCircleOutlined className="text-xl text-red-400/90" />
           )}
           <div>
             <Text strong className={classNames(
-              configValid ? 'text-green-600' : 'text-red-500/90',
-              isDark && configValid && 'text-green-400/90',
-              isDark && !configValid && 'text-red-500/90'
+              configValid ? 'text-green-600' : 'text-red-400',
+              isDark && configValid && 'text-green-400',
+              isDark && !configValid && 'text-red-400'
             )}>
               {configValid 
                 ? intl.formatMessage({ id: 'AiCenter.aiServiceConfigured' }) 
