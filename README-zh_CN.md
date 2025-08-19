@@ -13,8 +13,8 @@
 
 **PacketScope** 是一款基于 eBPF 的协议栈通用分析调试工具，集性能优化、异常诊断与安全防御于一体。它致力于在服务器端实现对网络分组（Packet）在协议栈中的细粒度追踪与智能分析，解决开放服务器面临的性能瓶颈难诊断、传输路径不明晰、底层攻击难防御等三大痛点，提供可视化、智能化的端侧安全分析与防护能力。
 
-![packetscope](./docs/demo.png)
-![packetscope](./docs/demo_light.png)
+![packetscope](./docs/home.png)
+![packetscope](./docs/home_light.png)
 
 ## 背景
 
