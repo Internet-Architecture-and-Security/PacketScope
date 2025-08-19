@@ -10,7 +10,7 @@ export const DataSwitch = ({ name, label }: { name: string; label: string }) => 
   return (
     <Form.Item name={name} valuePropName="checked" noStyle>
       <label className="inline-flex items-center cursor-pointer gap-3 py-1">
-        <Switch size="small" />
+        <Switch size="small" defaultChecked />
         <span className={classNames(isDark ? "text-gray-300" : "text-gray-900")}>{label}</span>
       </label>
     </Form.Item>

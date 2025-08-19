@@ -1,16 +1,25 @@
+// /FunctionCallChainViewer/types.ts
+
 export interface QueryParams {
   srcip: string;
   dstip: string;
   srcport: number;
   dstport: number;
+  count?: number;
 }
 
-export interface FunctionInfo {
+export interface FuncInfo {
   name: string;
   kind: string;
-  type_id: string;
+  type_id: number;
   linkage: string;
 }
+
+export interface FuncTable {
+  [id: number]: FuncInfo;
+}
+
+export type Call = [number, number, number, number]; // [timestamp, isReturn, funcId, threadId]
 
 export interface ProcessedCall {
   timestamp: number;
@@ -18,7 +27,7 @@ export interface ProcessedCall {
   funcId: number;
   threadId: number;
   funcName: string;
-  callType: string;
+  callType: 'CALL' | 'RETURN';
   depth: number;
   callIndex: number;
   chainIndex: number;
@@ -27,8 +36,4 @@ export interface ProcessedCall {
 export interface SelectedCall {
   chainIndex: number;
   callIndex: number;
-}
-
-export interface ChainData {
-  [key: string]: number[][][] | null;
 }

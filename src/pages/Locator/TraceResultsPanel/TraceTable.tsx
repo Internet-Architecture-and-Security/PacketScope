@@ -188,6 +188,13 @@ const TraceTable: React.FC<TraceTableProps> = ({ traceResults, loading }) => {
           if (record.packet_loss === '100%') return 'error-row';
           return index % 2 === 0 ? 'even-row' : 'odd-row';
         }}
+        onRow={(record) => {
+          return {
+            onClick: (event) => { 
+              console.log('Row clicked:', event, record);
+            }
+          };
+        }}
         components={{
           body: {
             row: (props: any) => {

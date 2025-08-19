@@ -6,10 +6,13 @@ import {
   Zap,
   Layers,
 } from 'lucide-react';
+import { useTheme } from '@/stores/useStore';
+import classNames from 'classnames';
 import useWebSocketData from './useWebSocketData';
 import MetricCard from './MetricCard';
 import InteractionCard from './InteractionCard';
 import DropRateCard from './DropRateCard';
+
 
 interface ProtocolStackMonitorProps {
   queryParams: {
@@ -25,45 +28,56 @@ interface ProtocolStackMonitorProps {
 // 主组件
 const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams }) => {
   const intl = useIntl();
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
+  
   // 使用自定义钩子获取各种数据
-  // const packetFlowData = useWebSocketData('PacketFlowCount', queryParams);
-  // const linkNetworkData = useWebSocketData('LinkNetworkLatencyFrequency', queryParams);
-  // const networkTransData = useWebSocketData('NetworkTransLatencyFrequency', queryParams);
-  // const linkTransData = useWebSocketData('LinkTransLatencyFrequency', queryParams);
   const protocolStackData = useWebSocketData('NumLatencyFrequency', queryParams);
   console.log(protocolStackData, 'NumLatencyFrequency');
 
   // 没有查询参数时的提示
   if (!queryParams) {
     return (
-      <div className="h-full w-full bg-gray-50 flex items-center justify-center">
+      <div className={classNames(
+        "h-full w-full flex items-center justify-center",
+        isDark ? "bg-gray-900" : "bg-gray-50"
+      )}>
         <div className="text-center">
-          <Activity className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <div className="text-lg font-semibold text-slate-500 mb-2">{intl.formatMessage({ id: 'ProtocolStackMonitor.title' })}</div>
-          <div className="text-sm text-slate-400">{intl.formatMessage({ id: 'ProtocolStackMonitor.selectConnection' })}</div>
+          <Activity className={classNames(
+            "w-12 h-12 mx-auto mb-4",
+            isDark ? "text-gray-600" : "text-gray-300"
+          )} />
+          <div className={classNames(
+            "text-lg font-semibold mb-2",
+            isDark ? "text-gray-300" : "text-slate-500"
+          )}>{intl.formatMessage({ id: 'ProtocolStackMonitor.title' })}</div>
+          <div className={classNames(
+            "text-sm",
+            isDark ? "text-gray-500" : "text-slate-400"
+          )}>{intl.formatMessage({ id: 'ProtocolStackMonitor.selectConnection' })}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full bg-gray-50 flex flex-col min-w-[500px]">
+    <div className={classNames(
+      "h-full w-full flex flex-col min-w-[500px]",
+      isDark ? "bg-gray-900" : "bg-gray-50"
+    )}>
       {/* 工具栏 */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
+      <div className={classNames(
+        "border-b px-4 py-3 flex-shrink-0",
+        isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+      )}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Activity className="text-blue-600" size={20} />
-            <div className="font-semibold text-base text-slate-900">{intl.formatMessage({ id: 'ProtocolStackMonitor.title' })}</div>
+            <div className={classNames(
+              "font-semibold text-base",
+              isDark ? "text-gray-100" : "text-slate-900"
+            )}>{intl.formatMessage({ id: 'ProtocolStackMonitor.title' })}</div>
           </div>
-          {/* 右侧丢包率展示 */}
-          {/* <div className="flex text-[12px] items-center gap-2 px-3 py-1 rounded-md bg-red-50 border border-red-100">
-            <div className="font-medium text-red-600">丢包率</div>
-            <span className="font-semibold text-red-700">
-              {protocolStackData?.data?.drop?.drop
-                ? `${(parseFloat(protocolStackData.data.drop.drop) * 100).toFixed(2)}%`
-                : protocolStackData?.data?.drop === null ? '--' : protocolStackData?.data?.drop?.drop}
-            </span>
-          </div> */}
         </div>
       </div>
 
@@ -86,12 +100,12 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
               {
                 key: 'num',
                 label: intl.formatMessage({ id: 'ProtocolStackMonitor.packets' }),
-                color: 'text-gray-900',
+                color: isDark ? 'text-gray-100' : 'text-gray-900',
               },
               {
                 key: 'pps',
                 label: intl.formatMessage({ id: 'ProtocolStackMonitor.pps' }),
-                color: 'text-purple-600',
+                color: isDark ? 'text-purple-400' : 'text-purple-600',
                 format: (val) => parseFloat(val).toFixed(3) + '/s',
               },
             ]}
@@ -128,7 +142,7 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
               {
                 key: 'num',
                 label: intl.formatMessage({ id: 'ProtocolStackMonitor.packets' }),
-                color: 'text-gray-900',
+                color: isDark ? 'text-gray-100' : 'text-gray-900',
               },
               {
                 key: 'pps',
@@ -170,12 +184,12 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
               {
                 key: 'num',
                 label: intl.formatMessage({ id: 'ProtocolStackMonitor.packets' }),
-                color: 'text-gray-900',
+                color: isDark ? 'text-gray-100' : 'text-gray-900',
               },
               {
                 key: 'pps',
                 label: intl.formatMessage({ id: 'ProtocolStackMonitor.pps' }),
-                color: 'text-blue-600',
+                color: isDark ? 'text-blue-400' : 'text-blue-600',
                 format: (val) => parseFloat(val).toFixed(3) + '/s',
               },
             ]}
@@ -199,9 +213,15 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
         </div>
 
         {/* 跨层交互 */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className={classNames(
+          "rounded-lg border p-4",
+          isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+        )}>
           <div className="flex items-center mb-4">
-            <div className="text-sm font-medium text-gray-900">{intl.formatMessage({ id: 'ProtocolStackMonitor.crossLayerInteraction' })}</div>
+            <div className={classNames(
+              "text-sm font-medium",
+              isDark ? "text-gray-100" : "text-gray-900"
+            )}>{intl.formatMessage({ id: 'ProtocolStackMonitor.crossLayerInteraction' })}</div>
           </div>
 
           <div className="space-y-3">
@@ -231,7 +251,7 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
                 {
                   key: 'lat',
                   label: intl.formatMessage({ id: 'ProtocolStackMonitor.latency' }),
-                  color: 'text-red-600',
+                  color: isDark ? 'text-red-400' : 'text-red-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}ms`,
                 },
               ]}
@@ -273,13 +293,13 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
                 {
                   key: 'freq',
                   label: intl.formatMessage({ id: 'ProtocolStackMonitor.frequency' }),
-                  color: 'text-purple-600',
+                  color: isDark ? 'text-purple-400' : 'text-purple-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}/s`,
                 },
                 {
                   key: 'lat',
                   label: intl.formatMessage({ id: 'ProtocolStackMonitor.latency' }),
-                  color: 'text-red-600',
+                  color: isDark ? 'text-red-400' : 'text-red-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}ms`,
                 },
               ]}
@@ -327,7 +347,7 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
                 {
                   key: 'lat',
                   label: intl.formatMessage({ id: 'ProtocolStackMonitor.latency' }),
-                  color: 'text-red-600',
+                  color: isDark ? 'text-red-400' : 'text-red-600',
                   format: (val) => `${parseFloat(val).toFixed(3)}ms`,
                 },
               ]}

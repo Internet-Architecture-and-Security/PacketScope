@@ -1,28 +1,51 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { useIntl } from 'react-intl';
 import { usePollingManager } from '@/stores/usePollingManager';
-import { INITIAL_FILTERS, FilterState } from './constants';
-import SocketViewerHeader from './SocketViewerHeader';
+import { useTheme } from '@/stores/useStore';
+import classNames from 'classnames';
+import HeaderTitle from './HeaderTitle';
+import HeaderStats from './HeaderStats';
+import FilterToolbar from './FilterToolbar';
 import SocketTable from './SocketTable';
 
+// Define component props interface
 interface SocketViewerProps {
   contentHeight: number;
-  onRowClick: (record: any) => void;
+  onRowClick: (key: string | number) => void;
 }
+
+// Filter state interface
+interface FilterState {
+  searchText: string;
+  protocol: string;
+  type: string;
+  state: string;
+}
+
+// Initial filter state
+const INITIAL_FILTERS: FilterState = {
+  searchText: '',
+  protocol: 'all',
+  type: 'all',
+  state: 'all',
+};
 
 const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }) => {
   const pollingManagerStore = usePollingManager();
   const socketData = pollingManagerStore.tasks['socket']?.data;
   const [selectedRowKey, setSelectedRowKey] = useState<string | number | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const intl = useIntl();
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
 
-  // Process socket data and apply filters
+  // Process socket data and apply filters - optimized with useMemo
   const { summaryInfo, tableData, filteredData } = useMemo(() => {
     if (!socketData) {
       return { summaryInfo: {}, tableData: [], filteredData: [] };
     }
 
-    // FIX: The complete data processing logic is now included here.
-    // This part defines the `summary` variable, fixing the ReferenceError.
+    // Calculate summary information
     const summary = {
       interface: socketData.dev?.map((item: any) => item[1]).join(', ') || 'N/A',
       TCPv4: socketData.tcpipv4?.length || 0,
@@ -35,6 +58,7 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
       ICMPv6: socketData.icmpipv6?.length || 0,
     };
 
+    // Process all socket data into unified format
     const list: any[] = [];
     const addSocketData = (arr: any[], type: string, protocol: string) => {
       arr?.forEach((item: any) => {
@@ -51,6 +75,7 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
       });
     };
 
+    // Add all socket types
     addSocketData(socketData.tcpipv4, 'ipv4', 'TCP');
     addSocketData(socketData.tcpipv6, 'ipv6', 'TCP');
     addSocketData(socketData.udpipv4, 'ipv4', 'UDP');
@@ -60,6 +85,7 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
     addSocketData(socketData.icmpipv4, 'ipv4', 'ICMP');
     addSocketData(socketData.icmpipv6, 'ipv6', 'ICMP');
 
+    // Apply filters
     const filtered = list.filter((item) => {
       const matchesSearch =
         !filters.searchText ||
@@ -74,8 +100,7 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
 
       return matchesSearch && matchesProtocol && matchesType && matchesState;
     });
-    
-    // Now this return statement works because `summary` is defined above.
+
     return { summaryInfo: summary, tableData: list, filteredData: filtered };
   }, [socketData, filters]);
 
@@ -83,13 +108,17 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
   const uniqueStates = useMemo(() => {
     const states = new Set<string>();
     tableData.forEach((item) => {
-      if (item.state) states.add(item.state);
+      if (item.state) {
+        states.add(item.state);
+      }
     });
     return Array.from(states).sort();
   }, [tableData]);
 
   // Reset filters handler
-  const handleResetFilters = useCallback(() => setFilters(INITIAL_FILTERS), []);
+  const handleResetFilters = useCallback(() => {
+    setFilters(INITIAL_FILTERS);
+  }, []);
 
   // Update filter handler
   const updateFilter = useCallback((key: keyof FilterState, value: string) => {
@@ -105,23 +134,50 @@ const SocketViewer: React.FC<SocketViewerProps> = ({ contentHeight, onRowClick }
     [onRowClick],
   );
 
+  // Check if there are active filters
+  const hasActiveFilters = filters.searchText || filters.protocol !== 'all' || filters.type !== 'all' || filters.state !== 'all';
+
   return (
     <div className="h-full w-full flex flex-col">
       <div className="flex-grow overflow-hidden">
-        <SocketViewerHeader
-          summaryInfo={summaryInfo}
-          filteredCount={filteredData.length}
-          totalCount={tableData.length}
-          filters={filters}
-          onFilterChange={updateFilter}
-          onResetFilters={handleResetFilters}
-          uniqueStates={uniqueStates}
-        />
+        {/* Header section with dual-row layout */}
+        <div className={classNames(
+          "border-b backdrop-blur-sm",
+          isDark 
+            ? "bg-gray-800 border-gray-700" 
+            : "bg-white border-gray-200/80"
+        )} style={{ height: '90px' }}>
+          <div className="px-6 py-3 h-full relative">
+            {/* First row: Title and statistics */}
+            <div className="flex items-center justify-between">
+              {/* Left: Title area */}
+              <HeaderTitle />
+
+              {/* Right: Statistics and status */}
+              <HeaderStats 
+                summaryInfo={summaryInfo}
+                filteredDataLength={filteredData.length}
+                tableDataLength={tableData.length}
+              />
+            </div>
+
+            {/* Second row: Search and filter toolbar */}
+            <FilterToolbar
+              filters={filters}
+              uniqueStates={uniqueStates}
+              hasActiveFilters={hasActiveFilters}
+              updateFilter={updateFilter}
+              handleResetFilters={handleResetFilters}
+            />
+          </div>
+        </div>
+
+        {/* Table section */}
         <SocketTable
-          data={filteredData}
-          onRowClick={handleRowClick}
-          selectedRowKey={selectedRowKey}
           contentHeight={contentHeight}
+          filteredData={filteredData}
+          selectedRowKey={selectedRowKey}
+          onRowClick={handleRowClick}
         />
       </div>
     </div>

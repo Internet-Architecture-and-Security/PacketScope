@@ -1,40 +1,90 @@
 import React, { useRef, useEffect } from 'react';
 import { useIntl } from 'react-intl';
-import { AlertCircle, ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
+import { AlertCircle, ArrowUp, ArrowDown, ArrowRight, LucideIcon } from 'lucide-react';
 import * as echarts from 'echarts';
-import LoadingCard from './LoadingCard';
+import { useTheme } from '@/stores/useStore';
+import classNames from 'classnames';
+import { LoadingCard } from './LoadingCard';
 
-// 单个指标组件
-const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, history, loading, error, queryParams, isReady }) => {
-  const intl = useIntl();
-  
-  console.log('MetricCard', data, loading, isReady);
-  // 如果正在加载且没有数据，显示loading状态
-  if (loading) {
+interface QueryParams {
+  srcip: string;
+  dstip: string;
+  srcport: number;
+  dstport: number;
+  ipver?: number;
+  protocol?: string;
+}
+
+interface LayerData {
+  send: { num: number; pps: number; timestamp: string } | null;
+  receive: { num: number; pps: number; timestamp: string } | null;
+}
+
+interface HistoryData {
+  send: Array<{ num: number; pps: number; timestamp: string }>;
+  receive: Array<{ num: number; pps: number; timestamp: string }>;
+}
+
+interface Field {
+  key: string;
+  label: string;
+  color?: string;
+  format?: (val: any) => string;
+}
+
+interface ChartConfig {
+  key: string;
+  label: string;
+  dataKey: string;
+  sendColor: string;
+  receiveColor: string;
+}
+
+interface MetricCardProps {
+  title: string;
+  icon: LucideIcon;
+  color: string;
+  fields: Field[];
+  chartConfigs: ChartConfig[];
+  data: LayerData;
+  history: HistoryData;
+  loading: boolean;
+  error: string | null;
+  queryParams: QueryParams | null;
+  isReady: boolean;
+}
+
+// 单个指标组件 - 完全按照原始逻辑
+export const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, history, error, queryParams, isReady, loading=true }: MetricCardProps) => {
+
+  if (!isReady || loading) {
     return <LoadingCard title={title} icon={Icon} color={color} />;
   }
-  const chartRefs = useRef({});
-  const chartsRef = useRef({});
+  const intl = useIntl();
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
+  const chartRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const chartsRef = useRef<Record<string, echarts.ECharts>>({});
 
-  // 初始化图表
+  // 初始化图表 - 完全按照原始逻辑，只添加夜间模式支持
   useEffect(() => {
     chartConfigs.forEach((config) => {
       ['send', 'receive'].forEach((direction) => {
         const key = `${config.key}_${direction}`;
         if (chartRefs.current[key] && !chartsRef.current[key]) {
-          chartsRef.current[key] = echarts.init(chartRefs.current[key]);
+          chartsRef.current[key] = echarts.init(chartRefs.current[key]!);
         }
       });
     });
-  }, []);
+  }, [chartConfigs, isDark]);
 
-  // 更新图表
+  // 更新图表 - 完全按照原始逻辑
   useEffect(() => {
     if (history.send.length > 0) {
       chartConfigs.forEach((config) => {
         const chart = chartsRef.current[`${config.key}_send`];
         if (chart) {
-          const chartData = history.send.map((item) => {
+          const chartData = history.send.map((item: any) => {
             const keys = [config.dataKey];
             let value = item;
             for (const key of keys) {
@@ -76,7 +126,7 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
       chartConfigs.forEach((config) => {
         const chart = chartsRef.current[`${config.key}_receive`];
         if (chart) {
-          const chartData = history.receive.map((item) => {
+          const chartData = history.receive.map((item: any) => {
             const keys = [config.dataKey];
             let value = item;
             for (const key of keys) {
@@ -113,10 +163,10 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
         }
       });
     }
-  }, [history, chartConfigs]);
+  }, [history, chartConfigs, isDark]);
 
-  // 获取字段值
-  const getFieldValue = (data, fieldKey) => {
+  // 获取字段值 - 完全按照原始逻辑
+  const getFieldValue = (data: any, fieldKey: string) => {
     if (!data) return 0;
     const keys = fieldKey.split('.');
     let value = data;
@@ -128,37 +178,71 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-red-200 p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <AlertCircle className="text-red-500" size={16} />
-          <span className="text-sm font-medium text-red-700">{title} - {intl.formatMessage({ id: 'ProtocolStackMonitor.connectionFailed' })}</span>
-        </div>
-        <div className="text-xs text-red-600">{error}</div>
-      </div>
+ <div className={classNames(
+  "rounded-lg border p-4",
+  isDark ? "bg-gray-800 border-red-400/50" : "bg-white border-red-200"
+)}>
+  <div className="flex items-center gap-2 mb-2">
+    <AlertCircle className={classNames(
+      isDark ? "text-red-400" :  "text-red-500"
+    )} size={16} />
+    <span className={classNames(
+      "text-sm font-medium",
+      isDark ? "text-red-400" : "text-red-700"
+    )}>{title} - {intl.formatMessage({ id: 'ProtocolStackMonitor.connectionFailed' })}</span>
+  </div>
+  <div className={classNames(
+    "text-xs",
+    isDark ? "text-red-400/80" : "text-red-600"
+  )}>{error}</div>
+</div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="flex items-center gap-2 p-3 bg-gray-50 border-b border-gray-100">
+    <div className={classNames(
+      "rounded-lg border border-gray-200 overflow-hidden",
+      isDark ? "bg-gray-800 border-gray-700" : "bg-white"
+    )}>
+      <div className={classNames(
+        "flex items-center gap-2 p-3 border-b border-gray-100",
+        isDark ? "bg-gray-700 border-gray-600" : "bg-gray-50"
+      )}>
         <Icon className={color} size={16} />
-        <span className="text-sm font-medium text-gray-900">{title}</span>
+        <span className={classNames(
+          "text-sm font-medium",
+          isDark ? "text-gray-200" : "text-gray-900"
+        )}>{title}</span>
       </div>
 
       {/* 发送数据组 */}
-      <div className="border-b border-gray-100">
+      <div className={classNames(
+        "border-b border-gray-100",
+        isDark ? "border-gray-600" : ""
+      )}>
         <div className="flex">
           <div className="flex-1 p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowUp className="text-blue-500" size={14} />
-              <span className="text-xs font-medium text-gray-700 mr-5">{intl.formatMessage({ id: 'ProtocolStackMonitor.send' })}</span>
+              <span className={classNames(
+                "text-xs font-medium mr-5",
+                isDark ? "text-gray-300" : "text-gray-700"
+              )}>{intl.formatMessage({ id: 'ProtocolStackMonitor.send' })}</span>
               {queryParams && (
                 <>
-                  <span className="text-xs text-gray-500">
+                  <span className={classNames(
+                    "text-xs",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>
                     {queryParams.srcip}:{queryParams.srcport}
                   </span>
-                  <ArrowRight className="text-gray-400" size={12} />
-                  <span className="text-xs text-gray-500">
+                  <ArrowRight className={classNames(
+                    isDark ? "text-gray-500" : "text-gray-400"
+                  )} size={12} />
+                  <span className={classNames(
+                    "text-xs",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>
                     {queryParams.dstip}:{queryParams.dstport}
                   </span>
                 </>
@@ -167,9 +251,15 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
             <div className="grid grid-cols-2 gap-4">
               {fields.map((field) => (
                 <div key={field.key}>
-                  <div className="text-xs text-gray-500">{field.label}</div>
-                  <div className={`text-lg font-bold ${field.color || 'text-gray-900'}`}>
-                    {field.format ? field.format(getFieldValue(data.send, field.key)) : getFieldValue(data.send, field.key)}
+                  <div className={classNames(
+                    "text-xs",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>{field.label}</div>
+                  <div className={classNames(
+                    "text-lg font-bold",
+                    field.color || (isDark ? "text-gray-200" : "text-gray-900")
+                  )}>
+                    {field.format ? field.format(getFieldValue(data?.send, field.key)) : getFieldValue(data?.send, field.key)}
                   </div>
                 </div>
               ))}
@@ -179,9 +269,15 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
             {chartConfigs.map((config, index) => (
               <div
                 key={`${config.key}_send`}
-                className={`w-24 h-20 p-1 ${index < chartConfigs.length - 1 ? 'border-r border-gray-100' : ''}`}
+                className={classNames(
+                  "w-24 h-20 p-1",
+                  index < chartConfigs.length - 1 ? (isDark ? "border-r border-gray-600" : "border-r border-gray-100") : ""
+                )}
               >
-                <div className="text-xs text-gray-400 mb-1">{config.label}</div>
+                <div className={classNames(
+                  "text-xs mb-1",
+                  isDark ? "text-gray-500" : "text-gray-400"
+                )}>{config.label}</div>
                 <div
                   ref={(el) => (chartRefs.current[`${config.key}_send`] = el)}
                   style={{ width: '100%', height: 'calc(100% - 16px)' }}
@@ -198,14 +294,25 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
           <div className="flex-1 p-4">
             <div className="flex items-center gap-2 mb-3">
               <ArrowDown className="text-green-500" size={14} />
-              <span className="text-xs font-medium text-gray-700">{intl.formatMessage({ id: 'ProtocolStackMonitor.receive' })}</span>
+              <span className={classNames(
+                "text-xs font-medium",
+                isDark ? "text-gray-300" : "text-gray-700"
+              )}>{intl.formatMessage({ id: 'ProtocolStackMonitor.receive' })}</span>
               {queryParams && (
                 <>
-                  <span className="text-xs text-gray-500">
+                  <span className={classNames(
+                    "text-xs",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>
                     {queryParams.dstip}:{queryParams.dstport}
                   </span>
-                  <ArrowRight className="text-gray-400" size={12} />
-                  <span className="text-xs text-gray-500">
+                  <ArrowRight className={classNames(
+                    isDark ? "text-gray-500" : "text-gray-400"
+                  )} size={12} />
+                  <span className={classNames(
+                    "text-xs",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>
                     {queryParams.srcip}:{queryParams.srcport}
                   </span>
                 </>
@@ -214,9 +321,15 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
             <div className="grid grid-cols-2 gap-4">
               {fields.map((field) => (
                 <div key={field.key}>
-                  <div className="text-xs text-gray-500">{field.label}</div>
-                  <div className={`text-lg font-bold ${field.color || 'text-gray-900'}`}>
-                    {field.format ? field.format(getFieldValue(data.receive, field.key)) : getFieldValue(data.receive, field.key)}
+                  <div className={classNames(
+                    "text-xs",
+                    isDark ? "text-gray-400" : "text-gray-500"
+                  )}>{field.label}</div>
+                  <div className={classNames(
+                    "text-lg font-bold",
+                    field.color || (isDark ? "text-gray-200" : "text-gray-900")
+                  )}>
+                    {field.format ? field.format(getFieldValue(data?.receive, field.key)) : getFieldValue(data?.receive, field.key)}
                   </div>
                 </div>
               ))}
@@ -226,9 +339,15 @@ const MetricCard = ({ title, icon: Icon, color, fields, chartConfigs, data, hist
             {chartConfigs.map((config, index) => (
               <div
                 key={`${config.key}_receive`}
-                className={`w-24 h-20 p-1 ${index < chartConfigs.length - 1 ? 'border-r border-gray-100' : ''}`}
+                className={classNames(
+                  "w-24 h-20 p-1",
+                  index < chartConfigs.length - 1 ? (isDark ? "border-r border-gray-600" : "border-r border-gray-100") : ""
+                )}
               >
-                <div className="text-xs text-gray-400 mb-1">{config.label}</div>
+                <div className={classNames(
+                  "text-xs mb-1",
+                  isDark ? "text-gray-500" : "text-gray-400"
+                )}>{config.label}</div>
                 <div
                   ref={(el) => (chartRefs.current[`${config.key}_receive`] = el)}
                   style={{ width: '100%', height: 'calc(100% - 16px)' }}

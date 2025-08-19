@@ -124,49 +124,10 @@ const Filters: React.FC = () => {
 
   return (
     <ConfigProvider
-      // theme={{
-      //   token: {
-      //       colorBorder: isDark ? '#374151' : undefined,
-      //   },
-      //   components: {
-      //     Card: isDark ? {
-      //       colorBg: '#1f2937',
-      //       colorBorder: '#374151',
-      //       colorText: '#e5e7eb',
-      //     } : {},
-      //     Button: isDark ? {
-      //       colorText: '#e5e7eb',
-      //       colorBg: '#374151',
-      //       colorBorder: '#4b5563',
-      //     } : {},
-      //     Table: isDark ? {
-      //       colorBg: '#1f2937',
-      //       colorBgContainer: '#1f2937',
-      //       colorText: '#e5e7eb',
-      //       colorBorder: '#374151',
-      //       colorBorderSecondary: '#374151',
-      //       headerBg: '#374151',
-      //       headerColor: '#f3f4f6',
-      //       rowHoverBg: '#374151',
-      //     } : {},
-      //     Tag: isDark ? {
-      //       colorText: '#e5e7eb',
-      //     } : {},
-      //     Statistic: isDark ? {
-      //       colorText: '#e5e7eb',
-      //       colorTextHeading: '#f3f4f6',
-      //     } : {},
-      //     Typography: isDark ? {
-      //       colorText: '#e5e7eb',
-      //       colorTextHeading: '#f3f4f6',
-      //     } : {},
-      //     Pagination: isDark ? {
-      //       colorText: '#e5e7eb',
-      //       colorBg: '#374151',
-      //       colorBorder: '#4b5563',
-      //     } : {},
-      //   },
-      // }}
+      theme={{
+        components: {
+        },
+      }}
     >
       <div className={classNames(
         isDark ? "bg-gray-900 text-gray-100" : ""

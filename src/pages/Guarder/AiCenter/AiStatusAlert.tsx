@@ -23,15 +23,15 @@ const AiStatusAlert: React.FC = () => {
       message={
         <div className="flex items-center space-x-3">
           {configValid ? (
-            <CheckCircleOutlined className="text-xl text-green-600" />
+            <CheckCircleOutlined className="text-xl text-green-600/90" />
           ) : (
-            <ExclamationCircleOutlined className="text-xl text-red-500" />
+            <ExclamationCircleOutlined className="text-xl text-red-500/90" />
           )}
           <div>
             <Text strong className={classNames(
-              configValid ? 'text-green-300' : 'text-red-400',
-              isDark && configValid && 'text-green-400',
-              isDark && !configValid && 'text-red-400'
+              configValid ? 'text-green-600' : 'text-red-500/90',
+              isDark && configValid && 'text-green-400/90',
+              isDark && !configValid && 'text-red-500/90'
             )}>
               {configValid 
                 ? intl.formatMessage({ id: 'AiCenter.aiServiceConfigured' }) 
@@ -40,8 +40,8 @@ const AiStatusAlert: React.FC = () => {
             </Text>
             <div className={classNames(
               `text-sm`,
-              configValid ? 'text-green-600' : 'text-red-400/80',
-              isDark && configValid && 'text-green-400',
+              configValid ? 'text-green-600/80' : 'text-red-400/80',
+              isDark && configValid && 'text-green-400/80',
               isDark && !configValid && 'text-red-400/80'
             )}>
               {configValid
@@ -62,7 +62,7 @@ const AiStatusAlert: React.FC = () => {
       className={classNames(
         "rounded-xl",
         isDark && configValid && "bg-green-900/20 border-green-700",
-        isDark && !configValid && "bg-red-900/20 border-red-500"
+        isDark && !configValid && "bg-red-900/20 border-red-400/30"
       )}
       action={
         !configValid && (

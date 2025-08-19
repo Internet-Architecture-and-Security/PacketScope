@@ -33,7 +33,11 @@ export default function Layout() {
     <ConfigProvider theme={{
       components: {
         Table: {
+           headerBorderRadius:0,
           colorBgContainer: isDark ? '#1f2937' : '#fff',
+          headerBg: 'transparent',
+          headerSplitColor: isDark ? '#374151' : '#f0f0f0',
+          borderColor: isDark ? '#374151' : '#f0f0f0',
         },
         Select: {
           colorBorder: isDark ? '#374151' : '#d9d9d9',
@@ -75,6 +79,8 @@ export default function Layout() {
         InputNumber: {
           colorBorder: isDark ? '#374151' : '#d9d9d9',
           colorBgContainer: isDark ? '#1f2937' : '#fff',
+          handleBg: isDark ? '#242d3d' : '#fff',
+          hoverBorderColor: isDark ? '#5e6c82' : '#1d4ed8',
         },
         Menu: {
           colorBgContainer: isDark ? '#1f2937' : undefined,
@@ -89,6 +95,9 @@ export default function Layout() {
           colorInfo: isDark ? '#3c89ff' : '#1677ff'
         },
         Notification: {
+          colorBgElevated: isDark ? '#374151' : '#fff',
+        },
+        Message: {
           colorBgElevated: isDark ? '#374151' : '#fff',
         },
         Card: {

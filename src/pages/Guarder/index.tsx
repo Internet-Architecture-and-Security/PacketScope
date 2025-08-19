@@ -541,7 +541,7 @@ const Guarder: React.FC = () => {
                       icon={<RobotOutlined />}
                       size="large"
                       disabled={!isAiConfigValid()}
-                      style={{ background: '#722ed1', borderColor: '#722ed1' }}
+                      style={{ background: '#722ed1', borderColor: '#722ed1', color: !isAiConfigValid() ? '#ffffff70' : '#ffffffff' }}
                     >
                       {intl.formatMessage({ id: 'Guarder.startAiAnalysis' })}
                     </Button>

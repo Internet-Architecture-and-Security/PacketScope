@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  CaretDownOutlined, 
+import {
+  CaretDownOutlined,
   CaretRightOutlined,
   GlobalOutlined,
   ExportOutlined,
@@ -137,11 +137,11 @@ const PacketItem: React.FC<PacketItemProps> = ({ packet, index, isExpanded, onTo
           {packet.srcAddress}:{packet.srcPort} → {packet.dstAddress}:{packet.dstPort}
         </span>
         <div className="w-4 h-4 flex items-center justify-center">
-          {isExpanded ? 
+          {isExpanded ?
             <CaretDownOutlined className={classNames(
               "text-xs",
               isDark ? "text-gray-500" : "text-gray-400"
-            )} /> : 
+            )} /> :
             <CaretRightOutlined className={classNames(
               "text-xs",
               isDark ? "text-gray-500" : "text-gray-400"
@@ -185,7 +185,7 @@ const PacketItem: React.FC<PacketItemProps> = ({ packet, index, isExpanded, onTo
         </DetailRow>
         <DetailRow icon={<GlobalOutlined style={{ color: 'rgb(239, 68, 68)' }} />} label={intl.formatMessage({ id: 'PacketDetails.destinationAddress' })}>
           <div className="flex items-center space-x-2">
-            <span className="font-mono text-red-600 text-xs">{packet.dstAddress}</span>
+            <span className={classNames("font-mono text-xs", isDark ? "text-red-400" : "text-red-600")}>{packet.dstAddress}</span>
             <Link
               to={`/locator?target=${packet.dstAddress}`}
               className="text-blue-500 hover:text-blue-700 text-xs flex items-center hover:underline"
@@ -232,7 +232,7 @@ const PacketItem: React.FC<PacketItemProps> = ({ packet, index, isExpanded, onTo
           <span className="font-mono text-green-600 text-xs">{packet.srcPort}</span>
         </DetailRow>
         <DetailRow icon={<GatewayOutlined style={{ color: 'rgb(239, 68, 68)' }} />} label={intl.formatMessage({ id: 'PacketDetails.destinationPort' })}>
-          <span className="font-mono text-red-600 text-xs">{packet.dstPort}</span>
+          <span className={classNames("font-mono text-xs", isDark ? "text-red-400" : "text-red-600")}>{packet.dstPort}</span>
         </DetailRow>
       </DetailCard>
 
@@ -243,10 +243,10 @@ const PacketItem: React.FC<PacketItemProps> = ({ packet, index, isExpanded, onTo
               onClick={() => setShowHexView(!showHexView)}
               className={classNames(
                 "px-2 py-1 text-xs font-medium transition-colors",
-                showHexView 
-                  ? "bg-blue-600 text-white" 
-                  : isDark 
-                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600" 
+                showHexView
+                  ? isDark ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-blue-600 text-white hover:bg-blue-700"
+                  : isDark
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               )}
             >
@@ -256,8 +256,8 @@ const PacketItem: React.FC<PacketItemProps> = ({ packet, index, isExpanded, onTo
           {showHexView ? (
             <div className={classNames(
               "p-3 font-mono text-xs overflow-x-auto",
-              isDark 
-                ? "bg-gray-900 text-green-400" 
+              isDark
+                ? "bg-gray-900 text-green-400"
                 : "bg-gray-900 text-green-400"
             )}>
               <pre>{formatHexContent(packet.content)}</pre>

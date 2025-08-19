@@ -106,10 +106,6 @@ const AiAnalyzeModal: React.FC = () => {
           <TextArea 
             rows={4} 
             placeholder={intl.formatMessage({ id: 'AiCenter.customAnalysisPlaceholder' })}
-            className={classNames(
-              "border-0",
-              isDark ? "placeholder:text-gray-500 text-gray-300 bg-transparent" : "placeholder:text-gray-400"
-            )}
           />
         </Form.Item>
       </Form>

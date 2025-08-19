@@ -1,131 +1,78 @@
-// components/GraphModal.tsx
-import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import { Modal, Slider, Button } from 'antd';
-import { useIntl } from 'react-intl';
+import React, { useRef, useEffect } from 'react';
+import { Modal, ConfigProvider } from 'antd';
 import * as echarts from 'echarts';
-import { QueryParams, ChainData, FunctionInfo } from './types';
+import { useIntl } from 'react-intl';
+import { useTheme } from '@/stores/useStore';
 
 interface GraphModalProps {
-  visible: boolean;
+  isVisible: boolean;
   onClose: () => void;
-  chainData: ChainData;
-  funcTable: Record<number, FunctionInfo>;
-  chainIndex: 'all' | number;
-  currentChainType: string;
+  graphChainIndex: 'all' | number;
+  chainData: any;
+  funcTable: any;
+  durationFilter: [number, number];
+  queryParams: any;
   receiveChainName: string;
   sendChainName: string;
-  queryParams: QueryParams | null;
-  fetchChainData?: (params: QueryParams & { count?: number }) => Promise<ChainData | undefined>;
 }
 
-export const GraphModal: React.FC<GraphModalProps> = ({
-  visible,
+const GraphModal: React.FC<GraphModalProps> = ({
+  isVisible,
   onClose,
+  graphChainIndex,
   chainData,
   funcTable,
-  chainIndex,
-  currentChainType,
-  receiveChainName,
-  sendChainName,
+  durationFilter,
   queryParams,
-  fetchChainData
+  receiveChainName,
+  sendChainName
 }) => {
   const intl = useIntl();
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
-  const [durationFilter, setDurationFilter] = useState([0, 10000]);
-  const [showDurationFilter, setShowDurationFilter] = useState(false);
 
-  // 计算持续时间范围
-  const durationRange = useMemo(() => {
-    if (!chainData || (!chainData[receiveChainName] && !chainData[sendChainName])) {
-      return [0, 10000];
-    }
+  const modalTitle = graphChainIndex === 'all' 
+    ? intl.formatMessage({ id: 'FunctionCallChainViewer.aggregatedGraphTitle' }) 
+    : intl.formatMessage({ id: 'FunctionCallChainViewer.singleGraphTitle' }, { chainIndex: graphChainIndex + 1 });
+
+  // 异步获取链数据的函数
+  const fetchChainData = async (params) => {
+    if (!params.srcip) return;
     
-    const functionStats = new Map();
-    
-    const processChain = (chain: number[][][]) => {
-      if (!Array.isArray(chain)) return;
-      for (const singleChain of chain) {
-        const callStack: Array<{ addr: number; startTime: number }> = [];
-        for (let i = 0; i < singleChain.length; i++) {
-          const item = singleChain[i] as [number, number, number, number];
-          const [timestamp, isReturn, addr] = item;
-          const functionKey = `${addr}`;
-          if (!isReturn) {
-            callStack.push({ addr, startTime: timestamp });
-            if (!functionStats.has(functionKey)) {
-              functionStats.set(functionKey, { durations: [], totalDuration: 0 });
-            }
-          } else {
-            if (callStack.length > 0) {
-              const callInfo = callStack.pop();
-              if (callInfo && callInfo.addr === addr) {
-                const duration = (timestamp - callInfo.startTime) * 1000000;
-                const stats = functionStats.get(functionKey);
-                if (stats) {
-                  stats.durations.push(duration);
-                  stats.totalDuration += duration;
-                }
-              }
-            }
-          }
-        }
-      }
-    };
-    
-    if (chainData[receiveChainName]) {
-      processChain(chainData[receiveChainName]);
-    }
-    if (chainData[sendChainName]) {
-      processChain(chainData[sendChainName]);
-    }
-    
-    const avgDurations = Array.from(functionStats.values())
-      .map((stats: any) => (stats.durations.length > 0 ? stats.totalDuration / stats.durations.length : 0))
-      .filter((duration) => duration > 0);
-      
-    if (avgDurations.length === 0) return [0, 10000];
-    return [Math.floor(Math.min(...avgDurations)), Math.ceil(Math.max(...avgDurations))];
-  }, [chainData, receiveChainName, sendChainName]);
-
-  // 初始化持续时间过滤器
-  useEffect(() => {
-    if (durationRange[0] !== durationRange[1]) {
-      setDurationFilter(durationRange);
-    }
-  }, [durationRange]);
-
-  // 获取函数名
-  const getFunctionNameFromItem = useCallback((item: [number, number, number, number]) => {
-    const [, , addr] = item;
-    const funcName = funcTable?.[addr]?.name || `0x${addr.toString(16)}`;
-    return funcName.length > 20 ? funcName.substring(0, 17) + '...' : funcName;
-  }, [funcTable]);
-
-  // 获取函数键
-  const getFunctionKey = useCallback((item: [number, number, number, number], category: string) => {
-    const [, , addr] = item;
-    return `${category}_${addr}`;
-  }, []);
-
-  // 获取图表配置
-  const getGraphOption = useCallback((data?: ChainData, targetChainIndex: 'all' | number = 'all') => {
-    const rawData = data || chainData;
-    if (!rawData) {
-      console.log('No raw data available');
-      return { 
-        title: { text: 'No Data Available', left: 'center' },
-        series: [] 
+    try {
+      const endpoint = 'http://127.0.0.1:19999/GetRecentMap';
+      const formData = new URLSearchParams();
+      formData.append('srcip', params.srcip);
+      formData.append('dstip', params.dstip);
+      formData.append('srcport', params.srcport);
+      formData.append('dstport', params.dstport);
+      formData.append('count', params.count ?? 1);
+      const res = await fetch(endpoint, { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      return {
+        [receiveChainName]: data[0],
+        [sendChainName]: data[1],
       };
+    } catch (err) {
+      console.error('Failed to fetch chain data:', err);
+      throw err;
     }
+  };
+
+  // 完整保持原有的getGraphOption函数
+  const getGraphOption = (data, targetChainIndex: 'all' | number = 'all') => {
+    const rawData = data || chainData;
+    if (!rawData) return { series: [] };
 
     const nodes = new Map<string, any>();
     const links: { source: string; target: string; weight: number }[] = [];
     const functionStats = new Map<string, { callCount: number; totalDuration: number; durations: number[] }>();
 
-    const receiveName = intl.formatMessage({ id: 'FunctionCallChainViewer.receive' }) || 'Receive';
-    const sendName = intl.formatMessage({ id: 'FunctionCallChainViewer.send' }) || 'Send';
+    const receiveName = intl.formatMessage({ id: 'FunctionCallChainViewer.receive' });
+    const sendName = intl.formatMessage({ id: 'FunctionCallChainViewer.send' });
 
     const CATEGORY_BASE_COLORS = {
       [receiveName]: {
@@ -140,14 +87,23 @@ export const GraphModal: React.FC<GraphModalProps> = ({
       },
     };
 
-    const processChain = (chain: number[][][], category: string) => {
+    function getFunctionNameFromItem(item: [number, number, number, number]) {
+      const [, , addr] = item;
+      const funcName = funcTable?.[addr]?.name || `0x${addr.toString(16)}`;
+      return funcName.length > 20 ? funcName.substring(0, 17) + '...' : funcName;
+    }
+
+    function getFunctionKey(item: [number, number, number, number], category: string) {
+      const [, , addr] = item;
+      return `${category}_${addr}`;
+    }
+
+    function processChain(chain: number[][][], category: string) {
       if (!Array.isArray(chain)) return;
 
       const chainsToProcess = targetChainIndex === 'all' ? chain : [chain[targetChainIndex]].filter(Boolean);
 
       for (const singleChain of chainsToProcess) {
-        if (!Array.isArray(singleChain)) continue;
-        
         const callStack: Array<{ item: [number, number, number, number]; startTime: number; key: string }> = [];
 
         for (let i = 0; i < singleChain.length; i++) {
@@ -185,25 +141,10 @@ export const GraphModal: React.FC<GraphModalProps> = ({
           }
         }
       }
-    };
-
-    // 处理链数据
-    if (rawData[receiveChainName]) {
-      processChain(rawData[receiveChainName], receiveName);
-    }
-    if (rawData[sendChainName]) {
-      processChain(rawData[sendChainName], sendName);
     }
 
-    console.log('Function stats size:', functionStats.size);
-    console.log('Links count:', links.length);
-
-    if (functionStats.size === 0) {
-      return { 
-        title: { text: 'No Function Data Available', left: 'center' },
-        series: [] 
-      };
-    }
+    processChain(rawData[receiveChainName], receiveName);
+    processChain(rawData[sendChainName], sendName);
 
     const receiveStats = Array.from(functionStats.entries())
       .filter(([key]) => key.startsWith(receiveName))
@@ -221,7 +162,7 @@ export const GraphModal: React.FC<GraphModalProps> = ({
     const maxSendDuration = sendAvgDurations.length > 0 ? Math.max(...sendAvgDurations) : 0.001;
     const minSendDuration = sendAvgDurations.length > 0 ? Math.min(...sendAvgDurations) : 0;
 
-    const getColorByDuration = (avgDuration: number, category: string) => {
+    function getColorByDuration(avgDuration: number, category: string) {
       const baseColor = CATEGORY_BASE_COLORS[category];
       const maxDuration = category === receiveName ? maxReceiveDuration : maxSendDuration;
       const minDuration = category === receiveName ? minReceiveDuration : minSendDuration;
@@ -232,9 +173,8 @@ export const GraphModal: React.FC<GraphModalProps> = ({
         borderColor: `hsl(${baseColor.hue}, ${baseColor.saturation}%, ${lightness - 15}%)`,
         shadowColor: `hsla(${baseColor.hue}, ${baseColor.saturation}%, ${lightness}%, 0.4)`,
       };
-    };
+    }
 
-    // 过滤函数统计
     const filteredFunctionStats = new Map();
     functionStats.forEach((stats, functionKey) => {
       const avgDuration = stats.durations.length > 0 ? stats.totalDuration / stats.durations.length : 0;
@@ -243,9 +183,6 @@ export const GraphModal: React.FC<GraphModalProps> = ({
       }
     });
 
-    console.log('Filtered function stats size:', filteredFunctionStats.size);
-
-    // 构建节点
     filteredFunctionStats.forEach((stats, functionKey) => {
       const [category, addr] = functionKey.split('_');
       const item = [0, 0, parseInt(addr), 0] as [number, number, number, number];
@@ -255,60 +192,23 @@ export const GraphModal: React.FC<GraphModalProps> = ({
       const sizeMultiplier = Math.min(Math.log(stats.callCount + 1) * 15, 80);
       const nodeSize = [Math.max(baseSize + sizeMultiplier, funcName.length * 8 + 20), 35 + Math.min(sizeMultiplier / 4, 15)];
       const colorConfig = getColorByDuration(avgDuration, category);
-      
       nodes.set(functionKey, {
-        id: functionKey,
-        name: funcName,
-        category: category,
-        value: [avgDuration, stats.callCount, stats.totalDuration],
-        avgDuration: avgDuration,
-        symbol: 'rect',
-        symbolSize: nodeSize,
-        itemStyle: {
-          color: colorConfig.color,
-          borderColor: colorConfig.borderColor,
-          borderWidth: 2,
-          shadowBlur: 8,
-          shadowColor: colorConfig.shadowColor,
-          shadowOffsetY: 2
-        },
+        id: functionKey, name: funcName, category: category, value: [avgDuration, stats.callCount, stats.totalDuration], avgDuration: avgDuration,
+        symbol: 'rect', symbolSize: nodeSize,
+        itemStyle: { color: colorConfig.color, borderColor: colorConfig.borderColor, borderWidth: 2, shadowBlur: 8, shadowColor: colorConfig.shadowColor, shadowOffsetY: 2 },
         label: {
           show: true,
-          formatter: (params: any) => {
-            const name = params.data.name;
-            const count = params.data.value[1];
-            const avgDur = params.data.value[0].toFixed(1);
-            return `${name}\n${count} calls\n${avgDur}μs`;
-          },
-          fontSize: 10,
-          fontWeight: '500',
-          color: '#FFFFFF',
-          textBorderColor: 'transparent',
-          position: 'inside',
-          lineHeight: 14,
+          formatter: (params) => intl.formatMessage({ id: 'FunctionCallChainViewer.nodeLabel' }, { name: params.data.name, count: params.data.value[1], avgDuration: params.data.value[0].toFixed(1) }),
+          fontSize: 10, fontWeight: '500', color: '#FFFFFF', textBorderColor: 'transparent', position: 'inside', lineHeight: 14,
         },
-        emphasis: {
-          focus: 'adjacency',
-          itemStyle: {
-            shadowBlur: 15,
-            shadowColor: colorConfig.shadowColor,
-            borderWidth: 3,
-            scale: 1.1,
-            color: colorConfig.borderColor
-          },
-          label: {
-            fontSize: 11,
-            fontWeight: 'bold'
-          }
-        },
+        emphasis: { focus: 'adjacency', itemStyle: { shadowBlur: 15, shadowColor: colorConfig.shadowColor, borderWidth: 3, scale: 1.1, color: colorConfig.borderColor }, label: { fontSize: 11, fontWeight: 'bold' } },
       });
     });
 
-    // 过滤链接
     const filteredNodeKeys = new Set(filteredFunctionStats.keys());
     const filteredLinks = links.filter((link) => filteredNodeKeys.has(link.source) && filteredNodeKeys.has(link.target));
-    const maxWeight = filteredLinks.length > 0 ? Math.max(...filteredLinks.map((link) => link.weight)) : 1;
-    const minWeight = filteredLinks.length > 0 ? Math.min(...filteredLinks.map((link) => link.weight)) : 1;
+    const maxWeight = Math.max(...filteredLinks.map((link) => link.weight));
+    const minWeight = Math.min(...filteredLinks.map((link) => link.weight));
 
     const processedLinks = filteredLinks.map((link) => {
       const weightRatio = maxWeight > minWeight ? (link.weight - minWeight) / (maxWeight - minWeight) : 0.5;
@@ -316,288 +216,181 @@ export const GraphModal: React.FC<GraphModalProps> = ({
       const baseColor = CATEGORY_BASE_COLORS[sourceCategory];
       const lightness = 65 - weightRatio * 25;
       const lineColor = `hsl(${baseColor.hue}, ${baseColor.saturation}%, ${lightness}%)`;
-      
       return {
-        source: link.source,
-        target: link.target,
-        value: link.weight,
-        lineStyle: {
-          color: lineColor,
-          width: Math.min(1 + Math.log(link.weight + 1) * 1.5, 6),
-          opacity: 0.8,
-          curveness: 0.2
-        },
-        emphasis: {
-          lineStyle: {
-            width: Math.min(2 + Math.log(link.weight + 1) * 2, 8),
-            opacity: 1,
-            shadowBlur: 10,
-            shadowColor: lineColor,
-            color: `hsl(${baseColor.hue}, ${baseColor.saturation}%, ${lightness - 15}%)`
-          }
-        },
-        label: {
-          show: link.weight > 1,
-          formatter: `${link.weight} calls`,
-          fontSize: 8,
-          color: '#666',
-          backgroundColor: 'rgba(255,255,255,0.9)',
-          borderRadius: 2,
-          padding: [1, 3]
-        },
+        source: link.source, target: link.target, value: link.weight,
+        lineStyle: { color: lineColor, width: Math.min(1 + Math.log(link.weight + 1) * 1.5, 6), opacity: 0.8, curveness: 0.2 },
+        emphasis: { lineStyle: { width: Math.min(2 + Math.log(link.weight + 1) * 2, 8), opacity: 1, shadowBlur: 10, shadowColor: lineColor, color: `hsl(${baseColor.hue}, ${baseColor.saturation}%, ${lightness - 15}%)` } },
+        label: { show: link.weight > 1, formatter: intl.formatMessage({ id: 'FunctionCallChainViewer.edgeLabel' }, { count: link.weight }), fontSize: 8, color: '#666', backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 2, padding: [1, 3] },
       };
     });
 
-    // 图例数据
     const legendData = Object.keys(CATEGORY_BASE_COLORS).map((category) => ({
       name: category,
-      itemStyle: {
-        color: `hsl(${CATEGORY_BASE_COLORS[category].hue}, ${CATEGORY_BASE_COLORS[category].saturation}%, 55%)`,
-        borderColor: `hsl(${CATEGORY_BASE_COLORS[category].hue}, ${CATEGORY_BASE_COLORS[category].saturation}%, 40%)`,
-        borderWidth: 2
-      },
+      itemStyle: { color: `hsl(${CATEGORY_BASE_COLORS[category].hue}, ${CATEGORY_BASE_COLORS[category].saturation}%, 55%)`, borderColor: `hsl(${CATEGORY_BASE_COLORS[category].hue}, ${CATEGORY_BASE_COLORS[category].saturation}%, 40%)`, borderWidth: 2 },
     }));
 
-    // 图表标题
     const chartTitle = targetChainIndex === 'all'
-      ? 'Aggregated Function Call Graph'
-      : `Chain ${(targetChainIndex as number) + 1} Function Call Graph`;
+      ? intl.formatMessage({ id: 'FunctionCallChainViewer.aggregatedGraphTitle' })
+      : intl.formatMessage({ id: 'FunctionCallChainViewer.singleGraphTitle' }, { chainIndex: targetChainIndex + 1 });
 
     const chartSubtext = targetChainIndex === 'all'
-      ? `Duration: ${durationFilter[0]}-${durationFilter[1]}μs | Nodes: ${nodes.size} | Links: ${processedLinks.length}`
-      : `Thread: ${rawData[currentChainType]?.[targetChainIndex]?.[0]?.[3]} | Nodes: ${nodes.size} | Links: ${processedLinks.length}`;
+      ? intl.formatMessage({ id: 'FunctionCallChainViewer.aggregatedGraphSubtext' }, { durationFilterStart: durationFilter[0], durationFilterEnd: durationFilter[1], nodesCount: nodes.size, linksCount: processedLinks.length })
+      : intl.formatMessage({ id: 'FunctionCallChainViewer.singleGraphSubtext' }, { threadId: rawData[receiveChainName]?.[targetChainIndex]?.[0]?.[3], nodesCount: nodes.size, linksCount: processedLinks.length });
 
-    console.log('Nodes created:', nodes.size);
-    console.log('Processed links:', processedLinks.length);
-
-    const option = {
-      backgroundColor: '#f8fafc',
+    return {
+      backgroundColor: isDark ? '#1f2937' : '#f8fafc',
       title: {
-        text: chartTitle,
-        subtext: chartSubtext,
-        left: 'center',
-        top: 20,
-        textStyle: {
-          fontSize: 24,
-          fontWeight: 'bold',
-          color: '#1a202c'
-        },
-        subtextStyle: {
-          fontSize: 14,
-          color: '#718096'
-        },
+        text: chartTitle, subtext: chartSubtext, left: 'center', top: 20,
+        textStyle: { fontSize: 24, fontWeight: 'bold', color: isDark ? '#e5e7eb' : '#1a202c' },
+        subtextStyle: { fontSize: 14, color: isDark ? '#9ca3af' : '#718096' },
       },
       tooltip: {
-        trigger: 'item',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: '#e2e8f0',
-        borderWidth: 1,
-        borderRadius: 8,
-        textStyle: {
-          color: '#2d3748',
-          fontSize: 12
-        },
+        trigger: 'item', 
+        backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)', 
+        borderColor: isDark ? '#374151' : '#e2e8f0', 
+        borderWidth: 1, borderRadius: 8,
+        textStyle: { color: isDark ? '#e5e7eb' : '#2d3748', fontSize: 12 }, 
         padding: [12, 16],
-        formatter: (params: any) => {
+        formatter: (params) => {
           if (params.dataType === 'node') {
             const [avgDur, callCount, totalDur] = params.data.value;
             const stats = filteredFunctionStats.get(params.data.id);
-            const maxDuration = stats && stats.durations.length > 0 ? Math.max(...stats.durations).toFixed(1) : '0';
-            const minDuration = stats && stats.durations.length > 0 ? Math.min(...stats.durations).toFixed(1) : '0';
+            const maxDuration = stats.durations.length > 0 ? Math.max(...stats.durations).toFixed(1) : '0';
+            const minDuration = stats.durations.length > 0 ? Math.min(...stats.durations).toFixed(1) : '0';
             return `
               <div style="line-height: 1.6;">
                 <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #2b6cb0;">
-                  ${params.data.category} - ${params.data.name}
+                  ${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.functionTitle' }, { category: params.data.category, name: params.data.name })}
                 </div>
-                <div><strong>Call Count:</strong> ${callCount}</div>
-                <div><strong>Total Duration:</strong> ${totalDur.toFixed(1)}μs</div>
-                <div><strong>Avg Duration:</strong> ${avgDur.toFixed(1)}μs</div>
-                <div><strong>Max Duration:</strong> ${maxDuration}μs</div>
-                <div><strong>Min Duration:</strong> ${minDuration}μs</div>
+                <div><strong>${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.callCount' })}</strong> ${callCount}</div>
+                <div><strong>${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.totalDuration' })}</strong> ${totalDur.toFixed(1)}μs</div>
+                <div><strong>${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.avgDuration' })}</strong> ${avgDur.toFixed(1)}μs</div>
+                <div><strong>${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.maxDuration' })}</strong> ${maxDuration}μs</div>
+                <div><strong>${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.minDuration' })}</strong> ${minDuration}μs</div>
+                <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                  ${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.durationTip' })}
+                </div>
               </div>`;
           } else if (params.dataType === 'edge') {
             return `
               <div style="line-height: 1.6;">
                 <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #2b6cb0;">
-                  Function Call Relationship
+                  ${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.relationshipTitle' })}
                 </div>
-                <div><strong>Call Frequency:</strong> ${params.data.value}</div>
-                <div><strong>Direction:</strong> ${params.data.source.split('_')[1]} → ${params.data.target.split('_')[1]}</div>
+                <div><strong>${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.callFrequency' })}</strong> ${params.data.value}</div>
+                <div><strong>${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.callDirection' })}</strong> ${params.data.source.split('_')[1]} → ${params.data.target.split('_')[1]}</div>
+                <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                  ${intl.formatMessage({ id: 'FunctionCallChainViewer.tooltip.frequencyTip' })}
+                </div>
               </div>`;
           }
           return '';
         },
       },
       legend: {
-        data: legendData,
-        top: 80,
-        left: 'center',
-        orient: 'horizontal',
-        itemGap: 30,
-        textStyle: {
-          fontSize: 14,
-          color: '#4a5568'
-        },
-        icon: 'rect',
-        itemWidth: 20,
-        itemHeight: 12,
+        data: legendData, top: 80, left: 'center', orient: 'horizontal', itemGap: 30,
+        textStyle: { fontSize: 14, color: isDark ? '#d1d5db' : '#4a5568' }, icon: 'rect', itemWidth: 20, itemHeight: 12,
       },
       toolbox: {
-        show: true,
-        itemGap: 10,
-        right: 20,
-        top: 20,
+        show: true, itemGap: 10, right: 20, top: 20,
         feature: {
-          saveAsImage: {
-            title: 'Save as Image',
-            pixelRatio: 2
+          saveAsImage: { title: intl.formatMessage({ id: 'FunctionCallChainViewer.saveAsImage' }), pixelRatio: 2 },
+          myrefresh: {
+            show: true, title: intl.formatMessage({ id: 'FunctionCallChainViewer.refresh' }), 
+            icon: 'path://M951.296 153.6H801.792C909.312 240.64 972.8 372.736 972.8 512c0 246.784-194.56 448.512-438.272 459.776-12.288 1.024-22.528-8.192-22.528-20.48 0-10.24 8.192-19.456 19.456-20.48C753.664 921.6 931.84 737.28 931.84 512c0-131.072-60.416-253.952-163.84-332.8V337.92c0 12.288-11.264 22.528-23.552 20.48-10.24-2.048-17.408-11.264-17.408-21.504V133.12c0-11.264 9.216-20.48 20.48-20.48h204.8c12.288 0 22.528 11.264 20.48 23.552-2.048 10.24-11.264 17.408-21.504 17.408zM492.544 51.2C244.736 51.2 51.2 253.952 51.2 512c0 139.264 63.488 271.36 171.008 358.4H73.728c-10.24 0-19.456 7.168-21.504 17.408-2.048 12.288 7.168 23.552 19.456 23.552h204.8c11.264 0 20.48-9.216 20.48-20.48V687.104c0-10.24-7.168-19.456-17.408-21.504-12.288-2.048-23.552 8.192-23.552 20.48v158.72C152.576 765.952 92.16 643.072 92.16 512 92.16 276.48 268.288 92.16 492.544 92.16c11.264 0 20.48-9.216 20.48-20.48s-9.216-20.48-20.48-20.48z', 
+            type: 'myrefresh',
+            onclick: async () => {
+              const chart = chartInstanceRef.current;
+              if (!chart) return;
+              chart.showLoading('default', { 
+                text: intl.formatMessage({ id: 'FunctionCallChainViewer.loading' }), 
+                color: '#3182ce', 
+                textColor: isDark ? '#e5e7eb' : '#2d3748', 
+                maskColor: isDark ? 'rgba(31,41,55,0.7)' : 'rgba(255,255,255,0.7)', 
+                zlevel: 0 
+              });
+              try {
+                const updatedData = await fetchChainData({ ...queryParams, count: 20000 });
+                chart.hideLoading();
+                chart.setOption(getGraphOption(updatedData, graphChainIndex), true);
+              } catch (err) {
+                chart.hideLoading();
+                console.error(intl.formatMessage({ id: 'FunctionCallChainViewer.refreshFailed' }), err);
+              }
+            },
           },
         },
       },
+      visualMap: [
+        {
+          type: 'continuous', seriesIndex: 0, dimension: 0, min: minReceiveDuration, max: maxReceiveDuration,
+          text: [intl.formatMessage({ id: 'FunctionCallChainViewer.high' }), intl.formatMessage({ id: 'FunctionCallChainViewer.low' }), intl.formatMessage({ id: 'FunctionCallChainViewer.receiveDuration' })],
+          textGap: 10, left: 'left', top: 'middle', calculable: true, realtime: false,
+          inRange: { opacity: [0.8, 1], color: ['#2b6cb000', '#2b6cb0'] }, outOfRange: { opacity: 0 },
+          controller: { inRange: { opacity: [0.3, 1] }, outOfRange: { opacity: 0 } },
+          textStyle: { color: '#2b6cb0', fontSize: 12 },
+          pieces: receiveStats.length > 0 ? undefined : [{ min: minReceiveDuration, max: maxReceiveDuration, opacity: 1 }],
+        },
+        {
+          type: 'continuous', seriesIndex: 1, dimension: 0, min: minSendDuration, max: maxSendDuration,
+          text: [intl.formatMessage({ id: 'FunctionCallChainViewer.high' }), intl.formatMessage({ id: 'FunctionCallChainViewer.low' })],
+          textGap: 10, right: 'right', top: 'middle', calculable: true, realtime: false,
+          inRange: { opacity: [0.9, 1], color: ['#d69e2e00', '#d69e2e'] }, outOfRange: { opacity: 0 },
+          controller: { inRange: { opacity: [0.3, 1] }, outOfRange: { opacity: 0 } },
+          textStyle: { color: '#d69e2e', fontSize: 12 },
+          pieces: sendStats.length > 0 ? undefined : [{ min: minSendDuration, max: maxSendDuration, opacity: 1 }],
+        },
+      ],
       series: [
         {
-          name: receiveName,
-          type: 'graph',
-          layout: 'force',
-          roam: true,
-          focusNodeAdjacency: true,
-          legendHoverLink: false,
+          name: intl.formatMessage({ id: 'FunctionCallChainViewer.receiveFunction' }), 
+          type: 'graph', layout: 'force', roam: true, focusNodeAdjacency: true, legendHoverLink: false,
           categories: [legendData[0]],
-          force: {
-            repulsion: [300, 500],
-            gravity: 0.1,
-            edgeLength: [120, 300],
-            friction: 0.3
-          },
-          edgeSymbol: ['', 'arrow'],
-          edgeSymbolSize: [0, 12],
+          force: { repulsion: [300, 500], gravity: 0.1, edgeLength: [120, 300], friction: 0.3 },
+          edgeSymbol: ['', 'arrow'], edgeSymbolSize: [0, 12],
           data: Array.from(nodes.values()).filter((node) => node.category === receiveName),
           links: processedLinks.filter((link) => link.source.startsWith(receiveName) && link.target.startsWith(receiveName)),
-          lineStyle: {
-            opacity: 0.8,
-            curveness: 0.3
-          },
-          emphasis: {
-            focus: 'series',
-            blurScope: 'coordinateSystem'
-          },
-          scaleLimit: {
-            min: 0.4,
-            max: 3
-          },
+          lineStyle: { opacity: 0.8, curveness: 0.3 }, 
+          emphasis: { focus: 'series', blurScope: 'coordinateSystem' }, 
+          scaleLimit: { min: 0.4, max: 3 },
         },
         {
-          name: sendName,
-          type: 'graph',
-          layout: 'force',
-          roam: true,
-          focusNodeAdjacency: true,
-          legendHoverLink: false,
+          name: intl.formatMessage({ id: 'FunctionCallChainViewer.sendFunction' }), 
+          type: 'graph', layout: 'force', roam: true, focusNodeAdjacency: true, legendHoverLink: false,
           categories: [legendData[1]],
-          force: {
-            repulsion: [300, 500],
-            gravity: 0.1,
-            edgeLength: [120, 300],
-            friction: 0.3
-          },
-          edgeSymbol: ['', 'arrow'],
-          edgeSymbolSize: [0, 12],
+          force: { repulsion: [300, 500], gravity: 0.1, edgeLength: [120, 300], friction: 0.3 },
+          edgeSymbol: ['', 'arrow'], edgeSymbolSize: [0, 12],
           data: Array.from(nodes.values()).filter((node) => node.category === sendName),
           links: processedLinks.filter((link) => link.source.startsWith(sendName) && link.target.startsWith(sendName)),
-          lineStyle: {
-            opacity: 0.8,
-            curveness: 0.3
-          },
-          emphasis: {
-            focus: 'series',
-            blurScope: 'coordinateSystem'
-          },
-          scaleLimit: {
-            min: 0.4,
-            max: 3
-          },
+          lineStyle: { opacity: 0.8, curveness: 0.3 }, 
+          emphasis: { focus: 'series', blurScope: 'coordinateSystem' }, 
+          scaleLimit: { min: 0.4, max: 3 },
         },
         {
-          name: 'Mixed Connection',
-          type: 'graph',
-          layout: 'force',
-          roam: true,
-          focusNodeAdjacency: true,
-          legendHoverLink: false,
-          force: {
-            repulsion: [300, 500],
-            gravity: 0.1,
-            edgeLength: [120, 300],
-            friction: 0.3
-          },
-          edgeSymbol: ['', 'arrow'],
-          edgeSymbolSize: [0, 12],
-          data: [],
-          links: processedLinks.filter((link) => 
-            (link.source.startsWith(receiveName) && link.target.startsWith(sendName)) || 
-            (link.source.startsWith(sendName) && link.target.startsWith(receiveName))
-          ),
-          lineStyle: {
-            opacity: 0.8,
-            curveness: 0.3
-          },
-          emphasis: {
-            focus: 'series',
-            blurScope: 'coordinateSystem'
-          },
-          scaleLimit: {
-            min: 0.4,
-            max: 3
-          },
+          name: intl.formatMessage({ id: 'FunctionCallChainViewer.mixedConnection' }), 
+          type: 'graph', layout: 'force', roam: true, focusNodeAdjacency: true, legendHoverLink: false,
+          force: { repulsion: [300, 500], gravity: 0.1, edgeLength: [120, 300], friction: 0.3 },
+          edgeSymbol: ['', 'arrow'], edgeSymbolSize: [0, 12], data: [],
+          links: processedLinks.filter((link) => (link.source.startsWith(receiveName) && link.target.startsWith(sendName)) || (link.source.startsWith(sendName) && link.target.startsWith(receiveName))),
+          lineStyle: { opacity: 0.8, curveness: 0.3 }, 
+          emphasis: { focus: 'series', blurScope: 'coordinateSystem' }, 
+          scaleLimit: { min: 0.4, max: 3 },
         },
       ],
-      dataZoom: [
-        {
-          type: 'inside',
-          disabled: false,
-          zoomOnMouseWheel: 'ctrl'
-        }
-      ],
+      dataZoom: [{ type: 'inside', disabled: false, zoomOnMouseWheel: 'ctrl' }],
     };
+  };
 
-    console.log('Generated option with series:', option.series.map(s => ({ name: s.name, dataCount: s.data?.length, linkCount: s.links?.length })));
-    return option;
-  }, [chainData, chainIndex, durationFilter, currentChainType, receiveChainName, sendChainName, getFunctionNameFromItem, getFunctionKey, intl]);
-
-  // 初始化和更新图表
   useEffect(() => {
-    if (!visible || !chartRef.current) {
-      console.log('Chart not visible or ref not ready');
-      return;
-    }
-
-    console.log('Initializing chart...', { visible, chainData, chainIndex });
-
-    const timer = setTimeout(() => {
-      if (chartInstanceRef.current) {
-        console.log('Disposing existing chart');
-        chartInstanceRef.current.dispose();
-      }
-      
-      if (chartRef.current) {
-        console.log('Creating new chart instance');
+    if (isVisible && chartRef.current) {
+      setTimeout(() => {
+        if (chartInstanceRef.current) {
+          chartInstanceRef.current.dispose();
+        }
         chartInstanceRef.current = echarts.init(chartRef.current);
-        const option = getGraphOption(chainData, chainIndex);
-        console.log('Setting chart option:', option);
-        chartInstanceRef.current.setOption(option);
+        chartInstanceRef.current.setOption(getGraphOption(chainData, graphChainIndex));
         
-        // 添加调试信息
-        const series = option.series;
-        console.log('Chart series data:', series.map(s => ({ 
-          name: s.name, 
-          dataLength: s.data?.length || 0,
-          linksLength: s.links?.length || 0 
-        })));
-        
-        const resizeChart = () => {
-          console.log('Resizing chart');
-          chartInstanceRef.current?.resize();
-        };
+        const resizeChart = () => chartInstanceRef.current?.resize();
         window.addEventListener('resize', resizeChart);
         
         return () => {
@@ -607,146 +400,59 @@ export const GraphModal: React.FC<GraphModalProps> = ({
             chartInstanceRef.current = null;
           }
         };
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [visible, chainData, chainIndex, getGraphOption]);
-
-  // 更新图表配置 - 当 durationFilter 改变时
-  useEffect(() => {
-    if (chartInstanceRef.current && visible) {
-      console.log('Updating chart with new duration filter:', durationFilter);
-      const option = getGraphOption(chainData, chainIndex);
-      chartInstanceRef.current.setOption(option, true);
+      }, 100);
     }
-  }, [durationFilter, getGraphOption, chainData, chainIndex, visible]);
-
-  // 重置持续时间过滤器
-  const resetDurationFilter = () => {
-    setDurationFilter(durationRange);
-  };
-
-  // 应用持续时间过滤器
-  const applyDurationFilter = (value: number[]) => {
-    setDurationFilter(value);
-  };
-
-  // 刷新图表数据
-  const refreshChart = async () => {
-    const chart = chartInstanceRef.current;
-    if (!chart || !queryParams || !fetchChainData) return;
-    
-    chart.showLoading('default', {
-      text: 'Loading...',
-      color: '#3182ce',
-      textColor: '#2d3748',
-      maskColor: 'rgba(255,255,255,0.7)',
-      zlevel: 0
-    });
-    
-    try {
-      const updatedData = await fetchChainData({ ...queryParams, count: 20000 });
-      chart.hideLoading();
-      if (updatedData) {
-        const option = getGraphOption(updatedData, chainIndex);
-        chart.setOption(option, true);
-      }
-    } catch (err) {
-      chart.hideLoading();
-      console.error('Refresh failed:', err);
-    }
-  };
-
-  const modalTitle = chainIndex === 'all' 
-    ? 'Aggregated Function Call Graph'
-    : `Chain ${(chainIndex as number) + 1} Function Call Graph`;
-
-  console.log('Rendering GraphModal', { visible, chainData: !!chainData, chainIndex });
+  }, [isVisible, chainData, graphChainIndex]);
 
   return (
-    <Modal
-      title={
-        <div className="flex items-center justify-between">
-          <span>{modalTitle}</span>
-          <div className="flex items-center gap-4">
-            <Button
-              size="small"
-              type={showDurationFilter ? 'primary' : 'default'}
-              onClick={() => setShowDurationFilter(!showDurationFilter)}
-            >
-              Duration Filter
-            </Button>
-            
-            {fetchChainData && (
-              <Button
-                size="small"
-                onClick={refreshChart}
-                icon={<span>⟳</span>}
-              >
-                Refresh
-              </Button>
-            )}
-          </div>
-        </div>
+     <ConfigProvider theme={{
+    components: {
+      Modal: {
+        // colorBgElevated: isDark ? '#1f2937' : undefined,
+        titleColor: isDark ? '#e5e7eb' : undefined,
+        headerBg: isDark ? '#364153' : "#fff",
+        contentBg: isDark ? '#364153' : "#fff",
       }
-      open={visible}
+    }
+  }}>
+    <Modal
+      title={modalTitle}
+      open={isVisible}
       onCancel={onClose}
       footer={null}
       width="95vw"
       style={{ top: 50, padding: 0 }}
       destroyOnClose
+      afterOpenChange={(open) => {
+        if (open && chartRef.current) {
+          setTimeout(() => {
+            if (chartInstanceRef.current) chartInstanceRef.current.dispose();
+            chartInstanceRef.current = echarts.init(chartRef.current);
+            chartInstanceRef.current.setOption(getGraphOption(chainData, graphChainIndex));
+            const resizeChart = () => chartInstanceRef.current?.resize();
+            window.addEventListener('resize', resizeChart);
+            return () => {
+              window.removeEventListener('resize', resizeChart);
+              if (chartInstanceRef.current) {
+                chartInstanceRef.current.dispose();
+                chartInstanceRef.current = null;
+              }
+            };
+          }, 100);
+        }
+      }}
     >
-      <div className="flex flex-col h-full">
-        {showDurationFilter && (
-          <div className="bg-gray-50 border-b p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-gray-700">
-                Duration Filter
-              </h4>
-              <Button size="small" onClick={resetDurationFilter}>
-                Reset
-              </Button>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>{durationRange[0]}μs</span>
-                <span>{durationRange[1]}μs</span>
-              </div>
-              
-              <Slider
-                range
-                min={durationRange[0]}
-                max={durationRange[1]}
-                value={durationFilter}
-                onChange={applyDurationFilter}
-                tooltip={{
-                  formatter: (value) => `${value}μs`
-                }}
-              />
-              
-              <div className="flex items-center justify-center text-xs text-gray-600">
-                Current filter: {durationFilter[0]}μs - {durationFilter[1]}μs
-              </div>
-            </div>
-            
-            <div className="text-xs text-gray-500">
-              Adjust the slider to filter functions by their average execution duration.
-            </div>
-          </div>
-        )}
-        
-        <div 
-          ref={chartRef} 
-          style={{ 
-            width: '100%', 
-            height: showDurationFilter ? '75vh' : '85vh', 
-            minHeight: '600px' 
-          }} 
-        />
-      </div>
+      <div 
+        ref={chartRef} 
+        style={{ 
+          width: '100%', 
+          height: '85vh', 
+          minHeight: '600px',
+          backgroundColor: isDark ? '#1f2937' : '#f8fafc'
+        }} 
+      />
     </Modal>
+    </ConfigProvider>
   );
 };
 

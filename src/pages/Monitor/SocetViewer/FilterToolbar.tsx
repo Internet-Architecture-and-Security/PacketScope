@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useIntl } from 'react-intl';
 import { Input, Select, Button } from 'antd';
 import { SearchOutlined, ClearOutlined, FilterOutlined } from '@ant-design/icons';
@@ -14,7 +14,7 @@ interface FilterState {
   state: string;
 }
 
-interface SocketFilterToolbarProps {
+interface FilterToolbarProps {
   filters: FilterState;
   uniqueStates: string[];
   hasActiveFilters: boolean;
@@ -22,24 +22,23 @@ interface SocketFilterToolbarProps {
   handleResetFilters: () => void;
 }
 
-const SocketFilterToolbar: React.FC<SocketFilterToolbarProps> = ({
+const FilterToolbar: React.FC<FilterToolbarProps> = ({
   filters,
   uniqueStates,
   hasActiveFilters,
   updateFilter,
-  handleResetFilters,
+  handleResetFilters
 }) => {
+  const intl = useIntl();
   const { currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
-  const intl = useIntl();
 
   return (
     <div className="flex items-center absolute left-0 w-full">
       <div
-        className={classNames(
-          "flex items-center gap-2 scale-85 origin-left transition-all duration-300 ease-in-out",
+        className={`flex items-center gap-2 scale-85 origin-left transition-all duration-300 ease-in-out ${
           hasActiveFilters ? 'opacity-100 translate-y-0' : 'opacity-30 hover:opacity-100 translate-y-0'
-        )}
+        }`}
       >
         {/* Search area */}
         <div className="flex items-center gap-2 rounded-lg px-3 py-1.5">
@@ -53,14 +52,8 @@ const SocketFilterToolbar: React.FC<SocketFilterToolbarProps> = ({
             onChange={(e) => updateFilter('searchText', e.target.value)}
             allowClear
             size="small"
-            bordered={false}
+            variant="borderless"
             style={{ width: 200 }}
-            className={classNames(
-              "border-0",
-              isDark 
-                ? "placeholder:text-gray-500 text-gray-300 bg-transparent"
-                : "placeholder:text-gray-400"
-            )}
           />
         </div>
 
@@ -72,7 +65,6 @@ const SocketFilterToolbar: React.FC<SocketFilterToolbarProps> = ({
             size="small"
             bordered={false}
             style={{ width: 120 }}
-            className="filter-select"
           >
             <Option value="all">{intl.formatMessage({ id: 'SocketViewer.filter.protocol.all' })}</Option>
             <Option value="TCP">TCP</Option>
@@ -87,7 +79,6 @@ const SocketFilterToolbar: React.FC<SocketFilterToolbarProps> = ({
             size="small"
             bordered={false}
             style={{ width: 110 }}
-            className="filter-select"
           >
             <Option value="all">{intl.formatMessage({ id: 'SocketViewer.filter.type.all' })}</Option>
             <Option value="ipv4">IPv4</Option>
@@ -102,7 +93,6 @@ const SocketFilterToolbar: React.FC<SocketFilterToolbarProps> = ({
             style={{ width: 180 }}
             showSearch
             optionFilterProp="children"
-            className="filter-select"
           >
             <Option value="all">{intl.formatMessage({ id: 'SocketViewer.filter.state.all' })}</Option>
             {uniqueStates.map((state) => (
@@ -124,11 +114,11 @@ const SocketFilterToolbar: React.FC<SocketFilterToolbarProps> = ({
             className={classNames(
               "rounded-lg transition-all duration-200",
               hasActiveFilters
-                ? isDark
+                ? isDark 
                   ? 'text-red-400 hover:bg-red-900/30 hover:text-red-300'
                   : 'text-red-600 hover:bg-red-50 hover:text-red-700'
                 : isDark
-                  ? 'text-gray-500 hover:bg-gray-800/50 hover:text-gray-400'
+                  ? 'text-gray-600 hover:bg-gray-800 hover:text-gray-500'
                   : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'
             )}
           >
@@ -137,8 +127,8 @@ const SocketFilterToolbar: React.FC<SocketFilterToolbarProps> = ({
           {hasActiveFilters && (
             <div className={classNames(
               "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium",
-              isDark
-                ? "bg-blue-900/50 text-blue-300 border border-blue-800/50"
+              isDark 
+                ? "bg-blue-600 text-blue-100" 
                 : "bg-blue-500 text-white"
             )}>
               <FilterOutlined className="text-xs" />
@@ -159,4 +149,4 @@ const SocketFilterToolbar: React.FC<SocketFilterToolbarProps> = ({
   );
 };
 
-export default SocketFilterToolbar;
+export default FilterToolbar;

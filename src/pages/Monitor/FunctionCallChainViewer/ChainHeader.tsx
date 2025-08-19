@@ -41,13 +41,6 @@ const ChainHeader: React.FC<ChainHeaderProps> = ({
         colorBgElevated: isDark ? '#4b5563' : undefined,
         itemSelectedBg: isDark ? '#1f2937' : undefined,
       },
-      Button: {
-        colorBgContainer: isDark ? '#374151' : undefined,
-        colorText: isDark ? '#e5e7eb' : undefined,
-        colorBorder: isDark ? '#6b7280' : undefined,
-        colorTextDisabled: isDark ? '#6b7280' : undefined,
-        colorBgContainerDisabled: isDark ? '#374151' : undefined,
-      }
     }
   };
 

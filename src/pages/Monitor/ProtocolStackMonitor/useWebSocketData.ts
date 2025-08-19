@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useIntl } from 'react-intl';
 
 // 自定义WebSocket钩子
@@ -32,7 +32,7 @@ const useWebSocketData = (websocketType, queryParams) => {
     drop: [],
   });
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const wsRef = useRef(null);
@@ -156,6 +156,7 @@ const useWebSocketData = (websocketType, queryParams) => {
       } catch (err) {
         console.error(`${websocketType} 数据解析错误:`, err);
         setError(intl.formatMessage({ id: 'ProtocolStackMonitor.dataParsingFailed' }));
+        setIsReady(true);
         setLoading(false);
       }
     };
@@ -163,16 +164,19 @@ const useWebSocketData = (websocketType, queryParams) => {
     ws.onerror = (error) => {
       console.error(`${websocketType} WebSocket错误:`, error);
       setError(intl.formatMessage({ id: 'ProtocolStackMonitor.connectionFailed' }));
+      setIsReady(true);
       setLoading(false);
     };
 
     ws.onclose = () => {
       console.log(`${websocketType} WebSocket连接已关闭`);
+      setIsReady(true);
       setLoading(false);
     };
   };
 
   useEffect(() => {
+    setIsReady(true);
     setLoading(false);
   }, [data]);
 

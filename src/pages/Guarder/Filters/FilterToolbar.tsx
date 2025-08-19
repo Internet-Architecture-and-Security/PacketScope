@@ -64,7 +64,7 @@ const FilterToolbar: React.FC<FilterToolbarProps> = ({
       }}>
     <Card className={classNames(
       "mb-6 shadow-sm z-10 relative",
-      isDark ? "bg-gray-800 border-gray-700" : ""
+      isDark ? "bg-gray-800 border-gray-700" : "border-white"
     )}>
       <div className="flex flex-col lg:flex-row gap-4 justify-between">
         <div className="flex flex-col sm:flex-row gap-4 flex-1">

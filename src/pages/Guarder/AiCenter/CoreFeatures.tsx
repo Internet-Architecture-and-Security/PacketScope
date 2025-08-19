@@ -24,7 +24,7 @@ const CoreFeatures: React.FC = () => {
           title={intl.formatMessage({ id: 'AiCenter.coreFeatures' })} 
           className={classNames(
             "shadow-sm",
-            isDark && "bg-gray-800 border-gray-700"
+            isDark ? "bg-gray-800 border-gray-700" : "border-white"
           )}
           headStyle={isDark ? { color: '#d1d5db' } : {}}
         >

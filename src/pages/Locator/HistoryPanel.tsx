@@ -50,8 +50,8 @@ const HistoryPanel = ({ historyData, onHistoryItemClick, onRefresh, loading, int
     if (historyItems.length === 0) {
       return (
         <div className={classNames(
-          "rounded-lg shadow p-6 text-center border-1 border-gray-100",
-          isDark ? "bg-gray-800 text-gray-400" : "bg-white text-gray-500"
+          "rounded-lg shadow p-6 text-center border-1",
+          isDark ? "bg-gray-800 border-gray-700 text-gray-400" : "bg-white border-white text-gray-500"
         )}>
           <GlobalOutlined className="text-2xl mb-2" />
           <div>{intl.formatMessage({ id: 'HistoryPanel.noHistoryData' })}</div>

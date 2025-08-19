@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Splitter } from 'antd';
-import PacketDetails from './PacketDetails_m';
-import FunctionCallChainViewer from './FunctionCallChainViewer_m';
-import ProtocolStackMonitor from './ProtocolStackMonitor_m';
-import SocketViewer from './SocetViewer_m';
+import PacketDetails from './PacketDetails';
+import FunctionCallChainViewer from './FunctionCallChainViewer';
+import ProtocolStackMonitor from './ProtocolStackMonitor';
+import SocketViewer from './SocetViewer';
 import { useTheme } from '@/stores/useStore';
 import classNames from 'classnames';
 

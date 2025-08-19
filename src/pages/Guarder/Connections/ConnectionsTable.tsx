@@ -81,11 +81,7 @@ const ConnectionsTable: React.FC<ConnectionsTableProps> = ({
         theme={{
           components: {
             Table: {
-              headerBorderRadius:0,
-              colorBgContainer: isDark ? '#1f2937' : '#ffffff',
-              colorText: isDark ? '#d1d5db' : '#000000',
-              headerBg: isDark ? '#374151' : '#fafafa',
-              headerColor: isDark ? '#d1d5db' : '#000000',
+              headerBg: isDark ? '#2b384d' : '#fafafa',
               rowHoverBg: isDark ? '#374151' : '#f5f5f5',
             },
           },

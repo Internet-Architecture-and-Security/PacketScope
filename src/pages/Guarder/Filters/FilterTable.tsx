@@ -138,7 +138,7 @@ const FilterTable: React.FC<FilterTableProps> = ({
   return (
     <Card className={classNames(
       "shadow-sm",
-      isDark ? "bg-gray-800 border-gray-700" : ""
+      isDark ? "bg-gray-800 border-gray-700" : "border-white"
     )}>
       <Table
         columns={filterColumns}
