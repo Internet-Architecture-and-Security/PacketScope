@@ -13,8 +13,8 @@
 
 **PacketScope** is a general-purpose protocol stack analysis and debugging tool based on eBPF. It integrates performance optimization, anomaly diagnosis, and security defense. It aims to implement fine-grained tracing and intelligent analysis of network packets at the protocol stack level on the server side. By solving three major pain points—difficult diagnosis of performance bottlenecks, unclear transmission paths, and hard-to-detect low-level attacks—PacketScope provides visualized, intelligent endpoint-side security analysis and defense capabilities.
 
-![packetscope](./docs/home.png)
-![packetscope](./docs/home_light.png)
+![packetscope](./docs/home_en.png)
+![packetscope](./docs/home_en_light.png)
 
 ## Background
 
