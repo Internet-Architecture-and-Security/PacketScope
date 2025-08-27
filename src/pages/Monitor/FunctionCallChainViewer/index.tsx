@@ -3,7 +3,7 @@ import { App } from 'antd';
 import { useIntl } from 'react-intl';
 import { useTheme } from '@/stores/useStore';
 import classNames from 'classnames';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 // 导入拆分的组件
 import ChainHeader from './ChainHeader';

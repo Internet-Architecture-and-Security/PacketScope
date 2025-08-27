@@ -11,7 +11,7 @@ import { useIsAutoScroll } from '@/stores/useStore';
 import { usePollingManager } from '@/stores/usePollingManager';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 import recordSvg from '@/assets/record.svg?react';
 import clearSvg from '@/assets/clear.svg?react';

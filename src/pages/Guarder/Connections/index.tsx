@@ -8,7 +8,7 @@ import PageHeader from './PageHeader';
 import StatsGrid from './StatsGrid';
 import ControlPanel from './ControlPanel';
 import ConnectionsTable from './ConnectionsTable';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 // 类型定义
 interface Connection {

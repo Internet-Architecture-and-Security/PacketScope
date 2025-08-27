@@ -10,7 +10,7 @@ import classNames from 'classnames';
 import RiskAnalysisPanel from './RiskAnalysisPanel';
 import TraceResultsPanel from './TraceResultsPanel';
 import HistoryPanel from './HistoryPanel';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 const OFFSET_CENTER = 136;
 const DEFAULT_CENTER = [18 - OFFSET_CENTER, 0];

@@ -7,7 +7,7 @@ import { useIntl } from 'react-intl';
 import logo from '@/assets/newlogo.png';
 // import Logo from '@/assets/newlogo.svg?react';
 import axios from 'axios';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 const { Title, Paragraph } = Typography;
 

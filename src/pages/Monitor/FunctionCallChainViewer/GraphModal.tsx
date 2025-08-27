@@ -3,7 +3,7 @@ import { Modal, ConfigProvider } from 'antd';
 import * as echarts from 'echarts';
 import { useIntl } from 'react-intl';
 import { useTheme } from '@/stores/useStore';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 interface GraphModalProps {
   isVisible: boolean;

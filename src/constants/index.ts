@@ -1,4 +1,4 @@
-import { APIs } from "./APs";
+export { APIs } from "./APIs";
 
 export const DEFAULT_NAME = 'PacketScope';
 export const COOOKIEs = {
@@ -10,4 +10,3 @@ export const LOCAL_STORE = {
   local: 'packetscope-local',
 };
 
-export default { APIs };

@@ -7,7 +7,7 @@ import PacketItem from './PacketItem';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
 import ErrorState from './ErrorState';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 interface IPv4PacketData {
   timestamp: string;

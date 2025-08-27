@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { App } from 'antd';
 import { useIntl } from 'react-intl';
 import { QueryParams, FuncTable } from './types';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 export function useFunctionCallData(queryParams: QueryParams | null) {
   const intl = useIntl();

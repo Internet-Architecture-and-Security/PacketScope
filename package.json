@@ -5,7 +5,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build:ts": "tsc -b && vite build",
     "build": "vite build --base=./",
     "lint": "eslint .",

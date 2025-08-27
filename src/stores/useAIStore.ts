@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 // Types
 interface AIConfig {

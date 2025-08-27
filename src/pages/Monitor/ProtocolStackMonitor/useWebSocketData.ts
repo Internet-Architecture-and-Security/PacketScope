@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useIntl } from 'react-intl';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 // 自定义WebSocket钩子
 const useWebSocketData = (websocketType, queryParams) => {
@@ -46,6 +46,7 @@ const useWebSocketData = (websocketType, queryParams) => {
     }
 
     const ws = new WebSocket(APIs['Analyzer.ws']);
+    console.log('Connecting to WebSocket at', APIs['Analyzer.ws']);
     wsRef.current = ws;
 
     ws.onopen = () => {

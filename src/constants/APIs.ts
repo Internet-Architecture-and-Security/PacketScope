@@ -22,7 +22,7 @@ function makeHttpUrl(port: number, path: string) {
 
 function makeWsUrl(port: number, path: string) {
   // const targetHost = isDev ? "127.0.0.1" : host;
-  const targetHost = host;
+  const targetHost = host === 'localhost' ? '127.0.0.1' : host;
   return `ws://${targetHost}:${port}${path}`;
 }
 

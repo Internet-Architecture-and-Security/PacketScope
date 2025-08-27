@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { IntlShape } from 'react-intl';
 import { type MessageInstance } from 'antd/es/message/interface';
-import { APIs } from '@/constants/APs';
+import { APIs } from '@/constants';
 
 export interface Filter {
   id: number;
