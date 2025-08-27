@@ -385,12 +385,12 @@ const Guarder: React.FC = () => {
       }}
     >
       <Layout className={classNames(
-        "min-h-screen",
+        "h-full overflow-hidden",
         isDark ? "bg-gray-900" : ""
       )}>
         <Layout>
           <Sider width={250} className={classNames(
-            "shadow-sm",
+            "shadow-sm ",
             isDark ? "bg-gray-800" : "bg-white"
           )}>
             <Menu
@@ -403,7 +403,7 @@ const Guarder: React.FC = () => {
           </Sider>
 
           <Content className={classNames(
-            "p-12 pt-8",
+            "p-12 pt-8 relative overflow-auto",
             isDark ? "bg-gradient-to-br from-gray-900 to-gray-800" : "bg-gradient-to-br from-slate-50 to-blue-50"
           )}>
             {renderContent()}

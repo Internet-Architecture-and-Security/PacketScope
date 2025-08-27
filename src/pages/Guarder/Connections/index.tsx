@@ -8,6 +8,7 @@ import PageHeader from './PageHeader';
 import StatsGrid from './StatsGrid';
 import ControlPanel from './ControlPanel';
 import ConnectionsTable from './ConnectionsTable';
+import { APIs } from '@/constants/APs';
 
 // 类型定义
 interface Connection {
@@ -24,7 +25,6 @@ interface Stats {
 }
 
 // API 配置
-const API_BASE_URL = 'http://localhost:8080/api';
 const POLLING_INTERVAL = 3000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000;
@@ -68,14 +68,14 @@ const Connections: React.FC = () => {
       const rect = tableContainerRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       const availableHeight = windowHeight - rect.top;
-      const calculatedHeight = Math.max(availableHeight - 156, MIN_TABLE_HEIGHT);
+      const calculatedHeight = Math.max(availableHeight - 170, MIN_TABLE_HEIGHT);
       setTableHeight(calculatedHeight);
     }
   }, []);
 
   // API 调用函数
   const fetchStats = useCallback(async (): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/stats`);
+    const response = await fetch(APIs['Guarder.stats']);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -84,7 +84,7 @@ const Connections: React.FC = () => {
   }, []);
 
   const fetchConnections = useCallback(async (): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/connections`);
+    const response = await fetch(APIs['Guarder.connections']);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -252,7 +252,7 @@ const Connections: React.FC = () => {
 
   return (
     <div className={classNames(
-      "min-h-screen transition-colors duration-200"
+      "transition-colors duration-200"
     )}>
       <div className="mx-auto space-y-6">
         <PageHeader />

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { APIs } from '@/constants/APs';
 
 // Types
 interface AIConfig {
@@ -54,20 +55,17 @@ interface AIStore {
   isAiConfigValid: () => boolean;
 }
 
-// API Configuration
-const HOST = 'http://localhost:8080';
-
 // API functions
 const aiAPI = {
   getStatus: async (): Promise<AIStatus> => {
-    const response = await fetch(`${HOST}/api/ai/status`);
+    const response = await fetch(APIs['Guarder.status']);
     if (!response.ok) {
       throw new Error('Failed to fetch AI status');
     }
     return response.json();
   },
   getConfig: async (): Promise<AIConfig> => {
-    const response = await fetch(`${HOST}/api/ai/config`);
+    const response = await fetch(APIs['Guarder.config']);
     if (!response.ok) {
       throw new Error('Failed to fetch AI config');
     }
@@ -75,7 +73,7 @@ const aiAPI = {
   },
 
   updateConfig: async (config: AIConfig): Promise<void> => {
-    const response = await fetch(`${HOST}/api/ai/config`, {
+    const response = await fetch(APIs['Guarder.config'], {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -88,7 +86,7 @@ const aiAPI = {
   },
 
   generateFilters: async (params: any): Promise<AIGenerationResult> => {
-    const response = await fetch(`${HOST}/api/ai/generate`, {
+    const response = await fetch(APIs['Guarder.generate'], {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -102,7 +100,7 @@ const aiAPI = {
   },
 
   analyzeOnly: async (params: any): Promise<AIAnalysisResult> => {
-    const response = await fetch(`${HOST}/api/ai/analyze`, {
+    const response = await fetch(APIs['Guarder.analyze'], {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

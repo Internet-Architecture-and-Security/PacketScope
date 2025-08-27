@@ -10,6 +10,7 @@ import classNames from 'classnames';
 import RiskAnalysisPanel from './RiskAnalysisPanel';
 import TraceResultsPanel from './TraceResultsPanel';
 import HistoryPanel from './HistoryPanel';
+import { APIs } from '@/constants/APs';
 
 const OFFSET_CENTER = 136;
 const DEFAULT_CENTER = [18 - OFFSET_CENTER, 0];
@@ -57,7 +58,7 @@ function fetchTraceWithCancel(target, useCache = false, onHop) {
   const promise = (async () => {
     if (!target) return [];
 
-    const url = `http://127.0.0.1:8000/api/trace?target=${target}&cache=${useCache}`;
+    const url = `${APIs['Locator.trace']}?target=${target}&cache=${useCache}`;
     const response = await fetch(url);
     const isStream = response.headers.get('Transfer-Encoding') === 'chunked';
     const results = [];
@@ -301,7 +302,7 @@ function extractMapData(data, intl) {
 };
 
 async function fetchRiskAnalysis(target, useCache = true) {
-  const url = `http://127.0.0.1:8000/api/analyze?target=${target}&cache=${useCache}`;
+  const url = `${APIs['Locator.analyze']}?target=${target}&cache=${useCache}`;
   const response = (await fetch(url)).json();
   return response;
 }
@@ -337,7 +338,7 @@ const Locator = () => {
   // 获取历史记录
   const fetchHistoryData = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/history');
+      const response = await fetch(APIs['Locator.history']);
       const data = await response.json();
       setHistoryData(data);
     } catch (error) {

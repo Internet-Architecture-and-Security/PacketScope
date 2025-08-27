@@ -3,6 +3,7 @@ import { Modal, ConfigProvider } from 'antd';
 import * as echarts from 'echarts';
 import { useIntl } from 'react-intl';
 import { useTheme } from '@/stores/useStore';
+import { APIs } from '@/constants/APs';
 
 interface GraphModalProps {
   isVisible: boolean;
@@ -42,14 +43,13 @@ const GraphModal: React.FC<GraphModalProps> = ({
     if (!params.srcip) return;
     
     try {
-      const endpoint = 'http://127.0.0.1:19999/GetRecentMap';
       const formData = new URLSearchParams();
       formData.append('srcip', params.srcip);
       formData.append('dstip', params.dstip);
       formData.append('srcport', params.srcport);
       formData.append('dstport', params.dstport);
       formData.append('count', params.count ?? 1);
-      const res = await fetch(endpoint, { method: 'POST', body: formData });
+      const res = await fetch(APIs['Tracer.getRecentMap'], { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       return {

@@ -7,6 +7,7 @@ import PacketItem from './PacketItem';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
 import ErrorState from './ErrorState';
+import { APIs } from '@/constants/APs';
 
 interface IPv4PacketData {
   timestamp: string;
@@ -71,8 +72,7 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
       formData.append('count', params.count ?? 40);
 
       // 发起POST请求
-      // const res = await fetch('http://127.0.0.1:19999/QueryPacket', {
-      const res = await fetch('http://127.0.0.1:19999/GetRecentPacket', {
+      const res = await fetch(APIs['Tracer.getRecentPacket'], {
         method: 'POST',
         body: formData,
       });

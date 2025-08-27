@@ -7,12 +7,12 @@ import { useIntl } from 'react-intl';
 import logo from '@/assets/newlogo.png';
 // import Logo from '@/assets/newlogo.svg?react';
 import axios from 'axios';
+import { APIs } from '@/constants/APs';
 
 const { Title, Paragraph } = Typography;
 
 const POLLING_INTERVAL = 5000; // Poll every 3 seconds
 const REQUEST_TIMEOUT = 8000; // 5 seconds timeout
-const API_URL = 'http://127.0.0.1:19999/IsAttachFinished';
 
 // 自定义 Loading 组件
 const CustomLoading = () => (
@@ -55,7 +55,7 @@ export default function ServiceReadinessGate() {
     const checkServiceStatus = async () => {
       try {
         setIsTimeout(false);
-        const response = await apiClient.get(API_URL);
+        const response = await apiClient.get(APIs['Tracer.isAttachFinished']);
 
         if (response.status === 200) {
           const data = response.data;

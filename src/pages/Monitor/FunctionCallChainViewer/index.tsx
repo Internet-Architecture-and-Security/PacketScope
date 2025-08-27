@@ -3,6 +3,7 @@ import { App } from 'antd';
 import { useIntl } from 'react-intl';
 import { useTheme } from '@/stores/useStore';
 import classNames from 'classnames';
+import { APIs } from '@/constants/APs';
 
 // 导入拆分的组件
 import ChainHeader from './ChainHeader';
@@ -155,7 +156,7 @@ const FunctionCallChainViewer: React.FC<FunctionCallChainViewerProps> = ({ query
   // API调用函数
   const fetchFuncTable = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:19999/GetFuncTable', { method: 'GET' });
+      const res = await fetch(APIs['Tracer.getFuncTable'], { method: 'GET' });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setFuncTable(data);
@@ -173,14 +174,13 @@ const FunctionCallChainViewer: React.FC<FunctionCallChainViewerProps> = ({ query
     setLoading(true);
     setError(null);
     try {
-      const endpoint = 'http://127.0.0.1:19999/GetRecentMap';
       const formData = new URLSearchParams();
       formData.append('srcip', params.srcip);
       formData.append('dstip', params.dstip);
       formData.append('srcport', params.srcport);
       formData.append('dstport', params.dstport);
       formData.append('count', params.count ?? 1);
-      const res = await fetch(endpoint, { method: 'POST', body: formData });
+      const res = await fetch(APIs['Tracer.getRecentMap'], { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       const newData = {

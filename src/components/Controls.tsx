@@ -11,6 +11,7 @@ import { useIsAutoScroll } from '@/stores/useStore';
 import { usePollingManager } from '@/stores/usePollingManager';
 import { useIntl } from 'react-intl';
 import { Link } from 'react-router';
+import { APIs } from '@/constants/APs';
 
 import recordSvg from '@/assets/record.svg?react';
 import clearSvg from '@/assets/clear.svg?react';
@@ -40,7 +41,7 @@ const Controls = () => {
 
   useEffect(() => {
     pollingManagerStore.setConfig('socket', {
-      url: 'http://127.0.0.1:19999/QuerySockList',
+      url: APIs['Tracer.querySockList'],
     });
   }, []);
 
@@ -53,7 +54,7 @@ const Controls = () => {
   const handleClearData = async () => {
     try {
       setIsClearing(true);
-      const response = await fetch('http://127.0.0.1:19999/ClearData', {
+      const response = await fetch(APIs['Tracer.clearData'], {
         method: 'GET',
       });
 

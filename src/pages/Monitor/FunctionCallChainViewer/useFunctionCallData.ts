@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { App } from 'antd';
 import { useIntl } from 'react-intl';
 import { QueryParams, FuncTable } from './types';
+import { APIs } from '@/constants/APs';
 
 export function useFunctionCallData(queryParams: QueryParams | null) {
   const intl = useIntl();
@@ -24,7 +25,7 @@ export function useFunctionCallData(queryParams: QueryParams | null) {
 
   const fetchFuncTable = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:19999/GetFuncTable', { method: 'GET' });
+      const res = await fetch(APIs['Tracer.getFuncTable'], { method: 'GET' });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setFuncTable(data);
@@ -42,15 +43,14 @@ export function useFunctionCallData(queryParams: QueryParams | null) {
     setLoading(true);
     setError(null);
     try {
-      const endpoint = 'http://127.0.0.1:19999/GetRecentMap';
       const formData = new URLSearchParams();
       formData.append('srcip', params.srcip);
       formData.append('dstip', params.dstip);
       formData.append('srcport', String(params.srcport));
       formData.append('dstport', String(params.dstport));
       formData.append('count', String(params.count ?? 1));
-      
-      const res = await fetch(endpoint, { method: 'POST', body: formData });
+
+      const res = await fetch(APIs['Tracer.getRecentMap'], { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       
       const data = await res.json();

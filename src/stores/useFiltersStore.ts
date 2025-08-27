@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { IntlShape } from 'react-intl';
 import { type MessageInstance } from 'antd/es/message/interface';
+import { APIs } from '@/constants/APs';
 
 export interface Filter {
   id: number;
@@ -37,14 +38,13 @@ interface FilterState {
   toggleFilter: (id: number, messageApi?: MessageInstance, intl?: IntlShape) => Promise<void>;
 }
 
-const HOST = 'http://localhost:8080';
 
 export const useFiltersStore = create<FilterState>()(
   devtools((set, get) => ({
     filters: [],
     initFilters: async (messageApi, intl) => {
       try {
-        const res = await fetch(`${HOST}/api/filters`);
+        const res = await fetch(APIs['Guarder.filters']);
         if (!res.ok) throw new Error('接口错误');
         const data: Filter[] = await res.json();
         if (data.length === 0) {
@@ -140,7 +140,7 @@ export const useFiltersStore = create<FilterState>()(
 
     fetchFilters: async (messageApi, intl) => {
       try {
-        const res = await fetch(`${HOST}/api/filters`);
+        const res = await fetch(APIs['Guarder.filters']);
         if (!res.ok) throw new Error('接口错误');
         const data: Filter[] = await res.json();
         const newFilters = data
@@ -155,7 +155,7 @@ export const useFiltersStore = create<FilterState>()(
 
     addFilter: async (filter, messageApi, intl) => {
       try {
-        const res = await fetch(`${HOST}/api/filters`, {
+        const res = await fetch(APIs['Guarder.filters'], {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filter),
@@ -171,7 +171,7 @@ export const useFiltersStore = create<FilterState>()(
 
     updateFilter: async (id, filter, messageApi, intl) => {
       try {
-        const res = await fetch(`${HOST}/api/filters/${id}`, {
+        const res = await fetch(`${APIs['Guarder.filters']}/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filter),
@@ -187,7 +187,7 @@ export const useFiltersStore = create<FilterState>()(
 
     deleteFilter: async (id, messageApi, intl) => {
       try {
-        const res = await fetch(`${HOST}/api/filters/${id}`, {
+        const res = await fetch(`${APIs['Guarder.filters']}/${id}`, {
           method: 'DELETE',
         });
         if (!res.ok) throw new Error('删除失败');
@@ -205,7 +205,7 @@ export const useFiltersStore = create<FilterState>()(
 
       const endpoint = current.enabled ? 'disable' : 'enable';
       try {
-        const res = await fetch(`${HOST}/api/filters/${id}/${endpoint}`, {
+        const res = await fetch(`${APIs['Guarder.filters']}/${id}/${endpoint}`, {
           method: 'POST',
         });
         if (!res.ok) throw new Error('切换失败');
