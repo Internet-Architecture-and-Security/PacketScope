@@ -20,6 +20,8 @@ import classNames from 'classnames';
 import DetailRow from './DetailRow';
 import DetailCard from './DetailCard';
 
+import { formatTime } from '@/utils';
+
 interface IPv4PacketData {
   timestamp: string;
   interface: number;
@@ -121,7 +123,7 @@ const PacketItem: React.FC<PacketItemProps> = ({ packet, index, isExpanded, onTo
             "font-mono",
             isDark ? "text-gray-300" : "text-gray-600"
           )}>
-            {packet.timestamp}
+            {formatTime(packet.timestamp)}
           </span>
           <span className={isDark ? "text-gray-500" : "text-gray-400"}>|</span>
           <span className="font-mono text-blue-600">{packet.length}B</span>
@@ -160,7 +162,7 @@ const PacketItem: React.FC<PacketItemProps> = ({ packet, index, isExpanded, onTo
             "font-mono text-xs",
             isDark ? "text-gray-300" : "text-gray-700"
           )}>
-            {packet.timestamp}
+            {formatTime(packet.timestamp)}
           </span>
         </DetailRow>
         <DetailRow icon={<GatewayOutlined />} label={intl.formatMessage({ id: 'PacketDetails.interface' })}>

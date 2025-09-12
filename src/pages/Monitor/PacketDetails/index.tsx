@@ -264,7 +264,7 @@ const PacketDetails: React.FC<PacketDetailsProps> = ({ queryParams }) => {
 
         {!loading && !error && packetData.length > 0 && (
           <div className="space-y-4">
-            {packetData.map((packet, index) => (
+            {packetData.sort((a, b) => b.timestamp - a.timestamp).map((packet, index) => (
               <PacketItem
                 key={index}
                 packet={packet}

@@ -12,6 +12,7 @@ import ChainTree from './ChainTree';
 import FunctionDetails from './FunctionDetails';
 import GraphModal from './GraphModal';
 import { LoadingState, ErrorState, EmptyState, NoQueryParamsState } from './LoadingErrorStates';
+import { formatTime } from '@/utils';
 
 interface FunctionCallChainViewerProps {
   queryParams: {
@@ -53,12 +54,6 @@ const FunctionCallChainViewer: React.FC<FunctionCallChainViewerProps> = ({ query
 
   const [durationFilter, setDurationFilter] = useState([0, 10000]);
   const [showDurationFilter, setShowDurationFilter] = useState(false);
-
-  // 格式化时间的函数
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp * 1000);
-    return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}.${String(date.getMilliseconds()).padStart(3, '0')}`;
-  };
 
   const getFunctionName = (id) => funcTable[id]?.name || `Unknown_${id}`;
   const getCallType = (isReturn) => (isReturn ? 'RETURN' : 'CALL');
