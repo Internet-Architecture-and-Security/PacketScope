@@ -7,7 +7,9 @@ from datetime import datetime
 import geoip2.database
 from flask_cors import CORS, cross_origin
 import requests
-
+import re
+import statistics
+from update_threat_intel import update_risky_ips
 # 历史记录存储路径
 HISTORY_DIR = "history"
 # 创建存储目录（如果不存在）
@@ -26,6 +28,7 @@ def load_risky_ips():
             RISKY_IPS = json.load(f)
         print(f"[✓] Loaded {len(RISKY_IPS)} risky IPs.")
     except Exception as e:
+        update_risky_ips()
         print(f"[!] Failed to load risky IPs: {e}")
 
 # 启动时加载
@@ -47,11 +50,23 @@ def get_timestamp():
     """获取当前时间戳"""
     return datetime.now().strftime("%Y%m%d-%H%M%S")
 
-def get_history_file_path(target):
-    """生成历史记录的存储路径"""
-    ip_dir = os.path.join(HISTORY_DIR, target)  # 每个 IP 一个目录
-    os.makedirs(ip_dir, exist_ok=True)  # 确保目录存在
-    return os.path.join(ip_dir, f"{get_timestamp()}-{target}.json")
+def sanitize_filename(name: str) -> str:
+    """将 URL/IP 转为安全文件名"""
+    return re.sub(r"[^0-9a-zA-Z_-]", "_", name)
+
+def get_history_file_path(target: str, ip_address: str) -> str:
+    """
+    生成历史记录路径
+    - target: 原始输入（URL 或 IP）
+    - ip_address: 实际 traceroute 使用的 IP
+    """
+    ip_dir = os.path.join(HISTORY_DIR, ip_address)
+    os.makedirs(ip_dir, exist_ok=True)
+
+    safe_target = sanitize_filename(target)
+    filename = f"{get_timestamp()}-{safe_target}.json"
+    return os.path.join(ip_dir, filename)
+
 
 def get_ip_from_url(target):
     """解析 URL 获取对应的 IP 地址"""
@@ -137,46 +152,109 @@ def get_ip_info(ip):
             "geo": "Unknown"
         }
 
-def run_traceroute(target: str):
+def enrich_geo(geo):
+    """调用外部API获取经纬度"""
+    if geo["city"]:
+        # 假设调用 ip-api.com 或你自己的 Geo API
+        try:
+            url = f"http://ip-api.com/json/{geo['city']}?lang=zh-CN"
+            resp = requests.get(url, timeout=3).json()
+            geo["lat"] = resp.get("lat")
+            geo["lon"] = resp.get("lon")
+        except:
+            pass
+    return geo
+
+def finalize_hop(hop):
+    numeric_rtts = [r for r in hop["rtts"] if isinstance(r, float)]
+    latency = statistics.mean(numeric_rtts) if numeric_rtts else None
+    packet_loss = (
+        f"{round(hop['rtts'].count('*') / len(hop['rtts']) * 100, 1)}%"
+        if hop["rtts"] else "100%"
+    )
+    ip_info = get_ip_info(hop["ip"]) if hop["ip"] else {}
+    if ip_info["isp"] == "DoD Network Information Center": 
+        ip_info["isp"] = "unknown"
+        ip_info["asn"] = "unknown"
+        ip_info["location"] = "unknown"
+        ip_info["geo"] = "unknown"
+    return {
+        "hop": hop["hop"],
+        "ip": hop["ip"],
+        "latency": round(latency, 2) if latency else None,
+        "jitter": round(statistics.pstdev(numeric_rtts), 2) if len(numeric_rtts) > 1 else None,
+        "packet_loss": packet_loss,
+        "bandwidth_mbps": round(100.0 / (latency + 1), 2) if latency else None,
+        "location": ip_info["location"],
+        "asn": ip_info["asn"],
+        "isp": ip_info["isp"],
+        "geo": ip_info["geo"]
+    }
+
+def run_traceroute(target: str, ip_address: str):
     """ 逐行执行 traceroute 并流式返回 JSON 数据 """
 
     hops = []
-    file_path = get_history_file_path(target)
+    file_path = get_history_file_path(target, ip_address)
     # 运行 traceroute，逐行读取输出
-    traceroute_cmd = ["traceroute", "-I", target]  # ICMP 模式
-    result = subprocess.Popen(traceroute_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    
+    # traceroute_cmd = ["traceroute", "-I", target]  # ICMP 模式
+    # result = subprocess.Popen(traceroute_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    nexttrace_cmd = ["nexttrace", ip_address]  # 不解析域名
+    result = subprocess.Popen(nexttrace_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    current_hop = None
     for line in result.stdout:
-        line = line.strip()
-        if not line or line.startswith("traceroute"):  # 跳过标题行
+        line = ansi_escape.sub('', line).strip()
+        if not line or line.startswith(("traceroute", "NextTrace", "[NextTrace", "IP")):
             continue
-        parts = line.split()
-        ip = parts[1]  # IP 地址
-        print("parts", parts)
-        if len(parts) < 2:
-            continue
+        # hop 开始行
+        print(f"Processing line: {line}")
+        if (re.match(r'^\d+', line) and "ms" not in line ) or "DOD" in line:
+            parts = line.split()
+            if len(parts) == 3:
+                continue
+            hop_num = int(parts[0])
+            # print(f"Processing hop {hop_num}: {parts}")
 
-        
-        latency = float(parts[-2]) if parts[-2].replace('.', '', 1).isdigit() else None
-        ip_info = get_ip_info(ip)
-        # 组装数据
-        hop_data = {
-            "ip": ip,
-            "latency": latency,
-            "jitter": round(latency * 0.1, 2) if latency else "None",  # 模拟 jitter
-            "packet_loss": "0%" if latency else "100%",
-            "bandwidth_mbps": round(100.0 / (latency + 1), 2) if latency else "None",  # 模拟带宽
-            "location": ip_info["location"],
-            "asn": ip_info["asn"],
-            "isp": ip_info["isp"],
-            "geo": ip_info["geo"]
-        }
-        
-        # 存入列表
-        hops.append(hop_data)
+            # 如果遇到新 hop，先保存上一个 hop
+            if current_hop and hop_num != current_hop_num:
+                hops.append(finalize_hop(current_hop))
+                print(f"Saved hop: {hops[-1]}")
+                yield json.dumps(hops[-1], ensure_ascii=False) + "\n"
+                current_hop = None
 
-        # 实时返回 JSON
-        yield json.dumps(hop_data) + "\n"
+            # 如果还没有 current_hop，初始化
+            if not current_hop:
+                ip = parts[1] if len(parts) >= 2 else None
+                asn = parts[2] if len(parts) >= 3 and parts[2].startswith("AS") else None
+                current_hop = {
+                    "hop": hop_num,
+                    "ip": ip,  # 只记录第一个 IP
+                    "asn": asn,
+                    # "location": f"{city}, {country}",
+                    # "isp": isp,
+                    # "geo": {"country": country, "city": city},
+                    "rtts": []
+                }
+                current_hop_num = hop_num
+
+        elif "ms" in line:
+            matches = re.findall(r"(\d+\.\d+)\s*ms|\*", line)
+            print(f"Processing RTT line: {matches}")
+            for m in matches:
+                if m == "*":
+                    current_hop["rtts"].append("*")
+                else:
+                    try:
+                        current_hop["rtts"].append(float(m))
+                    except:
+                        pass
+
+    # 循环结束后，保存最后一个 hop
+    if current_hop:
+        hops.append(finalize_hop(current_hop))
+        yield json.dumps(hops[-1], ensure_ascii=False) + "\n"
+
 
     # 保存完整结果到本地 JSON 文件
     with open(file_path, "w") as f:
@@ -202,7 +280,9 @@ def trace_route():
 
     # 检查是否有历史数据
     ip_dir = os.path.join(HISTORY_DIR, target)
+    print(f"Checking history in {ip_dir}, use_cache={use_cache}")
     if use_cache and os.path.exists(ip_dir):
+        print(f"Found history directory: {ip_dir}")
         files = sorted(os.listdir(ip_dir), reverse=True)  # 按时间倒序
         if files:
             latest_file = os.path.join(ip_dir, files[0])
@@ -210,7 +290,7 @@ def trace_route():
                 return Response(f.read(), mimetype="application/json")
 
     # 如果没有历史数据或用户强制刷新，执行新的 traceroute
-    return Response(run_traceroute(target), mimetype="application/json")
+    return Response(run_traceroute(target, ip_address), mimetype="application/json")
 
 
 # 
@@ -332,7 +412,7 @@ def analyze_route():
             current_hops = []
     else:
         current_hops = []
-        for line in run_traceroute(ip):
+        for line in run_traceroute(target, ip):
             current_hops.append(json.loads(line.strip()))
 
     # 历史对比分析

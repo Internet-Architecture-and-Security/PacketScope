@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  locator:
+    build: .                   # 或使用 image: packetscope-locator
+    container_name: packetscope-locator
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./history:/app/history   # 挂载历史记录目录
+      - ./GeoLite2-City.mmdb:/app/GeoLite2-City.mmdb
+      - ./GeoLite2-ASN.mmdb:/app/GeoLite2-ASN.mmdb
+      - ./risky_ips.json:/app/risky_ips.json

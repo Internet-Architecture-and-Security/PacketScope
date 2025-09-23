@@ -47,5 +47,5 @@ def update_risky_ips():
     else:
         print("No IPs updated.")
 
-if __name__ == "__main__":
-    update_risky_ips()
+# if __name__ == "__main__":
+#     update_risky_ips()
