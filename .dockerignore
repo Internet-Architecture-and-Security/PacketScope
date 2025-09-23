@@ -1,0 +1,28 @@
+# node_modules 目录不打包，依赖在容器内安装
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Git 文件
+.git
+.gitignore
+
+# Docker 文件
+Dockerfile
+.dockerignore
+
+# IDE/编辑器配置
+.vscode
+.idea
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 测试/文档
+coverage
+*.md
+
+modules
+docs
+testscript
