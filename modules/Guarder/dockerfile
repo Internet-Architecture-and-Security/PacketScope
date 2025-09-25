@@ -1,0 +1,94 @@
+FROM ubuntu:24.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CGO_ENABLED=1
+
+# Go proxy configuration (can be overridden at build time)
+ARG GOPROXY=https://proxy.golang.org,direct
+ARG GOSUMDB=sum.golang.org
+ENV GOPROXY=${GOPROXY}
+ENV GOSUMDB=${GOSUMDB}
+
+# Keep default Ubuntu sources (no mirror changes for other dependencies)
+
+# Update package lists and install system dependencies
+RUN apt-get update && apt-get install -y \
+    # Basic tools
+    curl \
+    wget \
+    git \
+    make \
+    build-essential \
+    # Go programming language
+    golang-go \
+    # C/C++ development
+    gcc \
+    g++ \
+    clang \
+    llvm \
+    # eBPF/XDP dependencies
+    libbpf-dev \
+    linux-headers-generic \
+    linux-tools-generic \
+    linux-tools-common \
+    # Additional eBPF tools
+    bpfcc-tools \
+    libbpf-tools \
+    # Network tools
+    iproute2 \
+    net-tools \
+    tcpdump \
+    # Development libraries
+    libelf-dev \
+    zlib1g-dev \
+    pkg-config \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/*
+
+# Verify Go installation
+RUN go version
+
+# Set working directory
+WORKDIR /app
+
+# Copy go module files
+COPY go.mod go.sum ./
+
+# Download Go dependencies
+RUN go mod download
+
+# Install bpf2go tool for eBPF code generation
+RUN go install github.com/cilium/ebpf/cmd/bpf2go@latest
+
+# Copy source code
+COPY . .
+
+# Install project dependencies and build
+RUN make deps && make
+
+# Ensure eBPF is available by checking kernel version and capabilities
+RUN echo "Checking kernel version and eBPF support..." \
+    && uname -r || echo "Kernel version check skipped in container" \
+    && ls -la /sys/fs/bpf || echo "BPF filesystem not mounted (normal in build stage)" \
+    && which clang && clang --version \
+    && which llc || echo "llc not found, using clang for BPF compilation"
+
+# Create non-root user for security (optional)
+RUN groupadd -r guarder && useradd -r -g guarder guarder
+
+# Set proper permissions
+RUN chown -R guarder:guarder /app
+
+# Expose API port
+EXPOSE 8080
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Run as non-root user (commented out as eBPF typically requires root)
+# USER guarder
+
+# Default command
+CMD ["./conn-tracker", "-iface", "eth0", "-interval", "5", "-api", ":8080"]

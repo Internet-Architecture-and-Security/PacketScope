@@ -69,10 +69,29 @@ conn-tracker/
 - OpenAI API密钥 (可选，用于AI功能)
 
 ### 编译安装
+
+#### 国内用户配置
+如果遇到Go模块下载超时问题，请在编译前配置Go代理：
+
+```bash
+# 设置阿里云Go代理镜像
+export GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
+export GOSUMDB=sum.golang.google.cn
+
+# 其他可选代理源（选择其一）:
+# export GOPROXY=https://goproxy.cn,direct
+# export GOPROXY=https://mirrors.cloud.tencent.com/go/,direct
+```
+
+#### 编译步骤
 ```bash
 # 克隆仓库
 git clone <repository-url>
 cd conn-tracker
+
+# （可选）配置Go代理加速下载
+export GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
+export GOSUMDB=sum.golang.google.cn
 
 # 编译项目
 make
@@ -81,10 +100,111 @@ make
 sudo ./conn-tracker -iface eth0 -interval 5 -api :8080
 ```
 
+### Docker构建时使用自定义Go代理
+
+在中国或其他地区，可以在构建时指定Go代理以加速构建：
+
+```bash
+# 使用阿里云Go代理构建
+docker build --build-arg GOPROXY=https://mirrors.aliyun.com/goproxy/,direct \
+             --build-arg GOSUMDB=sum.golang.google.cn \
+             -t guarder .
+
+# 使用goproxy.cn构建
+docker build --build-arg GOPROXY=https://goproxy.cn,direct \
+             --build-arg GOSUMDB=sum.golang.google.cn \
+             -t guarder .
+
+# 使用腾讯云代理构建
+docker build --build-arg GOPROXY=https://mirrors.cloud.tencent.com/go/,direct \
+             --build-arg GOSUMDB=sum.golang.google.cn \
+             -t guarder .
+
+# 默认构建（使用官方Go代理）
+docker build -t guarder .
+```
+
 ### 命令行参数
 - `-iface`: 要监控的网络接口（必需）
 - `-interval`: 控制台输出间隔秒数（默认: 10）
 - `-api`: API服务器监听地址（默认: :8080）
+
+## 🐳 Docker部署
+
+### Docker快速启动
+
+```bash
+# 使用主机网络运行（eBPF必需）
+sudo docker run --privileged --network host guarder
+
+# 指定网络接口运行
+sudo docker run --privileged --network host guarder ./conn-tracker -iface ens33 -interval 10
+
+# 后台运行
+sudo docker run -d --privileged --network host --name guarder-monitor guarder
+```
+
+### 发布Docker镜像
+
+#### 1. 标记镜像
+```bash
+# 标记为Docker Hub镜像
+sudo docker tag guarder your-username/guarder:latest
+sudo docker tag guarder your-username/guarder:v1.0.0
+
+# 标记为GitHub容器注册表镜像
+sudo docker tag guarder ghcr.io/your-username/guarder:latest
+sudo docker tag guarder ghcr.io/your-username/guarder:v1.0.0
+
+# 标记为阿里云容器注册表镜像
+sudo docker tag guarder registry.cn-hangzhou.aliyuncs.com/your-namespace/guarder:latest
+```
+
+#### 2. 推送到注册表
+
+**Docker Hub:**
+```bash
+# 登录Docker Hub
+sudo docker login
+
+# 推送镜像
+sudo docker push your-username/guarder:latest
+sudo docker push your-username/guarder:v1.0.0
+```
+
+**GitHub容器注册表:**
+```bash
+# 使用GitHub令牌登录
+echo $GITHUB_TOKEN | sudo docker login ghcr.io -u your-username --password-stdin
+
+# 推送镜像
+sudo docker push ghcr.io/your-username/guarder:latest
+sudo docker push ghcr.io/your-username/guarder:v1.0.0
+```
+
+**阿里云容器注册表:**
+```bash
+# 登录阿里云
+sudo docker login --username=your-aliyun-username registry.cn-hangzhou.aliyuncs.com
+
+# 推送镜像
+sudo docker push registry.cn-hangzhou.aliyuncs.com/your-namespace/guarder:latest
+```
+
+#### 3. 多架构构建（可选）
+
+支持多种架构（amd64, arm64）：
+
+```bash
+# 创建并使用buildx构建器
+sudo docker buildx create --name multiarch-builder --use
+
+# 构建并推送多架构镜像
+sudo docker buildx build --platform linux/amd64,linux/arm64 \
+  --build-arg GOPROXY=https://goproxy.cn,direct \
+  -t your-username/guarder:latest \
+  --push .
+```
 
 ## 📊 连接追踪
 

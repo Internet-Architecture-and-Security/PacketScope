@@ -69,10 +69,29 @@ conn-tracker/
 - OpenAI API key (optional, for AI functionality)
 
 ### Build
+
+#### For Chinese Users (中国用户配置)
+If you encounter Go module download timeouts, configure Go proxy before building:
+
+```bash
+# Set Go proxy to Alibaba Cloud mirror
+export GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
+export GOSUMDB=sum.golang.google.cn
+
+# Alternative proxies (choose one):
+# export GOPROXY=https://goproxy.cn,direct
+# export GOPROXY=https://mirrors.cloud.tencent.com/go/,direct
+```
+
+#### Build Steps
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd conn-tracker
+
+# (Optional) Configure Go proxy for faster downloads
+export GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
+export GOSUMDB=sum.golang.google.cn
 
 # Build the project
 make
@@ -81,10 +100,111 @@ make
 sudo ./conn-tracker -iface eth0 -interval 5 -api :8080
 ```
 
+### Docker Build with Custom Go Proxy
+
+For faster builds in China or other regions, you can specify Go proxy at build time:
+
+```bash
+# Build with Alibaba Cloud Go proxy
+docker build --build-arg GOPROXY=https://mirrors.aliyun.com/goproxy/,direct \
+             --build-arg GOSUMDB=sum.golang.google.cn \
+             -t guarder .
+
+# Build with goproxy.cn
+docker build --build-arg GOPROXY=https://goproxy.cn,direct \
+             --build-arg GOSUMDB=sum.golang.google.cn \
+             -t guarder .
+
+# Build with Tencent Cloud proxy
+docker build --build-arg GOPROXY=https://mirrors.cloud.tencent.com/go/,direct \
+             --build-arg GOSUMDB=sum.golang.google.cn \
+             -t guarder .
+
+# Default build (uses official Go proxy)
+docker build -t guarder .
+```
+
 ### Command Line Options
 - `-iface`: Network interface to monitor (required)
 - `-interval`: Console output interval in seconds (default: 10)
 - `-api`: API server listen address (default: :8080)
+
+## 🐳 Docker Deployment
+
+### Quick Start with Docker
+
+```bash
+# Run with host network (required for eBPF)
+sudo docker run --privileged --network host guarder
+
+# Run with custom interface
+sudo docker run --privileged --network host guarder ./conn-tracker -iface ens33 -interval 10
+
+# Run in background
+sudo docker run -d --privileged --network host --name guarder-monitor guarder
+```
+
+### Publishing Docker Images
+
+#### 1. Tag Your Image
+```bash
+# Tag for Docker Hub
+sudo docker tag guarder your-username/guarder:latest
+sudo docker tag guarder your-username/guarder:v1.0.0
+
+# Tag for GitHub Container Registry
+sudo docker tag guarder ghcr.io/your-username/guarder:latest
+sudo docker tag guarder ghcr.io/your-username/guarder:v1.0.0
+
+# Tag for Alibaba Cloud Container Registry (China)
+sudo docker tag guarder registry.cn-hangzhou.aliyuncs.com/your-namespace/guarder:latest
+```
+
+#### 2. Push to Registries
+
+**Docker Hub:**
+```bash
+# Login to Docker Hub
+sudo docker login
+
+# Push images
+sudo docker push your-username/guarder:latest
+sudo docker push your-username/guarder:v1.0.0
+```
+
+**GitHub Container Registry:**
+```bash
+# Login with GitHub token
+echo $GITHUB_TOKEN | sudo docker login ghcr.io -u your-username --password-stdin
+
+# Push images
+sudo docker push ghcr.io/your-username/guarder:latest
+sudo docker push ghcr.io/your-username/guarder:v1.0.0
+```
+
+**Alibaba Cloud Registry (China):**
+```bash
+# Login to Alibaba Cloud
+sudo docker login --username=your-aliyun-username registry.cn-hangzhou.aliyuncs.com
+
+# Push images
+sudo docker push registry.cn-hangzhou.aliyuncs.com/your-namespace/guarder:latest
+```
+
+#### 3. Multi-Architecture Builds (Optional)
+
+For supporting multiple architectures (amd64, arm64):
+
+```bash
+# Create and use buildx builder
+sudo docker buildx create --name multiarch-builder --use
+
+# Build and push multi-arch images
+sudo docker buildx build --platform linux/amd64,linux/arm64 \
+  --build-arg GOPROXY=https://goproxy.cn,direct \
+  -t your-username/guarder:latest \
+  --push .
+```
 
 ## 📊 Connection Tracking
 
