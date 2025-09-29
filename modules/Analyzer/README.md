@@ -1,4 +1,4 @@
-# Tracer 模块说明
+# Analyzer 模块说明
 
 本模块用于进行Analyzer模块的前端操作。
 
@@ -23,7 +23,7 @@ https://github.com/iovisor/bcc/tree/2b73f76eab440111a717f53290636f8233f15306
 
 请按此版本安装BCC，其它版本BCC不保证可正常运行，如需适配高版本，请向我们提出issue
 
-2. 安装python依赖，请注意，此环境应与BCC位于同一python环境重
+2. 安装python依赖，请注意，此环境应与BCC位于同一python环境
 cd ../Analyzer
 pip install -r ./requirements.txt
 
@@ -169,4 +169,4 @@ ID号通过GetFuncTable获取向函数名的映射表.不采用直接存储函�
 
 ```
 
-sudo -E /home/ubuntu/packetscope-web-app/modules/monitor/.venv/bin/python flaskServerMain.py
+
