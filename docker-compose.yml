@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+  # 根目录主服务
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: packetscope_app
+    ports:
+      - "4173:4173"
+    volumes:
+      - ./:/app/
+    depends_on:
+      - analyzer-tracer
+      - analyzer-analyzer
+      # - guarder
+      # - locator
+      # - tracer
+
+  analyzer-tracer:
+    build:
+      context: ./modules/Analyzer/Tracer
+      dockerfile: Dockerfile   # 如果 Analyzer 没有 Dockerfile，可以用 python 镜像+requirements.txt
+    image: packetscope:tracer
+    container_name: analyzer-tracer
+    privileged: true
+    network_mode: host   # ✅ 使用宿主机网络
+    volumes:
+      - ./modules/Analyzer/Tracer:/tracer
+  analyzer-analyzer:
+    build:
+      context: ./modules/Analyzer/Analyzer
+      dockerfile: Dockerfile   # 如果 Analyzer 没有 Dockerfile，可以用 python 镜像+requirements.txt
+    container_name: analyzer-analyzer
+    privileged: true
+    network_mode: host   # ✅ 使用宿主机网络
+    volumes:
+      - ./modules/Analyzer/Analyzer:/analyzer
+    depends_on:
+      - analyzer-tracer
+  # tracer:
+  #   build:
+  #     context: ./modules/Tracer
+  #     dockerfile: Dockerfile   # 如果 Tracer 没有 Dockerfile，可以用 python 镜像+requirements.txt
+  #   container_name: tracer
+  #   privileged: true
+  #   network_mode: host   # ✅ 使用宿主机网络
+  #   volumes:
+  #     - ./modules/Tracer:/tracer
+
+  # guarder:
+  #   build:
+  #     context: ./modules/Guarder
+  #     dockerfile: Dockerfile   # Guarder 目录里已经有 Dockerfile
+  #   container_name: packetscope-guarder
+  #   privileged: true           # 如果涉及 eBPF/BPF，可能需要特权模式
+  #   volumes:
+  #     - ./modules/Guarder:/guarder
+  #   ports:
+  #     - "8080:8080"  # 如果 Flask/Django 或 API 在这里
+
+  # locator:
+  #   build:
+  #     context: ./modules/Locator
+  #     dockerfile: Dockerfile
+  #   container_name: packetscope-locator
+  #   volumes:
+  #     - ./modules/Locator:/locator
+  #   ports:
+  #     - "8000:8000"  # 如果 Flask/Django 或 API 在这里
+
+  # tracer:
+  #   build:
+  #     context: ./modules/Tracer
+  #     dockerfile: Dockerfile
+  #   container_name: tracer
+  #   command: ./start.sh
+  #   privileged: true           # tracer 用到 bcc/bpf，通常需要
+  #   volumes:
+  #     - ./modules/Tracer:/tracer
