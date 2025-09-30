@@ -2,8 +2,8 @@ version: "3.9"
 
 services:
   locator:
-    build: .                   # 或使用 image: packetscope-locator
-    container_name: packetscope-locator
+    build: .                   # 或使用 image: packetscope-tracer
+    container_name: packetscope-tracer
     restart: unless-stopped
     ports:
       - "8000:8000"

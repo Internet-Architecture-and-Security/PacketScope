@@ -1,4 +1,4 @@
-# Locator
+# Tracer
 
 一个基于 Flask 的网络路径分析服务，集成实时 `traceroute` 路由追踪、地理与 ASN 查询、历史缓存记录、异常分析和 Spamhaus 恶意 IP 风险评估功能。
 
@@ -41,7 +41,7 @@
 docker-compose up --build
 ```
 
-这将自动构建并启动所有依赖的容器，包括 Flask 后端和 `nexttrace` 服务。
+这将自动构建并启动所有依赖的容器Flask 后端。
 
 #### 1.2 使用 Docker 启动
 
@@ -49,10 +49,10 @@ docker-compose up --build
 
 ```bash
 # 构建镜像
-docker build -t packetscope-locator .
+docker build -t packetscope-tracer .
 
 # 启动容器
-docker run --rm -v $(pwd)/history:/app/history -p 8000:8000 packetscope-locator
+docker run --rm -v $(pwd)/history:/app/history -p 8000:8000 packetscope-tracer
 ```
 
 服务默认监听在端口 `8000`。
