@@ -44,10 +44,9 @@ This project includes multiple server-side modules implemented in different lang
 
 ```bash
 modules
-├── Analyzer  # Python-based protocol stack analysis module
+├── Analyzer  # Python-based protocol stack analysis, traffic monitoring and fine-grained tracing module
 ├── Guarder   # Go-based security policy module
-├── Locator   # Python-based network path mapping module
-└── Tracer    # Python-based traffic monitoring and fine-grained tracing module
+└── Tracer    # Python-based network path mapping module
 ```
 
 ### Start Frontend Service
@@ -98,15 +97,11 @@ npm run build
 
 ## ✨ Functional Modules
 
-- **Tracer**
-
-  Tracks interactions of connections/packets in the protocol stack and generates a detailed visual path map. Users can click to explore different protocol layers and understand the data flow.
-
 - **Analyzer**
 
-  Provides multidimensional statistics on packet movement in the protocol stack, including traffic volume, latency, cross-layer interaction frequency, and packet loss.
+  Provides multidimensional statistics on packet movement in the protocol stack, including traffic volume, latency, cross-layer interaction frequency, and packet loss. Tracks interactions of connections/packets in the protocol stack and generates a detailed visual path map. Users can click to explore different protocol layers and understand the data flow.
 
-- **Locator**
+- **Tracer**
 
   Maps routes and latency from the host to any global IP address, displaying this data on a global topology for optimization insights.
 
