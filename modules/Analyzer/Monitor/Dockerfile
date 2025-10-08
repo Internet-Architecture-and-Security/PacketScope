@@ -44,7 +44,6 @@ COPY ./* /PacketScope-main/modules/Tracer/
 # WORKDIR PacketScope-main/modules/Tracer
 RUN pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple && \
     pip install -r PacketScope-main/modules/Tracer/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-
 # WORKDIR PacketScope-main/modules/Analyzer 
 # 设置默认工作目录
 # WORKDIR PacketScope-main/modules/Tracer

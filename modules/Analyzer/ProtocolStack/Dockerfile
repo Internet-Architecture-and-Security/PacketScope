@@ -1,5 +1,5 @@
 # 使用Ubuntu作为基础镜像（基于apt命令推测，可根据实际需求调整版本）
-FROM packetscope:tracer
+FROM packetscope-analyzer-monitor:v1.0
 
 # 镜像元信息（可选）
 LABEL maintainer="Your Name" \

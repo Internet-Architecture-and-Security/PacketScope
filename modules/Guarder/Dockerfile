@@ -5,10 +5,16 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV CGO_ENABLED=1
 
 # Go proxy configuration (can be overridden at build time)
-ARG GOPROXY=https://proxy.golang.org,direct
-ARG GOSUMDB=sum.golang.org
-ENV GOPROXY=${GOPROXY}
-ENV GOSUMDB=${GOSUMDB}
+# ARG GOPROXY=https://proxy.golang.org,direct
+# ARG GOSUMDB=sum.golang.org
+# ENV GOPROXY=${GOPROXY}
+# ENV GOSUMDB=${GOSUMDB}
+# 配置 Go 代理
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOSUMDB=sum.golang.google.cn
+# ARG GOSUMDB=sum.golang.org
+# ENV GOPROXY=${GOPROXY}
+# ENV GOSUMDB=${GOSUMDB}
 
 # Keep default Ubuntu sources (no mirror changes for other dependencies)
 

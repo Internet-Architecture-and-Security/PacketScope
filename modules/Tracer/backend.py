@@ -430,6 +430,21 @@ def analyze_route():
         "riskScore": total_score
     })
 
+@app.route("/api/ready", methods=["GET"])
+def readiness_check():
+    """就绪检查接口 - 检查服务是否可以接受请求"""
+    try:
+        # 简单的就绪检查
+        return jsonify({
+            "ready": True,
+            "timestamp": datetime.now().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "ready": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }), 503
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
