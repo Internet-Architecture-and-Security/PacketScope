@@ -1,8 +1,9 @@
+import React, { useEffect } from 'react';
 import { IntlProvider } from 'react-intl';
 import zh from '@/locales/zh-CN';
 import en from '@/locales/en-US';
 import ServiceReadinessGate from './ServiceReadinessGate';
-import { useSelectLang } from '@/stores/useStore';
+import { useSelectLang, useMonitorReadyStore } from '@/stores/useStore';
 import { ConfigProvider, App } from 'antd';
 // import { AliveScope } from 'react-activation';
 import Theme from './Theme';
@@ -27,7 +28,18 @@ export default function Layout() {
   const { currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
   const { currentLang, defaultValue } = useSelectLang();
+  const { startPolling, stopPolling } = useMonitorReadyStore();
   const locale = (messages[currentLang as keyof Messages] ? currentLang : 'en-US') as keyof Messages;
+  
+  useEffect(() => {
+    // 开始轮询
+    startPolling();
+    
+    // 组件卸载时停止轮询
+    return () => {
+      stopPolling();
+    };
+  }, []);
 
   return (
     <ConfigProvider theme={{

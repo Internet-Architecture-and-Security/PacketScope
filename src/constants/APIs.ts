@@ -43,6 +43,7 @@ export const APIs = {
   "Locator.trace": makeHttpUrl(PORTS.locator, "/api/trace"),
   "Locator.analyze": makeHttpUrl(PORTS.locator, "/api/analyze"),
   "Locator.history": makeHttpUrl(PORTS.locator, "/api/history"),
+  "Locator.ready": makeHttpUrl(PORTS.locator, "/api/ready"),
 
   // Guarder 服务
   "Guarder.stats": makeHttpUrl(PORTS.guarder, "/api/stats"),
