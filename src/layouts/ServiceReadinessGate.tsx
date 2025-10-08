@@ -55,11 +55,12 @@ export default function ServiceReadinessGate() {
     const checkServiceStatus = async () => {
       try {
         setIsTimeout(false);
-        const response = await apiClient.get(APIs['Tracer.isAttachFinished']);
+        const response = await apiClient.get(APIs['Locator.ready']);
 
         if (response.status === 200) {
           const data = response.data;
-          if (Array.isArray(data) && data[0] === true) {
+          console.log('Service readiness response:', data);
+          if (data && data.ready === true) {
             setIsReady(true);
             setError(null);
             clearInterval(intervalId);

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { LOCAL_STORE } from '@/constants';
+import { LOCAL_STORE, APIs } from '@/constants';
 import { devtools } from 'zustand/middleware';
 
 type ThemeType = 'light' | 'dark' | 'system';
@@ -30,6 +30,148 @@ export const useTheme = create<ThemeState>()(
     },
   ),
 );
+
+interface ReadyState {
+  isReady: boolean;
+  isLoading: boolean;
+  error: string | null;
+  maxAttemptsReached: boolean;
+  checkReady: () => Promise<void>;
+  startPolling: () => void;
+  stopPolling: () => void;
+  resetPolling: () => void;
+}
+export const useMonitorReadyStore = create<ReadyState>((set, get) => {
+  let pollingInterval: NodeJS.Timeout | null = null;
+  let attemptCount = 0;
+  const MAX_ATTEMPTS = 60; // 60次 * 500ms = 30秒
+
+  return {
+    isReady: false,
+    isLoading: false,
+    error: null,
+    maxAttemptsReached: false,
+
+    checkReady: async () => {
+      console.log('[MonitorReadyStore] checkReady called, attemptCount:', attemptCount);
+      
+      try {
+        const res = await fetch(APIs['Tracer.isAttachFinished']);
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        const ready = Array.isArray(data) && data[0] === true;
+
+        console.log('[MonitorReadyStore] API response:', { data, ready });
+
+        set({
+          isReady: ready,
+          isLoading: false  // 关键：每次检查后都设置为 false
+        });
+
+        // 如果已准备好，停止轮询并重置计数
+        if (ready && pollingInterval) {
+          console.log('[MonitorReadyStore] Ready! Stopping polling');
+          clearInterval(pollingInterval);
+          pollingInterval = null;
+          attemptCount = 0;
+        }
+      } catch (error) {
+        console.error('[MonitorReadyStore] checkReady error:', error);
+        set({
+          isReady: false,
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    },
+
+    startPolling: () => {
+      console.log('[MonitorReadyStore] startPolling called');
+      
+      // 清除已存在的轮询
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+
+      // 重置状态
+      attemptCount = 0;
+      set({ 
+        maxAttemptsReached: false, 
+        error: null,
+        isLoading: true  // 开始轮询时设置为 true
+      });
+
+      // 立即执行一次
+      get().checkReady();
+      attemptCount++;
+
+      // 每1000ms执行一次
+      pollingInterval = setInterval(() => {
+        const { isReady } = get();
+        
+        console.log('[MonitorReadyStore] Polling check:', { attemptCount, isReady });
+        
+        // 检查是否达到最大尝试次数
+        if (attemptCount >= MAX_ATTEMPTS) {
+          console.log('[MonitorReadyStore] Max attempts reached');
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+          set({
+            maxAttemptsReached: true,
+            isLoading: false,
+            error: '服务没有开启或网络故障，请检查后再重新尝试'
+          });
+          return;
+        }
+
+        if (!isReady) {
+          get().checkReady();
+          attemptCount++;
+        } else {
+          // 已准备好，停止轮询
+          console.log('[MonitorReadyStore] Already ready, stopping interval');
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+          attemptCount = 0;
+          set({ isLoading: false });
+        }
+      }, 1000);
+    },
+
+    stopPolling: () => {
+      console.log('[MonitorReadyStore] stopPolling called');
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
+      attemptCount = 0;
+      set({ isLoading: false });
+    },
+
+    resetPolling: () => {
+      console.log('[MonitorReadyStore] resetPolling called');
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
+      attemptCount = 0;
+      set({
+        isReady: false,
+        isLoading: false,
+        error: null,
+        maxAttemptsReached: false
+      });
+      get().startPolling();
+    }
+  };
+});
 // 监听系统主题变化
 export const listenSystemThemeChange = () => {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');

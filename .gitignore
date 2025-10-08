@@ -32,6 +32,7 @@ modules/Locator/.cache
 modules/Tracer/.venv
 modules/Tracer/.cache
 modules/Tracer/.*
+modules/Tracer/history
 modules/Tracer/bcc-master
 modules/Tracer/__pycache__
 modules/Tracer/*.db
@@ -39,5 +40,9 @@ modules/Tracer/*.db*
 modules/Tracer/FuncIDMap.json
 modules/Analyzer/.venv
 modules/Analyzer/__pycache__
+modules/Analyzer/.cache
+modules/Analyzer/Monitor/.cache
+modules/Analyzer/Monitor/__pycache__
+modules/Analyzer/Monitor/.venv
 
 testscript
