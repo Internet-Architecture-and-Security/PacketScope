@@ -38,8 +38,15 @@ modules/Tracer/*.db
 modules/Tracer/*.db*
 modules/Tracer/history
 modules/Tracer/FuncIDMap.json
-modules/Analyzer/.venv
+
+
+modules/Analyzer/Monitor/.cache
+modules/Analyzer/Monitor/__pycache__
+modules/Analyzer/Monitor/.venv
+modules/Analyzer/ProtocolStack/__pycache__
+modules/Analyzer/ProtocolStack/.venv
 modules/Analyzer/__pycache__
+modules/Analyzer/.venv
 modules/Analyzer/Monitor/.cache
 modules/Analyzer/Monitor/__pycache__
 modules/Analyzer/Monitor/.venv

@@ -165,9 +165,11 @@ show_services() {
     print_separator
     log_info "服务端点："
     print_separator
-    echo -e "  ${CYAN}Web UI:${NC}              http://localhost:4173"
-    echo -e "  ${CYAN}Guarder API:${NC}         http://localhost:8080"
-    echo -e "  ${CYAN}Tracer API:${NC}          http://localhost:8000"
+    echo -e "  ${CYAN}Web UI:${NC}                       http://localhost:4173"
+    echo -e "  ${CYAN}Guarder API:${NC}                  http://localhost:8080"
+    echo -e "  ${CYAN}Tracer API:${NC}                   http://localhost:8000"
+    echo -e "  ${CYAN}Analyzer-Monitor API:${NC}         http://localhost:5000"
+    echo -e "  ${CYAN}Analyzer-ProtocolStack API:${NC}   http://localhost:19999"
     
     echo ""
     print_separator
