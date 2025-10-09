@@ -1,8 +1,8 @@
 import { createHashRouter, RouteObject } from 'react-router';
 import Layout from '@/layouts';
 import Guarder from '@/pages/Guarder';
-import Locator from '@/pages/Locator';
-import Monitor from '@/pages/Monitor';
+import Tracer from '@/pages/Tracer';
+import Analyzer from '@/pages/Analyzer';
 import ErrorPage from '@/pages/ErrorPage'; // 引入 ErrorPage
 
 export const routerObjects: RouteObject[] = [
@@ -12,7 +12,7 @@ export const routerObjects: RouteObject[] = [
     errorElement: <ErrorPage />,
     children: [
       {
-        element: <Monitor />,
+        element: <Analyzer />,
         index: true,
       },
       {
@@ -21,7 +21,7 @@ export const routerObjects: RouteObject[] = [
       },
       {
         path: 'locator',
-        element: <Locator />,
+        element: <Tracer />,
       },
     ],
   },
