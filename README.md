@@ -38,64 +38,162 @@ Through protocol tracing, path visualization, and intelligent analysis, PacketSc
 
 ## ⚡ Getting Started
 
-### Start Server Modules
+### Prerequisites
 
-This project includes multiple server-side modules implemented in different languages. Follow the instructions in each module’s `README.md` to install dependencies and start services.
+Before starting, ensure Docker is installed and running on your system:
 
-```bash
-modules
-├── Analyzer  # Python-based protocol stack analysis, traffic monitoring and fine-grained tracing module
-├── Guarder   # Go-based security policy module
-└── Tracer    # Python-based network path mapping module
-```
+- **Docker**: Version 20.10 or higher
+- **Docker Compose**: Version 2.0 or higher
 
-### Start Frontend Service
-
-The frontend is built on [Node.js](https://nodejs.org/en). Please ensure Node.js (version ≥ 16) is installed.
-
-#### 1. Install Dependencies
-
-Run the following command in the project root:
+To verify your Docker installation:
 
 ```bash
-npm install
+docker --version
+docker compose version
 ```
 
-> ⚠️ For users in mainland China, set npm mirror to speed up installation:
+If Docker is not installed, please visit [Docker's official website](https://docs.docker.com/get-docker/) for installation instructions.
+
+### One-Click Deployment
+
+PacketScope provides a convenient deployment script that automatically builds and starts all services using Docker Compose.
+
+#### 1. Clone the Repository
 
 ```bash
-npm config set registry http://registry.npmmirror.com
+git clone https://github.com/Internet-Architecture-and-Security/PacketScope.git
+cd PacketScope
 ```
 
-#### 2. Start Preview Server
+#### 2. Run the Deployment Script
+
+Execute the starter script with root privileges:
 
 ```bash
-npm run preview
+sudo bash starter.sh
 ```
 
-The application runs locally by default on port `4173`.
+The script will automatically:
+- Check your Docker environment
+- Stop any existing services
+- Build all service containers in the correct order
+- Start all services
+- Display service status and access information
 
-#### 3. Access the App
+#### 3. Access the Application
 
-Open your browser and visit:
+Once deployment is complete, open your browser and visit:
 
 ```
 http://localhost:4173/
 ```
 
-> 💡 To run in development mode with hot reloading, use the following command:
+### Service Endpoints
 
+After successful deployment, the following services will be available:
+
+- **Web UI**: `http://localhost:4173`
+- **Guarder API**: `http://localhost:8080`
+- **Tracer API**: `http://localhost:8000`
+- **Analyzer-Monitor API**: `http://localhost:5000`
+- **Analyzer-ProtocolStack API**: `http://localhost:19999`
+
+### Managing Services
+
+**View service status:**
 ```bash
-npm run dev
+sudo docker compose ps
 ```
 
-> 💡 To build the project for production, use the following command:
-
+**View service logs:**
 ```bash
-npm run build
+sudo docker compose logs -f
 ```
+
+**View logs for a specific service:**
+```bash
+sudo docker compose logs -f <service-name>
+```
+
+**Stop all services:**
+```bash
+sudo docker compose down
+```
+
+**Restart services:**
+```bash
+sudo docker compose restart
+```
+
+**Restart a specific service:**
+```bash
+sudo docker compose restart <service-name>
+```
+
+> 💡 **Note**: The starter.sh script handles the entire deployment process automatically. For manual deployment or advanced configuration, please refer to the individual module README files in the `modules/` directory.
+
+
+
+## 📁 Project Structure
+
+```
+.
+├── CODE_OF_CONDUCT.md          # Code of Conduct
+├── CONTRIBUTING.md             # Contributing Guidelines
+├── docker-compose.yml          # Docker Compose configuration
+├── Dockerfile                  # Frontend application Dockerfile
+├── eslint.config.js            # ESLint configuration
+├── index.html                  # Application entry HTML
+├── LICENSE                     # Project license
+├── modules/                    # Backend service modules
+│   ├── Analyzer/              # Analyzer module
+│   │   ├── Monitor/           # Traffic monitoring sub-module
+│   │   ├── ProtocolStack/     # Protocol analysis sub-module
+│   │   └── README.md          # Analyzer documentation
+│   ├── Guarder/               # Security protection module
+│   └── Tracer/                # Network tracing module
+├── package.json                # Node.js dependencies
+├── package-lock.json           # npm lock file
+├── pnpm-lock.yaml             # pnpm lock file
+├── src/                        # Frontend source code
+├── public/                     # Static assets
+├── README.md                   # English documentation
+├── README-zh_CN.md            # Chinese documentation
+├── SECURITY.md                # Security policy
+├── starter.sh                 # One-click deployment script
+├── tailwind.config.js         # Tailwind CSS configuration
+├── TODOList.md                # TODO list
+├── tsconfig.app.json          # TypeScript app configuration
+├── tsconfig.json              # TypeScript base configuration
+├── tsconfig.node.json         # TypeScript Node configuration
+├── vite.config.ts             # Vite build configuration
+└── vite-README.md             # Vite usage instructions
+```
+
+### Core Directories
+
+- **modules/**：Contains all backend service modules, each module is an independent microservice
+  - **Analyzer/**：Protocol stack analysis and traffic monitoring service
+  - **Guarder/**：Security protection and threat detection service
+  - **Tracer/**：Network path tracing and topology analysis service
+  
+- **src/**：Frontend application source code, built with React and TypeScript
+
+- **public/**：Static asset files such as images and icons
+
+- **starter.sh**：One-click deployment script that automates building and starting all services
+
 
 ## ✨ Functional Modules
+
+PacketScope consists of three main modules, each serving a specific purpose:
+
+```
+modules
+├── Analyzer  # Python-based protocol stack analysis, traffic monitoring and fine-grained tracing module
+├── Guarder   # Go-based security policy module
+└── Tracer    # Python-based network path mapping module
+```
 
 - **Analyzer**
 

@@ -36,70 +36,163 @@
 - 🔐 **协议栈级防护**：识别并拦截协议栈层的异常流量，弥补传统 WAF/IDS 空白
 - 🖥️ **图形化界面**：用户友好的操作界面，便于安全工程师和运维人员快速上手
 
+
 ## ⚡ 快速开始
 
-### 启动服务器
+### 前置要求
 
-本项目包含多个服务端模块，分别采用不同的编程语言实现。请根据各模块目录下的 `README.md` 文件说明，依次完成依赖安装与服务启动操作。
+开始之前，请确保您的系统已安装并运行 Docker：
 
-模块结构如下：
+- **Docker**：版本 20.10 或更高
+- **Docker Compose**：版本 2.0 或更高
 
-```bash
-modules
-├── Analyzer  # Python 实现的协议栈分析、流量监测和细粒度追踪模块
-├── Guarder   # Go 实现的安全策略模块
-└── Tracer    # Python 实现的网络定位模块
-```
-
-### 启动前端服务
-
-本项目前端基于 [Node.js](https://nodejs.org/en) 环境构建，请确保已正确安装 Node.js（推荐版本 ≥ 16）。
-
-#### 一、安装依赖
-
-在项目根目录下执行以下命令安装所需依赖包：
+验证 Docker 安装：
 
 ```bash
-npm install
+docker --version
+docker compose version
 ```
 
-> ⚠️ 如果您位于国内，建议配置 [npm 镜像源](http://registry.npmmirror.com) 以提高安装速度：
+如果尚未安装 Docker，请访问 [Docker 官方网站](https://docs.docker.com/get-docker/) 获取安装说明。
+
+### 一键部署
+
+PacketScope 提供了便捷的部署脚本，可使用 Docker Compose 自动构建并启动所有服务。
+
+#### 1. 克隆仓库
 
 ```bash
-npm config set registry http://registry.npmmirror.com
+git clone https://github.com/Internet-Architecture-and-Security/PacketScope.git
+cd PacketScope
 ```
 
-#### 二、启动服务
+#### 2. 运行部署脚本
 
-使用以下命令启动前端服务（以预览模式运行构建后的应用）：
+使用 root 权限执行启动脚本：
 
 ```bash
-npm run preview
+sudo bash starter.sh
 ```
 
-该命令会在本地启动一个静态服务，默认监听端口为 `4173`。
+该脚本将自动完成以下操作：
+- 检查 Docker 环境
+- 停止现有服务
+- 按正确顺序构建所有服务容器
+- 启动所有服务
+- 显示服务状态和访问信息
 
-#### 三、访问应用
+#### 3. 访问应用
 
-在浏览器中打开以下地址访问应用界面：
+部署完成后，打开浏览器访问：
 
 ```
 http://localhost:4173/
 ```
 
-> 💡 如需以开发模式运行（启用热更新），可使用以下命令：
+### 服务端点
 
+部署成功后，以下服务将可用：
+
+- **Web UI**：`http://localhost:4173`
+- **Guarder API**：`http://localhost:8080`
+- **Tracer API**：`http://localhost:8000`
+- **Analyzer-Monitor API**：`http://localhost:5000`
+- **Analyzer-ProtocolStack API**：`http://localhost:19999`
+
+### 管理服务
+
+**查看服务状态：**
 ```bash
-npm run dev
+sudo docker compose ps
 ```
 
-> 💡 如需打包生成生产环境代码，可使用以下命令：
+**查看服务日志：**
+```bash
+sudo docker compose logs -f
+```
+
+**查看特定服务的日志：**
+```bash
+sudo docker compose logs -f <服务名称>
+```
+
+**停止所有服务：**
+```bash
+sudo docker compose down
+```
+
+**重启服务：**
+```bash
+sudo docker compose restart
+```
+
+**重启特定服务：**
+```bash
+sudo docker compose restart <服务名称>
+```
+
+> 💡 **提示**：starter.sh 脚本会自动处理整个部署过程。如需手动部署或高级配置，请参考 `modules/` 目录中各个模块的 README 文件。
+
+
+## 📁 项目结构
 
 ```
-npm run build
+.
+├── CODE_OF_CONDUCT.md          # 行为准则
+├── CONTRIBUTING.md             # 贡献指南
+├── docker-compose.yml          # Docker Compose 配置文件
+├── Dockerfile                  # 前端应用 Docker 构建文件
+├── eslint.config.js            # ESLint 配置
+├── index.html                  # 应用入口 HTML
+├── LICENSE                     # 项目许可证
+├── modules/                    # 后端服务模块
+│   ├── Analyzer/              # 分析器模块
+│   │   ├── Monitor/           # 流量监控子模块
+│   │   ├── ProtocolStack/     # 协议分析子模块
+│   │   └── README.md          # 分析器文档
+│   ├── Guarder/               # 安全防护模块
+│   └── Tracer/                # 网络追踪模块
+├── package.json                # Node.js 依赖配置
+├── package-lock.json           # npm 锁定文件
+├── pnpm-lock.yaml             # pnpm 锁定文件
+├── src/                        # 前端源代码
+├── public/                     # 静态资源文件
+├── README.md                   # 英文文档
+├── README-zh_CN.md            # 中文文档
+├── SECURITY.md                # 安全策略
+├── starter.sh                 # 一键部署脚本
+├── tailwind.config.js         # Tailwind CSS 配置
+├── TODOList.md                # 待办事项列表
+├── tsconfig.app.json          # TypeScript 应用配置
+├── tsconfig.json              # TypeScript 基础配置
+├── tsconfig.node.json         # TypeScript Node 配置
+├── vite.config.ts             # Vite 构建配置
+└── vite-README.md             # Vite 使用说明
 ```
+
+### 核心目录说明
+
+- **modules/**：包含所有后端服务模块，每个模块都是独立的微服务
+  - **Analyzer/**：协议栈分析和流量监控服务
+  - **Guarder/**：安全防护和威胁检测服务
+  - **Tracer/**：网络路径追踪和拓扑分析服务
+  
+- **src/**：前端应用源代码，基于 React 和 TypeScript 开发
+
+- **public/**：静态资源文件，如图片、图标等
+
+- **starter.sh**：一键部署脚本，自动化构建和启动所有服务
 
 ## ✨ 功能模块
+
+PacketScope 由四个主要模块组成，每个模块都有特定用途：
+
+```
+modules
+├── Analyzer  # 基于 Python 的协议栈分析、流量监控和细粒度追踪模块
+├── Guarder   # 基于 Go 的安全策略模块
+└── Tracer    # 基于 Python 的网络路径映射模块
+```
 
 - **Analyzer（分析器）**
 
