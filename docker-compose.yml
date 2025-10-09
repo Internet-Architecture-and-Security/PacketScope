@@ -1,4 +1,4 @@
-version: "3.9"
+version: '3.8'
 
 services:
   # 根目录主服务
@@ -12,70 +12,56 @@ services:
     volumes:
       - ./:/app/
     depends_on:
-      - analyzer-tracer
-      - analyzer-analyzer
-      # - guarder
-      # - locator
-      # - tracer
+      - analyzer-monitor
+      - analyzer-protocolstack
+      - guarder
+      - tracer
 
-  analyzer-tracer:
+  analyzer-monitor:
     build:
-      context: ./modules/Analyzer/Tracer
-      dockerfile: Dockerfile   # 如果 Analyzer 没有 Dockerfile，可以用 python 镜像+requirements.txt
-    image: packetscope:tracer
-    container_name: analyzer-tracer
+      context: ./modules/Analyzer/Monitor
+      dockerfile: Dockerfile
+    image: packetscope-analyzer-monitor:v1.0
+    container_name: packetscope-analyzer-monitor
     privileged: true
     network_mode: host   # ✅ 使用宿主机网络
     volumes:
-      - ./modules/Analyzer/Tracer:/tracer
-  analyzer-analyzer:
+      - ./modules/Analyzer/Monitor:/monitor
+  analyzer-protocolstack:
     build:
-      context: ./modules/Analyzer/Analyzer
-      dockerfile: Dockerfile   # 如果 Analyzer 没有 Dockerfile，可以用 python 镜像+requirements.txt
-    container_name: analyzer-analyzer
+      context: ./modules/Analyzer/ProtocolStack
+      dockerfile: Dockerfile 
+    container_name: packetscope-analyzer-protocolstack
     privileged: true
     network_mode: host   # ✅ 使用宿主机网络
     volumes:
-      - ./modules/Analyzer/Analyzer:/analyzer
+      - ./modules/Analyzer/ProtocolStack:/protocolstack
     depends_on:
-      - analyzer-tracer
-  # tracer:
-  #   build:
-  #     context: ./modules/Tracer
-  #     dockerfile: Dockerfile   # 如果 Tracer 没有 Dockerfile，可以用 python 镜像+requirements.txt
-  #   container_name: tracer
-  #   privileged: true
-  #   network_mode: host   # ✅ 使用宿主机网络
-  #   volumes:
-  #     - ./modules/Tracer:/tracer
+      - analyzer-monitor
+  
+  guarder:
+    build:
+      context: ./modules/Guarder
+      dockerfile: Dockerfile 
+    container_name: packetscope-guarder
+    privileged: true           # 如果涉及 eBPF/BPF，可能需要特权模式
+    volumes:
+      - ./modules/Guarder:/guarder
+    ports:
+      - "8080:8080"
+  
+  tracer:
+    build:                       # 或使用 image: packetscope-tracer
+      context: ./modules/Tracer
+      dockerfile: Dockerfile
+    container_name: packetscope-tracer
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./modules/Tracer/history:/app/history   # 挂载历史记录目录
+      - ./modules/Tracer/GeoLite2-City.mmdb:/app/GeoLite2-City.mmdb
+      - ./modules/Tracer/GeoLite2-ASN.mmdb:/app/GeoLite2-ASN.mmdb
+      - ./modules/Tracer/risky_ips.json:/app/risky_ips.json
 
-  # guarder:
-  #   build:
-  #     context: ./modules/Guarder
-  #     dockerfile: Dockerfile   # Guarder 目录里已经有 Dockerfile
-  #   container_name: packetscope-guarder
-  #   privileged: true           # 如果涉及 eBPF/BPF，可能需要特权模式
-  #   volumes:
-  #     - ./modules/Guarder:/guarder
-  #   ports:
-  #     - "8080:8080"  # 如果 Flask/Django 或 API 在这里
-
-  # locator:
-  #   build:
-  #     context: ./modules/Locator
-  #     dockerfile: Dockerfile
-  #   container_name: packetscope-locator
-  #   volumes:
-  #     - ./modules/Locator:/locator
-  #   ports:
-  #     - "8000:8000"  # 如果 Flask/Django 或 API 在这里
-
-  # tracer:
-  #   build:
-  #     context: ./modules/Tracer
-  #     dockerfile: Dockerfile
-  #   container_name: tracer
-  #   command: ./start.sh
-  #   privileged: true           # tracer 用到 bcc/bpf，通常需要
-  #   volumes:
-  #     - ./modules/Tracer:/tracer
+  

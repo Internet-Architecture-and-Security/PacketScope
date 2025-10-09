@@ -6,7 +6,7 @@ import {
   Zap,
   Layers,
 } from 'lucide-react';
-import { useTheme } from '@/stores/useStore';
+import { useTheme, useMonitorReadyStore } from '@/stores/useStore';
 import classNames from 'classnames';
 import useWebSocketData from './useWebSocketData';
 import MetricCard from './MetricCard';
@@ -31,9 +31,124 @@ const ProtocolStackMonitor: React.FC<ProtocolStackMonitorProps> = ({ queryParams
   const { currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
   
+  // 获取 ready 状态
+  const { isReady, error: readyError, maxAttemptsReached } = useMonitorReadyStore();
+
+
   // 使用自定义钩子获取各种数据
   const protocolStackData = useWebSocketData('NumLatencyFrequency', queryParams);
   console.log(protocolStackData, 'NumLatencyFrequency');
+
+  // 如果还在检查 ready 状态或未准备好，显示 loading 或错误状态
+  if (!isReady) {
+    console.log('[PacketDetails] 显示初始化界面');
+    return (
+      <div className={classNames(
+        "h-full w-full flex items-center justify-center min-w-[500px] border-l",
+        isDark
+          ? "bg-gray-900 border-gray-700"
+          : "bg-gray-50 border-gray-200"
+      )}>
+        {readyError || maxAttemptsReached ? (
+          <div className="flex flex-col items-center gap-5 max-w-sm px-6">
+            {/* 错误图标 */}
+            <div className={classNames(
+              "w-14 h-14 rounded-full flex items-center justify-center",
+              isDark ? "bg-red-500/10" : "bg-red-50"
+            )}>
+              <svg
+                className={classNames(
+                  "w-7 h-7",
+                  isDark ? "text-red-400" : "text-red-500"
+                )}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+
+            {/* 错误信息 */}
+            <div className="text-center space-y-1">
+              <h3 className={classNames(
+                "text-base font-semibold",
+                isDark ? "text-gray-100" : "text-gray-900"
+              )}>
+                服务初始化失败
+              </h3>
+              <p className={classNames(
+                "text-sm",
+                isDark ? "text-gray-400" : "text-gray-500"
+              )}>
+                {readyError || '服务没有开启或网络故障'}
+              </p>
+            </div>
+
+            {/* 重试按钮 */}
+            <button
+              onClick={() => {
+                console.log('[PacketDetails] 用户点击重试');
+                useMonitorReadyStore.getState().resetPolling();
+              }}
+              className={classNames(
+                "px-5 py-2 rounded-md font-medium text-sm transition-all duration-200",
+                "flex items-center gap-2",
+                isDark
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              )}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              重新尝试
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            {/* 加载动画圆点 */}
+            <div className="flex gap-1.5">
+              <span
+                className={classNames(
+                  "w-2 h-2 rounded-full animate-pulse",
+                  isDark ? "bg-blue-500" : "bg-blue-500"
+                )}
+                style={{ animationDelay: '0ms' }}
+              />
+              <span
+                className={classNames(
+                  "w-2 h-2 rounded-full animate-pulse",
+                  isDark ? "bg-blue-500" : "bg-blue-500"
+                )}
+                style={{ animationDelay: '150ms' }}
+              />
+              <span
+                className={classNames(
+                  "w-2 h-2 rounded-full animate-pulse",
+                  isDark ? "bg-blue-500" : "bg-blue-500"
+                )}
+                style={{ animationDelay: '300ms' }}
+              />
+            </div>
+
+            {/* 加载文本 */}
+            <span className={classNames(
+              "text-sm font-medium",
+              isDark ? "text-gray-300" : "text-gray-700"
+            )}>
+              正在连接服务
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // 没有查询参数时的提示
   if (!queryParams) {
