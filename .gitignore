@@ -31,7 +31,7 @@ modules/Locator/history
 modules/Locator/.cache
 modules/Tracer/.venv
 modules/Tracer/.cache
-modules/Tracer/.*
+# modules/Tracer/.*
 modules/Tracer/history
 modules/Tracer/bcc-master
 modules/Tracer/__pycache__
