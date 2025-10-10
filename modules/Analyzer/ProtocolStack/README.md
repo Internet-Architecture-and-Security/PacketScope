@@ -10,11 +10,8 @@
 
 安装 Python 环境和依赖：
 ```bash
-# 创建虚拟环境
-python3 -m venv .venv
 
-# 激活虚拟环境
-source .venv/bin/activate
+sudo su
 
 # 安装 Python 依赖
 pip install -r requirements.txt
@@ -27,9 +24,6 @@ pip install -r requirements.txt
 ```bash
 # 切换为 root 用户（或使用 sudo）
 sudo -s
-
-# 激活虚拟环境
-source .venv/bin/activate
 
 # 启动监控脚本
 python monitor.py
