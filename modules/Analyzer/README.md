@@ -2,7 +2,8 @@
 
 ## 概述
 
-Analyzer 模块是PacketScope的一个部件，可深入洞察 Linux 内核网络栈中的数据包处理过程。该系统由 **Monitor（监控器）** 和 **Calculator（计算器）** 两个核心组件构成，协同工作以实现网络流量在内核各层的捕获、追踪和分析。
+PacketScope的Analyzer模块为用户提供了前所未有的协议交互全景可视化能力。其中，**Monitor**组件能够捕获分组自协议栈入口至应用层处理的完整处理路径，生成跨层、跨协议的交互全景图。**Calculator**组件进一步梳理数据包在协议栈中的完整收发路径，统计分析分组跨层交互信息，包含：层流量、跨层交互频率、跨层延迟、丢包率 。
+
 
 ## 安装指南
 
@@ -22,10 +23,10 @@ Docker 部署方式提供最可靠和一致的运行环境。请严格按照以�
 
 ```bash
 # 步骤 1: 构建 Monitor 模块
-docker build -t packetscope:tracer ./Monitor/
+docker build -t packetscope-analyzer-monitor:v1.0 ./Monitor/
 
 # 步骤 2: 构建 Calculator 模块
-docker build -t packetscope:analyzer ./Calculator/
+docker build -t packetscope-analyzer-calculator:v1.0 ./Calculator/
 ```
 
 #### 运行容器
@@ -76,7 +77,9 @@ docker run --privileged --network host -p 5000:5000 packetscope:analyzer
    两个模块都必须以 root 权限运行：
    ```bash
    # 终端 1：启动 Monitor
-   sudo python3 Monitor/flaskServerMain.py
+   sudo su
+   ulimit -n 65535
+   python3 Monitor/flaskServerMain.py
    
    # 终端 2：启动 Calculator
    sudo python3 Calculator/monitor.py
@@ -172,12 +175,12 @@ Monitor 代码库分为五个功能域：
 
 ### Calculator 模块结构
 
-Calculator 组件实现分析算法和指标计算：
+Calculator 组件在链路层、网络层和传输层识别最能代表各层处理工作的关键函数作为插桩点，进行跨层交互统计与性能量化分析，包含：层流量、跨层交互频率、跨层延迟、丢包率 。 
 
-- **指标引擎**：将原始追踪数据聚合为统计摘要
-- **流分析器**：追踪连接生命周期和状态转换
-- **丢包检测器**：通过调用图分析识别数据包丢失
-- **性能监视器**：计算延迟分布和吞吐量指标
+- **层流量**：数据包流经该层插桩点的次数，反映该层的处理工作量
+- **跨层交互频率**：数据包在各层关键函数之间交互的频率，衡量协议栈的跨层耦合程度
+- **跨层延迟**：数据包在各层关键函数之 间流转的处理时间，反映协议栈处理效率及潜在性能瓶颈
+- **丢包率**：分析TCP丢包率
 
 ---
 
@@ -221,3 +224,13 @@ GET  /api/NumLatencyFrequency             - 获取当前指标
 **BCC 兼容性问题**
 - 验证已安装内核头文件：`sudo apt-get install linux-headers-$(uname -r)`
 - 查阅 BCC 兼容性矩阵以确认您的内核版本
+
+**抓取函数列表缺失**
+- 输入:`ulimit -n 65535`以扩大最大挂载点数量，此数字可以增大，通常而言不应小于内核有关函数总数的4倍。
+
+**模块持续异常**
+- 重启相应模块功能即可，多数情况是BCC有关代码未正常卸载导致。
+
+## 致谢
+
+感谢 BCC 提供的开源工具，Sqlite 提供的开源数据库功能
