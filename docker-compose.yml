@@ -45,6 +45,7 @@ services:
       dockerfile: Dockerfile 
     container_name: packetscope-guarder
     privileged: true           # 如果涉及 eBPF/BPF，可能需要特权模式
+    network_mode: host   # ✅ 使用宿主机网络
     volumes:
       - ./modules/Guarder:/guarder
     ports:
