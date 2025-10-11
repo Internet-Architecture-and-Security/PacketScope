@@ -13,7 +13,7 @@ services:
     #   - ./:/app/
     depends_on:
       - analyzer-monitor
-      - analyzer-protocolstack
+      - analyzer-calculator
       - guarder
       - tracer
 
@@ -27,15 +27,15 @@ services:
     network_mode: host   # ✅ 使用宿主机网络
     volumes:
       - ./modules/Analyzer/Monitor:/monitor
-  analyzer-protocolstack:
+  analyzer-calculator:
     build:
-      context: ./modules/Analyzer/ProtocolStack
-      dockerfile: Dockerfile 
-    container_name: packetscope-analyzer-protocolstack
+      context: ./modules/Analyzer/Calculator
+      dockerfile: Dockerfile
+    container_name: packetscope-analyzer-calculator
     privileged: true
     network_mode: host   # ✅ 使用宿主机网络
     volumes:
-      - ./modules/Analyzer/ProtocolStack:/protocolstack
+      - ./modules/Analyzer/Calculator:/calculator
     depends_on:
       - analyzer-monitor
   

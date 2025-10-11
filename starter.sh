@@ -18,7 +18,7 @@ NC='\033[0m'
 # 服务列表（按依赖顺序）
 SERVICES=(
     "analyzer-monitor"
-    "analyzer-protocolstack"
+    "analyzer-calculator"
     "guarder"
     "tracer"
     "app"
@@ -169,7 +169,7 @@ show_services() {
     echo -e "  ${CYAN}Guarder API:${NC}                  http://localhost:8080"
     echo -e "  ${CYAN}Tracer API:${NC}                   http://localhost:8000"
     echo -e "  ${CYAN}Analyzer-Monitor API:${NC}         http://localhost:5000"
-    echo -e "  ${CYAN}Analyzer-ProtocolStack API:${NC}   http://localhost:19999"
+    echo -e "  ${CYAN}Analyzer-Calculator API:${NC}   http://localhost:19999"
     
     echo ""
     print_separator

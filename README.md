@@ -96,7 +96,7 @@ After successful deployment, the following services will be available:
 - **Guarder API**: `http://localhost:8080`
 - **Tracer API**: `http://localhost:8000`
 - **Analyzer-Monitor API**: `http://localhost:5000`
-- **Analyzer-ProtocolStack API**: `http://localhost:19999`
+- **Analyzer-Calculator API**: `http://localhost:19999`
 
 ### Managing Services
 
@@ -148,7 +148,7 @@ sudo docker compose restart <service-name>
 ├── modules/                    # Backend service modules
 │   ├── Analyzer/              # Analyzer module
 │   │   ├── Monitor/           # Traffic monitoring sub-module
-│   │   ├── ProtocolStack/     # Protocol analysis sub-module
+│   │   ├── Calculator/        # Protocol analysis sub-module
 │   │   └── README.md          # Analyzer documentation
 │   ├── Guarder/               # Security protection module
 │   └── Tracer/                # Network tracing module
