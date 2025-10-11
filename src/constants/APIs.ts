@@ -7,8 +7,8 @@ const host = window?.location?.hostname || "0.0.0.0";
 
 // 各服务端口
 const PORTS = {
-  tracer: 19999,
-  analyzer: 5000,   // WebSocket
+  tracer: 8010,
+  analyzer: 8020,   // WebSocket
   locator: 8000,
   guarder: 8080,
 };

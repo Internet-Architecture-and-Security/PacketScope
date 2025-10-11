@@ -168,8 +168,8 @@ show_services() {
     echo -e "  ${CYAN}Web UI:${NC}                       http://localhost:4173"
     echo -e "  ${CYAN}Guarder API:${NC}                  http://localhost:8080"
     echo -e "  ${CYAN}Tracer API:${NC}                   http://localhost:8000"
-    echo -e "  ${CYAN}Analyzer-Monitor API:${NC}         http://localhost:5000"
-    echo -e "  ${CYAN}Analyzer-Calculator API:${NC}   http://localhost:19999"
+    echo -e "  ${CYAN}Analyzer-Monitor API:${NC}         http://localhost:8010"
+    echo -e "  ${CYAN}Analyzer-Calculator API:${NC}   http://localhost:8020"
     
     echo ""
     print_separator
