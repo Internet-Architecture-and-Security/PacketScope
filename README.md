@@ -95,8 +95,8 @@ After successful deployment, the following services will be available:
 - **Web UI**: `http://localhost:4173`
 - **Guarder API**: `http://localhost:8080`
 - **Tracer API**: `http://localhost:8000`
-- **Analyzer-Monitor API**: `http://localhost:5000`
-- **Analyzer-Calculator API**: `http://localhost:19999`
+- **Analyzer-Monitor API**: `http://localhost:8010`
+- **Analyzer-Calculator API**: `http://localhost:8020`
 
 ### Managing Services
 

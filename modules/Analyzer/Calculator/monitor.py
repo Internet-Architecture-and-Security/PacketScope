@@ -121,8 +121,8 @@ async def handle_client(websocket):
 
 
 async def main():
-    print("✅ WebSocket server running at ws://0.0.0.0:5000")
-    async with websockets.serve(handle_client, "0.0.0.0", 5000):
+    print("✅ WebSocket server running at ws://0.0.0.0:8020")
+    async with websockets.serve(handle_client, "0.0.0.0", 8020):
         await asyncio.Future()  # run forever
 
 

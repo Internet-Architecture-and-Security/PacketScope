@@ -34,18 +34,18 @@ docker build -t packetscope-analyzer-calculator:v1.0 ./Calculator/
 两个模块都需要特定的运行时配置：
 
 ```bash
-# 运行 Monitor 模块（端口 19999）
-docker run --privileged --network host -p 19999:19999 packetscope:tracer
+# 运行 Monitor 模块（端口 8010）
+docker run --privileged --network host -p 8010:8010 packetscope:tracer
 
-# 运行 Calculator 模块（端口 5000）
-docker run --privileged --network host -p 5000:5000 packetscope:analyzer
+# 运行 Calculator 模块（端口 8020）
+docker run --privileged --network host -p 8020:8020 packetscope:analyzer
 ```
 
 **配置说明：**
 - `--privileged`：加载 eBPF 程序和内核追踪所必需
 - `--network host`：启用宿主机网络访问以获取完整流量可见性
   - 若不使用 host 网络模式，将只能捕获容器内部流量
-- 端口映射：Monitor（19999）、Calculator（5000）
+- 端口映射：Monitor（8010）、Calculator（8020）
 
 ### 备选方式：手动安装
 

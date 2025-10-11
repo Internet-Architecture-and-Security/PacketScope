@@ -196,5 +196,5 @@ if __name__ == "__main__":
     FuncThread=threading.Thread(target=AttachAndRunProbers.AttachAndRunProbers,args=(contEvent,),daemon=True)
     FuncThread.start()
     # TcxProber()
-    mainApp.run(host="0.0.0.0", port=19999)
+    mainApp.run(host="0.0.0.0", port=8010)
     # subprocess.run(["ulimit","-n","32768"],shell=True)
