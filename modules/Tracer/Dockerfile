@@ -20,11 +20,10 @@ RUN if [ -f /etc/apt/sources.list ] && [ -s /etc/apt/sources.list ]; then \
 
 # 安装必要工具和 nexttrace
 RUN apt-get update && apt-get install -y curl wget && \
-    # 使用 GitHub 加速代理下载 nexttrace
-    (curl -sL https://ghproxy.com/https://raw.githubusercontent.com/nxtrace/NTrace-core/main/nt_install.sh | bash) || \
-    (wget -q https://ghproxy.com/https://github.com/nxtrace/NTrace-core/releases/latest/download/nexttrace_linux_amd64 -O /usr/local/bin/nexttrace && \
-     chmod +x /usr/local/bin/nexttrace) || \
-    (curl -sL nxtrace.org/nt | bash) && \
+    # 下载 nexttrace
+    echo "Downloading nexttrace" && \
+    curl -sL nxtrace.org/nt | bash && \
+    nexttrace -V || true && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 复制 Locator 模块代码
