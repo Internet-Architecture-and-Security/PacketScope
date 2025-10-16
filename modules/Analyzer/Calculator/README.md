@@ -173,17 +173,3 @@ python monitor.py
 "drops(s)": 1.20...,   表示给定五元组，tcp的丢包率，单位为s
 ```
 
-
-{"type": "NumLatencyFrequency", "data": "{\"layer\": \"link\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": -1, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 0, \"pps(s)\": 0}"}
-
-{"type": "NumLatencyFrequency", "data": "{\"layer\": \"network\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": -1, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 0, \"pps(s)\": 0}"}
-
-{"type": "NumLatencyFrequency", "data": "{\"layer\": \"trans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": -1, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 0, \"pps(s)\": 0}"}
-
-{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linknetwork\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": -1, \"pid_name\": \"NULL\", \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"LAT(ms)\": 0, \"frequency(s)\": 0}"}
-
-{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"networktrans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": -1, \"pid_name\": \"NULL\", \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"LAT(ms)\": 0, \"frequency(s)\": 0}"}
-
-{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linktrans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": -1, \"pid_name\": \"NULL\", \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"LAT(ms)\": 0, \"frequency(s)\": 0}"}
-
-{"type": "NumLatencyFrequency", "data": "{\"type\": \"ipv4\", \"pid\": -1, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"drop(s)\": 0}"}

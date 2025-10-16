@@ -1,236 +1,231 @@
-# PacketScope Analyzer 模块
+# PacketScope Analyzer Module
 
-## 概述
+## Overview
 
-PacketScope的Analyzer模块为用户提供了前所未有的协议交互全景可视化能力。其中，**Monitor**组件能够捕获分组自协议栈入口至应用层处理的完整处理路径，生成跨层、跨协议的交互全景图。**Calculator**组件进一步梳理数据包在协议栈中的完整收发路径，统计分析分组跨层交互信息，包含：层流量、跨层交互频率、跨层延迟、丢包率 。
+The Analyzer module of PacketScope provides unprecedented panoramic visualization of protocol interactions. The Monitor component can capture the complete processing path of packets from the protocol stack entry to application-level handling, producing a cross-layer, cross-protocol interaction panorama. The Calculator component further organizes packet paths through the protocol stack and computes statistics of cross-layer interactions, including: per-layer traffic, cross-layer interaction frequency, cross-layer latency, and packet loss rate.
 
+## Features
 
-## 安装指南
+### Monitor component
+- Real-time monitoring of local sockets and network interface status
+- Capture traffic packets passing through any network interface
+- Capture the kernel function path and timings for packets
+- Organize kernel paths into call graphs for visualization
 
-### 系统要求
+### Calculator component
+- Real-time monitoring of key protocol stack paths: observe packets flowing through link, network, and transport layers
+- Real-time computation of cross-layer interaction metrics: per-layer traffic, cross-layer interaction frequency, cross-layer latency, packet loss rate
+- Historical trend analysis: view metric changes over time via charts
+- API interface: a single API can compute all cross-layer interaction metrics
 
-- 支持 eBPF 的 Linux 内核（6.8+ 版本）
-- Docker（用于容器化部署）
-- Root/sudo 权限
+---
 
-### 推荐方式：基于 Docker 的部署
+## Module Structure
 
-Docker 部署方式提供最可靠和一致的运行环境。请严格按照以下步骤确保正确的构建顺序：
+```
+Analyzer/
+├──Calculator/
+│   ├── Dokcerfile  # Dockerfile for building the container
+│   ├── NumLatencyFrequency # Real-time calculation of cross-layer interaction metrics
+│   └── monitor.py  # Interface to start the calculator
+├── Monitor/       # User space application
+│   ├── Dokcerfile  # Dockerfile for building the container
+│   ├── AttachAndRunProbers.py # Attach function flow graph interface
+│   ├── flaskServerMain.py # Organize server and provide APIs
+│   ├── GetRecentMaps.py # Query recent function flow maps
+│   ├── Inspector.py # Functional tests; can observe current kernel function calls
+│   ├── ListSockets.py # Query current socket status
+│   ├── PSUtil.py # Utility helper library
+│   ├── QueryAndGetFuncMapRecv.py # Query recent function flow maps (receive side)
+│   ├── QueryAndGetFuncMapSend.py # Query recent function flow maps (send side)
+│   ├── ReadBTFandGetItsMember.py # Read and preprocess BTF information
+│   ├── tcxProber.c # eBPF C file for attaching to TC
+│   ├── TcxProber.py # Attach eBPF on TC
+│   ├── TcxQuery.py # Query packets passing through a socket
+│   ├── TestFilterAndGet.py # Functional tests
+│   ├── TestPacket.py # Functional tests
+│   ├── TestRecentMap.py # Functional tests
+│   └── translateJSON.py # Translate BTF information into C for attaching
+├── README.md                   # Readme
+└── README-zh.md                # Documentation (this README)
+```
 
-#### 构建说明
+## Installation Guide
 
-**重要提示：** 必须按顺序构建，以确保依赖关系正确解析。
+### System Requirements
+
+- Linux kernel with eBPF support (version 6.8+)
+- Docker (for containerized deployment)
+- Root/sudo privileges
+
+### Recommended: Docker-based deployment
+
+Docker provides the most reliable and consistent runtime. Follow these build steps in order to ensure dependencies are resolved correctly:
+
+#### Build instructions
+
+Important: build in sequence to ensure dependencies are resolved.
 
 ```bash
-# 步骤 1: 构建 Monitor 模块
+# Step 1: Build Monitor module
 docker build -t packetscope-analyzer-monitor:v1.0 ./Monitor/
 
-# 步骤 2: 构建 Calculator 模块
+# Step 2: Build Calculator module
 docker build -t packetscope-analyzer-calculator:v1.0 ./Calculator/
 ```
 
-#### 运行容器
+#### Run containers
 
-两个模块都需要特定的运行时配置：
+Both modules require specific runtime configurations:
 
 ```bash
-# 运行 Monitor 模块（端口 8010）
-docker run --privileged --network host -p 8010:8010 packetscope:tracer
+# Run Monitor module (port 19999)
+docker run --privileged --network host -p 19999:19999 packetscope:tracer
 
-# 运行 Calculator 模块（端口 8020）
-docker run --privileged --network host -p 8020:8020 packetscope:analyzer
+# Run Calculator module (port 5000)
+docker run --privileged --network host -p 5000:5000 packetscope:analyzer
 ```
 
-**配置说明：**
-- `--privileged`：加载 eBPF 程序和内核追踪所必需
-- `--network host`：启用宿主机网络访问以获取完整流量可见性
-  - 若不使用 host 网络模式，将只能捕获容器内部流量
-- 端口映射：Monitor（8010）、Calculator（8020）
+Configuration notes:
+- `--privileged`: required to load eBPF programs and perform kernel tracing
+- `--network host`: enables host network access for full traffic visibility
+  - Without host network mode, only container-internal traffic will be captured
+- Port mappings: Monitor (19999), Calculator (5000)
 
-### 备选方式：手动安装
+### Alternative: Manual installation
 
-手动安装提供更大的灵活性，但需要仔细配置环境。
+Manual installation offers more flexibility but requires careful environment configuration.
 
-#### 安装步骤
+#### Manual installation steps
 
-1. **安装 BCC（BPF 编译器集合）**
-   
-   请参考官方安装指南：[BCC 安装文档](https://github.com/iovisor/bcc/blob/master/INSTALL.md)
-   
-   ⚠️ **兼容性警告：** 由于潜在的内核兼容性问题，不推荐在生产环境使用手动安装方式。BCC 无法保证在所有内核版本上的向下兼容性。
+1. Install BCC (BPF Compiler Collection)
 
-2. **安装 Python 依赖**
-   
-   进入各模块目录并安装依赖：
+   Refer to the official installation guide: https://github.com/iovisor/bcc/blob/master/INSTALL.md
+
+   ⚠️ Compatibility warning: manual installation is not recommended for production due to potential kernel compatibility issues. BCC cannot guarantee backward compatibility across all kernel versions.
+
+2. Install Python dependencies
+
+   Enter each module directory and install dependencies:
    ```bash
-   # 安装 Monitor 依赖
+   # Install Monitor dependencies
    cd Monitor/
    sudo pip install -r requirements.txt
-   
-   # 安装 Calculator 依赖
+
+   # Install Calculator dependencies
    cd ../Calculator/
    sudo pip install -r requirements.txt
    ```
 
-3. **启动模块**
-   
-   两个模块都必须以 root 权限运行：
+3. Start modules
+
+   Both modules must run as root:
    ```bash
-   # 终端 1：启动 Monitor
+   # Terminal 1: start Monitor
    sudo su
    ulimit -n 65535
    python3 Monitor/flaskServerMain.py
-   
-   # 终端 2：启动 Calculator
+
+   # Terminal 2: start Calculator
    sudo python3 Calculator/monitor.py
    ```
 
 ---
 
-## 架构与功能
+## API Reference
 
-### Monitor 组件
+### Monitor API
 
-Monitor 组件作为数据采集层，负责实时数据包捕获和内核级追踪。
+GET  /IsAttachFinished          - Check startup status  
+Parameters: GET, none  
+Return: [True] or [False]
 
-**核心能力：**
+GET  /GetRecentPacket           - Get recent packet info  
+Parameters: srcip, dstip, srcport, dstport, limit  
+Note: For IPv6, a non-standard IPv6 format is used, e.g.:
+fe80:0000:0000:0000:0250:56ff:fec0:2222  
+Return: an array like [[packet_info], [packet_info], ...]  
+IPv4 format example: [(time, if_index, direction, length, payload, src_addr, dst_addr, src_port, dst_port, lower_proto, IPID, TTL, fragmentation, optional_fields), ...]  
+IPv6 format example: [(time, if_index, direction, length, payload, src_addr, dst_addr, next_header, src_port, dst_port), ...]
 
-- **网络接口发现**：查询系统网络接口和套接字信息
-- **流量拦截**：利用 TCX（Traffic Control eXpress）钩子捕获通过网络接口的数据包
-- **内核函数追踪**：采用 kprobe 技术监控内核函数调用
-- **调用图构建**：构建以数据包为中心的函数调用图，展现每个数据包在网络栈中的完整路径
+GET  /GetRecentMap              - Get recent function flow info  
+Parameters: srcip, dstip, srcport, dstport, limit  
+Note: IPv6 uses the same non-standard format shown above.  
+Return: an array like [[func_call_chain], [func_call_chain], ...]  
+Example:
+[[[1750773060.8924384, 0, 200007, 7489], [1750773060.89244, 0, 52954, 7489], [1750773060.8924415, 0, 52920, 7489]],
+ [[1750773060.8924422, 1, 52920, 7489], [1750773060.8924434, 0, 52949, 7489]]]
 
-**技术实现：**
-- 在关键内核挂载点附加 eBPF 程序
-- 最小性能开销的实时数据采集
-- 结构化数据存储以支持下游分析
+GET /UnsetFilter               - Remove filter  
+Parameters: GET, none  
+Return: none
 
-### Calculator 组件
+GET /SetFilter                 - Set filter  
+Parameters: POST with fields: srcip, dstip, srcport, dstport, ipver (4/6)  
+Note: IPv6 uses the non-standard format shown above.  
+Return: none
 
-Calculator 组件提供分析和度量层，处理捕获的数据并提取可操作的洞察。
+GET /ClearData                 - Clear data  
+Parameters: GET, none  
+Return: none
 
-**核心能力：**
+GET /QuerySockList             - Get socket and device info  
+Parameters: GET, none  
+Return: a dict like:
+{"tcpipv4":[],"tcpipv6":[],"udpipv4":[],"udpipv6":[],"icmpipv4":[],"icmpipv6":[],"rawipv4":[],"rawipv6":[],"dev":[]}  
+Socket arrays contain lists; each element is [current_time, index, srcIP, dstIP, state]  
+"dev" contains lists; each element is [current_time, interface_name]  
+Note: provided srcIP and dstIP are in HEX format, e.g., 8002A8C0:AA36; simple conversion is needed to make them human-readable.
 
-- **网络栈分析**：监控数据包流经 OSI 各层和 Linux 网络子系统的过程
-- **性能指标**：计算吞吐量、延迟和数据包处理速率
-- **丢包检测**：识别并量化各层级的数据包丢失情况
-- **流量特征分析**：分析流量模式和连接状态
+### Calculator API
 
-**分析特性：**
-- 实时指标聚合
-- 历史趋势分析
-- 异常检测能力
+GET  /api/NumLatencyFrequency  - Get current metrics
 
----
-
-
-## 代码架构
-
-### Monitor 模块结构
-
-Monitor 代码库分为五个功能域：
-
-#### 1. 套接字信息获取
-**文件：** `ListSockets.py`
-
-与 Linux 内核 API 交互以提取：
-- 活跃网络接口配置
-- 打开的套接字描述符及其状态
-- 连接元数据（本地/远程地址、端口、协议）
-
-#### 2. 数据包捕获子系统
-**文件：** `TcxProber.py`、`tcxProber.c`
-
-实现基于 TCX 的数据包拦截：
-- 在网络接口钩子上附加 eBPF 程序
-- 捕获双向流量（入站/出站）
-- 执行初步的数据包分类和过滤
-- 提取数据包头和元数据
-
-#### 3. 内核信息处理
-**文件：** `ReadBTFandGetItsMember.py`、`translateJSON.py`
-
-处理内核调试信息：
-- 解析 BTF（BPF 类型格式）数据以枚举内核函数
-- 识别与`sk_buff` 相关的数据包处理关键函数
-- 应用语义过滤选择网络相关函数
-- 为动态函数追踪生成插桩代码
-
-#### 4. 函数调用监控
-**文件：** `AttachAndRunProbers.py`
-
-编排动态追踪：
-- 将 kprobe 附加到已识别的内核函数
-- 捕获带时序信息的函数进入/退出事件
-- 关联函数调用与数据包标识符
-- 将调用追踪数据持久化到数据库
-
-#### 5. API 与数据访问层
-**文件：** 其他
-
-提供外部接口：
-- 用于数据检索的 Flask API
-- 数据库查询接口
-- 数据导出功能
-
-### Calculator 模块结构
-
-Calculator 组件在链路层、网络层和传输层识别最能代表各层处理工作的关键函数作为插桩点，进行跨层交互统计与性能量化分析，包含：层流量、跨层交互频率、跨层延迟、丢包率 。 
-
-- **层流量**：数据包流经该层插桩点的次数，反映该层的处理工作量
-- **跨层交互频率**：数据包在各层关键函数之间交互的频率，衡量协议栈的跨层耦合程度
-- **跨层延迟**：数据包在各层关键函数之 间流转的处理时间，反映协议栈处理效率及潜在性能瓶颈
-- **丢包率**：分析TCP丢包率
-
----
-
-## API 参考
-
-### Monitor 接口
-
+Function: compute packet movement, packet loss, cross-layer latency and cross-layer interaction frequency for a specified 5-tuple across link, network, and transport layers.  
+Request example:
+```json
+{"type":"NumLatencyFrequency","params":{"ipv4":true,"ipv6":false,"sip":"192.168.126.128","dip":"103.143.17.156","sport":57892,"dport":443,"protocol":"tcp"}}
 ```
-GET  /IsAttachFinished          - 验证启动状态
-GET  /GetRecentPacket             - 获取最近包信息
-GET  /GetRecentMap             - 获取最近函数流信息
-GET /UnsetFilter         - 取消过滤器
-GET /SetFilter          - 设置过滤器
-GET /ClearData          - 清理数据
-GET /QuerySockList      - 获取套接字与网卡信息
-
+Output example:
+```
+{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linknetwork\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": 3206, \"pid_name\": \"Socket Thread\", \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 57892, \"dport\": 443, \"LAT(ms)\": 0.01, \"frequency(s)\": 35.3051937862859}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linknetwork\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"pid_name\": \"StreamT~ns #162\", \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"LAT(ms)\": 0.099, \"frequency(s)\": 35.30391275226362}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"networktrans\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": -1, \"pid_name\": \"NULL\", \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 57892, \"dport\": 443, \"LAT(ms)\": 0, \"frequency(s)\": 0}"}
+{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"networktrans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"pid_name\": \"StreamT~ns #162\", \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"LAT(ms)\": 0.269, \"frequency(s)\": 35.30557465216654}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linktrans\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": -1, \"pid_name\": \"NULL\", \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 57892, \"dport\": 443, \"LAT(ms)\": 0, \"frequency(s)\": 0}"}
+{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linktrans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"pid_name\": \"StreamT~ns #162\", \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"LAT(ms)\": 0.308, \"frequency(s)\": 35.30560927674498}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"layer\": \"trans\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": 3206, \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 37630, \"dport\": 443, \"num\": 2, \"pps(s)\": 2.4280114828756396}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"layer\": \"trans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3206, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 35, \"pps(s)\": 35.30557465216654}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"layer\": \"network\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": 3206, \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 37630, \"dport\": 443, \"num\": 2, \"pps(s)\": 2.428141185078587}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"layer\": \"network\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 35, \"pps(s)\": 35.303947373582446}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"layer\": \"link\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": 3206, \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 37630, \"dport\": 443, \"num\": 2, \"pps(s)\": 2.428158872816276}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"layer\": \"link\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 35, \"pps(s)\": 35.30346268129799}\n"}
+{"type": "NumLatencyFrequency", "data": "{\"type\": \"ipv4\", \"pid\": 0, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57244, \"drop(s)\": 1.2019447465999988}\n"}
 ```
 
-### Calculator 接口
+## Troubleshooting
 
-```
-GET  /api/NumLatencyFrequency             - 获取当前指标
+### Common issues
 
-```
+Permission denied errors
+- Ensure modules run with root privileges
+- Verify eBPF is enabled in kernel configuration
+- Verify debugfs and related components are mounted
 
----
+No packets captured
+- Ensure Docker is run with `--network host`
+- Check network interface is up and receiving traffic
 
-## 故障排查
+BCC compatibility issues
+- Ensure kernel headers are installed: `sudo apt-get install linux-headers-$(uname -r)`
+- Consult BCC compatibility matrix for your kernel version
 
-### 常见问题
+Missing function list
+- Run: `ulimit -n 65535` to increase the maximum number of open file descriptors; this value can be increased further. Generally it should be at least 4x the number of kernel functions of interest.
 
-**权限被拒绝错误**
-- 确保模块以 root 权限运行
-- 验证内核配置中已启用 eBPF
-- 验证debugfs等模块已挂载
+Module keeps failing
+- Restart the affected module. Often BCC-related code was not properly unloaded.
 
-**未捕获到数据包**
-- 确认 Docker 使用了 `--network host` 参数
-- 检查网络接口已启动且正在接收流量
+## Acknowledgements
 
-**BCC 兼容性问题**
-- 验证已安装内核头文件：`sudo apt-get install linux-headers-$(uname -r)`
-- 查阅 BCC 兼容性矩阵以确认您的内核版本
-
-**抓取函数列表缺失**
-- 输入:`ulimit -n 65535`以扩大最大挂载点数量，此数字可以增大，通常而言不应小于内核有关函数总数的4倍。
-
-**模块持续异常**
-- 重启相应模块功能即可，多数情况是BCC有关代码未正常卸载导致。
-
-## 致谢
-
-感谢 BCC 提供的开源工具，Sqlite 提供的开源数据库功能
+Thanks to BCC for the open-source tooling and SQLite for the open-source database functionality.
