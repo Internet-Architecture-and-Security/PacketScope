@@ -1,0 +1,117 @@
+name: 'Build kernel and selftests/bpf, run selftests via vmtest'
+
+on:
+  workflow_call:
+    inputs:
+      runs_on:
+        required: true
+        default: 'ubuntu-24.04'
+        type: string
+      arch:
+        description: 'what arch to test'
+        required: true
+        default: 'x86_64'
+        type: string
+      kernel:
+        description: 'kernel version or LATEST'
+        required: true
+        default: 'LATEST'
+        type: string
+      pahole:
+        description: 'pahole rev or branch'
+        required: false
+        default: 'master'
+        type: string
+      llvm-version:
+        description: 'llvm version'
+        required: false
+        default: '18'
+        type: string
+jobs:
+  vmtest:
+    name: pahole@${{ inputs.pahole }}
+    runs-on: ${{ inputs.runs_on }}
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: libbpf/ci/setup-build-env@v3
+        with:
+          pahole: ${{ inputs.pahole }}
+          arch: ${{ inputs.arch }}
+          llvm-version: ${{ inputs.llvm-version }}
+
+      - name: Get checkpoint commit
+        shell: bash
+        run: |
+          cat CHECKPOINT-COMMIT
+          echo "CHECKPOINT=$(cat CHECKPOINT-COMMIT)" >> $GITHUB_ENV
+
+      - name: Get kernel source at checkpoint
+        uses: libbpf/ci/get-linux-source@v3
+        with:
+          repo: 'https://git.kernel.org/pub/scm/linux/kernel/git/bpf/bpf-next.git'
+          rev: ${{ env.CHECKPOINT }}
+          dest: '${{ github.workspace }}/.kernel'
+
+      - name: Patch kernel source
+        uses: libbpf/ci/patch-kernel@v3
+        with:
+          patches-root: '${{ github.workspace }}/ci/diffs'
+          repo-root: '.kernel'
+
+      - name: Configure kernel build
+        shell: bash
+        run: |
+          cd .kernel
+          cat tools/testing/selftests/bpf/config \
+              tools/testing/selftests/bpf/config.${{ inputs.arch }} > .config
+          # this file might or might not exist depending on kernel version
+          cat tools/testing/selftests/bpf/config.vm >> .config || :
+          make olddefconfig && make prepare
+          cd -
+
+      - name: Build kernel image
+        if: ${{ inputs.kernel == 'LATEST' }}
+        shell: bash
+        run: |
+          cd .kernel
+          make -j $((4*$(nproc))) all
+          cp vmlinux ${{ github.workspace }}
+          cd -
+
+      - name: Download prebuilt kernel
+        if: ${{ inputs.kernel != 'LATEST' }}
+        uses: libbpf/ci/download-vmlinux@v3
+        with:
+          kernel: ${{ inputs.kernel }}
+          arch: ${{ inputs.arch }}
+
+      - name: Build selftests/bpf
+        uses: libbpf/ci/build-selftests@v3
+        env:
+          MAX_MAKE_JOBS: 32
+          VMLINUX_BTF: ${{ github.workspace }}/vmlinux
+          VMLINUX_H: ${{ inputs.kernel != 'LATEST' && format('{0}/.github/actions/build-selftests/vmlinux.h', github.workspace) || '' }}
+        with:
+          arch: ${{ inputs.arch }}
+          kernel-root: ${{ github.workspace }}/.kernel
+          llvm-version: ${{ inputs.llvm-version }}
+
+      - name: Run selftests
+        env:
+          ALLOWLIST_FILE: /tmp/allowlist
+          DENYLIST_FILE: /tmp/denylist
+          KERNEL: ${{ inputs.kernel }}
+          VMLINUX: ${{ github.workspace }}/vmlinux
+          LLVM_VERSION: ${{ inputs.llvm-version }}
+          SELFTESTS_BPF: ${{ github.workspace }}/.kernel/tools/testing/selftests/bpf
+          VMTEST_CONFIGS: ${{ github.workspace }}/ci/vmtest/configs
+        uses: libbpf/ci/run-vmtest@v3
+        with:
+          arch: ${{ inputs.arch }}
+          kbuild-output: ${{ github.workspace }}/.kernel
+          kernel-root: ${{ github.workspace }}/.kernel
+          vmlinuz: ${{ inputs.arch }}/vmlinuz-${{ inputs.kernel }}
+

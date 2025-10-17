@@ -1,0 +1,58 @@
+name: build
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - master
+
+env:
+  FEATURES: ".libbfd and .libbpf_strict"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+              clang libbfd-dev libcap-dev libelf-dev python3-docutils
+          case "${{ matrix.os }}" in
+              ubuntu-22.04)
+                  sudo apt-get install -y llvm
+                  FEATURES="${FEATURES} and .skeletons"
+                  ;;
+              esac
+
+      - name: Build bpftool
+        run: |
+          make -j -C src
+          ./src/bpftool 2>&1 | grep -q Usage
+          ./src/bpftool -p version | \
+              tee /dev/stderr | \
+              jq --exit-status ".features | ${FEATURES}"
+
+      - name: Build bpftool, with clang
+        run: |
+          make -C src clean
+          LLVM=1 make -j -C src
+          ./src/bpftool 2>&1 | grep -q Usage
+          ./src/bpftool -p version | \
+              tee /dev/stderr | \
+              jq --exit-status ".features | ${FEATURES}"
+
+      - name: Build bpftool's documentation
+        run: |
+          make -j -C docs
+          grep -q '.TH "\?BPFTOOL"\? 8' ./docs/bpftool.8

@@ -1,0 +1,44 @@
+Demonstrations of mountsnoop.
+
+mountsnoop traces the mount() and umount syscalls system-wide. For example,
+running the following series of commands produces this output:
+
+# mount --bind /mnt /mnt
+# umount /mnt
+# unshare -m
+# mount --bind /mnt /mnt
+# umount /mnt
+
+# ./mountsnoop.py
+COMM             PID     TID     MNT_NS      CALL
+mount            13207   13207   4026531841  mount("/dev/loop0", "tmp-dir/", "ext4", 0x0, "") = 0
+mount            13207   13207   4026531841  umount("tmp-dir/", 0x0) = 0
+fsmount          13224   13224   4026531841  fsopen("ext4", 0x0) = 5
+fsmount          13224   13224   4026531841  fsconfig(5, FSCONFIG_SET_FLAG, "rw", "", 0) = 0
+fsmount          13224   13224   4026531841  fsconfig(5, FSCONFIG_SET_STRING, "source", "/dev/loop0", 0) = 0
+fsmount          13224   13224   4026531841  fsconfig(5, FSCONFIG_CMD_CREATE, "", "", 0) = 0
+fsmount          13224   13224   4026531841  fsmount(5, 0x0, MOUNT_ATTR_RDONLY) = 6
+fsmount          13224   13224   4026531841  move_mount(6, "", AT_FDCWD, "./tmp-dir/", MOVE_MOUNT_F_EMPTY_PATH) = 0
+fsmount          13224   13224   4026531841  umount("./tmp-dir/", 0x0) = 0
+
+# ./mountsnoop.py -P
+COMM             PID     TID     PCOMM            PPID    MNT_NS      CALL
+mount            13393   13393   bash             13392   4026531841  mount("/dev/loop0", "tmp-dir/", "ext4", 0x0, "") = 0
+mount            13393   13393   bash             13392   4026531841  umount("tmp-dir/", 0x0) = 0
+fsmount          13409   13409   bash             13408   4026531841  fsopen("ext4", 0x0) = 5
+fsmount          13409   13409   bash             13408   4026531841  fsconfig(5, FSCONFIG_SET_FLAG, "rw", "", 0) = 0
+fsmount          13409   13409   bash             13408   4026531841  fsconfig(5, FSCONFIG_SET_STRING, "source", "/dev/loop0", 0) = 0
+fsmount          13409   13409   bash             13408   4026531841  fsconfig(5, FSCONFIG_CMD_CREATE, "", "", 0) = 0
+fsmount          13409   13409   bash             13408   4026531841  fsmount(5, 0x0, MOUNT_ATTR_RDONLY) = 6
+fsmount          13409   13409   bash             13408   4026531841  move_mount(6, "", AT_FDCWD, "./tmp-dir/", MOVE_MOUNT_F_EMPTY_PATH) = 0
+fsmount          13409   13409   bash             13408   4026531841  umount("./tmp-dir/", 0x0) = 0
+
+The output shows the calling command, its process ID and thread ID, the mount
+namespace the call was made in, and the call itself.
+
+The mount namespace number is an inode number that uniquely identifies the
+namespace in the running system. This can also be obtained from readlink
+/proc/$PID/ns/mnt.
+
+Note that because of restrictions in BPF, the string arguments to either
+syscall may be truncated.

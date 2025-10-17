@@ -1,0 +1,31 @@
+name: ondemand
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        default: 'x86_64'
+        required: true
+      llvm-version:
+        default: '18'
+        required: true
+      kernel:
+        default: 'LATEST'
+        required: true
+      pahole:
+        default: "master"
+        required: true
+      runs-on:
+        default: 'ubuntu-24.04'
+        required: true
+
+jobs:
+  vmtest:
+    name: ${{ inputs.kernel }} kernel llvm-${{ inputs.llvm-version }} pahole@${{ inputs.pahole }}
+    uses: ./.github/workflows/vmtest.yml
+    with:
+      runs_on: ${{ inputs.runs-on }}
+      kernel: ${{ inputs.kernel }}
+      arch: ${{ inputs.arch }}
+      llvm-version: ${{ inputs.llvm-version }}
+      pahole: ${{ inputs.pahole }}

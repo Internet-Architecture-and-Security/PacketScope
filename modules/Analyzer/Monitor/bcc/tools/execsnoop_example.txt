@@ -1,0 +1,150 @@
+Demonstrations of execsnoop, the Linux eBPF/bcc version.
+
+
+execsnoop traces new processes. For example, tracing the commands invoked when
+running "man ls":
+
+# ./execsnoop
+COMM             PID    RET ARGS
+bash             15887    0 /usr/bin/man ls
+preconv          15894    0 /usr/bin/preconv -e UTF-8
+man              15896    0 /usr/bin/tbl
+man              15897    0 /usr/bin/nroff -mandoc -rLL=169n -rLT=169n -Tutf8
+man              15898    0 /usr/bin/pager -s
+nroff            15900    0 /usr/bin/locale charmap
+nroff            15901    0 /usr/bin/groff -mtty-char -Tutf8 -mandoc -rLL=169n -rLT=169n
+groff            15902    0 /usr/bin/troff -mtty-char -mandoc -rLL=169n -rLT=169n -Tutf8
+groff            15903    0 /usr/bin/grotty
+
+The output shows the process/command name (COMM), the PID, the return value of
+the exec() (RET), and the filename with arguments (ARGS).
+
+This works by traces the execve() system call (commonly used exec() variant),
+and shows details of the arguments and return value. This catches new processes
+that follow the fork->exec sequence, as well as processes that re-exec()
+themselves. Some applications fork() but do not exec(), eg, for worker
+processes, which won't be included in the execsnoop output.
+
+
+The -x option can be used to include failed exec()s. For example:
+
+# ./execsnoop -x
+COMM             PID    RET ARGS
+supervise        9660     0 ./run
+supervise        9661     0 ./run
+mkdir            9662     0 /bin/mkdir -p ./main
+run              9663     0 ./run
+chown            9664     0 /bin/chown nobody:nobody ./main
+run              9665     0 /bin/mkdir -p ./main
+supervise        9667     0 ./run
+run              9660    -2 /usr/local/bin/setuidgid nobody /command/multilog t ./main
+chown            9668     0 /bin/chown nobody:nobody ./main
+run              9666     0 /bin/chmod 0777 main
+run              9663    -2 /usr/local/bin/setuidgid nobody /command/multilog t ./main
+run              9669     0 /bin/mkdir -p ./main
+run              9661    -2 /usr/local/bin/setuidgid nobody /command/multilog t ./main
+supervise        9670     0 ./run
+[...]
+
+This example shows various regular system daemon activity, including some
+failures (trying to execute a /usr/local/bin/setuidgid, which I just noticed
+doesn't exist).
+
+
+A -T option can be used to include a time column, a -t option to include a
+timestamp column, and a -n option to match on a name. Regular expressions
+are allowed.
+For example, matching commands containing "mount":
+
+# ./execsnoop -Ttn mount
+TIME     TIME(s) COMM             PID    PPID  RET ARGS
+14:08:23 2.849   mount            18049  1045    0 /bin/mount -p
+
+The -l option can be used to only show command where one of the arguments
+matches specified line. The limitation is that we are looking only into first 20
+arguments of the command. For example, matching all command where one of the argument
+is "testpkg":
+
+# ./execsnoop.py -l testpkg
+COMM             PID    PPID   RET ARGS
+service          3344535 4146419   0 /usr/sbin/service testpkg status
+systemctl        3344535 4146419   0 /bin/systemctl status testpkg.service
+yum              3344856 4146419   0 /usr/local/bin/yum remove testpkg
+python           3344856 4146419   0 /usr/local/bin/python /usr/local/bin/yum remove testpkg
+yum              3344856 4146419   0 /usr/bin/yum remove testpkg
+yum              3345086 4146419   0 /usr/local/bin/yum install testpkg
+python           3345086 4146419   0 /usr/local/bin/python /usr/local/bin/yum install testpkg
+yum              3345086 4146419   0 /usr/bin/yum install testpkg
+rpm              3345452 4146419   0 /bin/rpm -qa testpkg
+
+
+The --cgroupmap option filters based on a cgroup set. It is meant to be used
+with an externally created map.
+
+# ./execsnoop --cgroupmap /sys/fs/bpf/test01
+
+For more details, see docs/special_filtering.md
+
+The -U option include UID on output:
+
+# ./execsnoop -U
+
+UID   COMM             PID    PPID   RET ARGS
+1000  ls               171318 133702   0 /bin/ls --color=auto
+1000  w                171322 133702   0 /usr/bin/w
+
+The -u options filters output based process UID. You also can use username as
+argument, in that cause UID will be looked up using getpwnam (see man 3 getpwnam).
+
+# ./execsnoop -Uu 1000
+UID   COMM             PID    PPID   RET ARGS
+1000  ls               171335 133702   0 /bin/ls --color=auto
+1000  man              171340 133702   0 /usr/bin/man getpwnam
+1000  bzip2            171341 171340   0 /bin/bzip2 -dc
+1000  bzip2            171342 171340   0 /bin/bzip2 -dc
+1000  bzip2            171345 171340   0 /bin/bzip2 -dc
+1000  manpager         171355 171340   0 /usr/bin/manpager
+1000  less             171355 171340   0 /usr/bin/less
+
+USAGE message:
+
+# ./execsnoop -h
+usage: execsnoop.py [-h] [-T] [-t] [-x] [--cgroupmap CGROUPMAP]
+                    [--mntnsmap MNTNSMAP] [-u USER] [-q] [-n NAME] [-l LINE]
+                    [-U] [--max-args MAX_ARGS] [-P PPID]
+
+Trace exec() syscalls
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -T, --time            include time column on output (HH:MM:SS)
+  -t, --timestamp       include timestamp on output
+  -x, --fails           include failed exec()s
+  --cgroupmap CGROUPMAP
+                        trace cgroups in this BPF map only
+  --mntnsmap MNTNSMAP   trace mount namespaces in this BPF map only
+  -u USER, --uid USER   trace this UID only
+  -q, --quote           Add quotemarks (") around arguments.
+  -n NAME, --name NAME  only print commands matching this name (regex), any
+                        arg
+  -l LINE, --line LINE  only print commands where arg contains this line
+                        (regex)
+  -U, --print-uid       print UID column
+  --max-args MAX_ARGS   maximum number of arguments parsed and displayed,
+                        defaults to 20
+  -P PPID, --ppid PPID  trace this parent PID only
+
+examples:
+    ./execsnoop                      # trace all exec() syscalls
+    ./execsnoop -x                   # include failed exec()s
+    ./execsnoop -T                   # include time (HH:MM:SS)
+    ./execsnoop -P 181               # only trace new processes whose parent PID is 181
+    ./execsnoop -U                   # include UID
+    ./execsnoop -u 1000              # only trace UID 1000
+    ./execsnoop -u user              # get user UID and trace only them
+    ./execsnoop -t                   # include timestamps
+    ./execsnoop -q                   # add "quotemarks" around arguments
+    ./execsnoop -n main              # only print command lines containing "main"
+    ./execsnoop -l tpkg              # only print command where arguments contains "tpkg"
+    ./execsnoop --cgroupmap mappath  # only trace cgroups in this BPF map
+    ./execsnoop --mntnsmap mappath   # only trace mount namespaces in the map

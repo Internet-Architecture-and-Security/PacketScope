@@ -1,0 +1,249 @@
+Demonstrations of memleak.
+
+
+memleak traces and matches memory allocation and deallocation requests, and
+collects call stacks for each allocation. memleak can then print a summary
+of which call stacks performed allocations that weren't subsequently freed.
+For example:
+
+# ./memleak -p $(pidof allocs)
+Attaching to pid 5193, Ctrl+C to quit.
+[11:16:33] Top 2 stacks with outstanding allocations:
+        80 bytes in 5 allocations from stack
+                 main+0x6d [allocs]
+                 __libc_start_main+0xf0 [libc-2.21.so]
+
+[11:16:34] Top 2 stacks with outstanding allocations:
+        160 bytes in 10 allocations from stack
+                 main+0x6d [allocs]
+                 __libc_start_main+0xf0 [libc-2.21.so]
+
+
+Each entry printed is a set of allocations that originate from the same call
+stack, and that weren't freed yet. The number of bytes and number of allocs
+are followed by the call stack, top to bottom, of the allocation site.
+
+As time goes on, it becomes apparent that the main function in the allocs
+process is leaking memory, 16 bytes at a time. Fortunately, you don't have to
+inspect each allocation individually -- you get a nice summary of which stack
+is responsible for a large leak.
+
+Occasionally, you do want the individual allocation details. Perhaps the same
+stack is allocating various sizes and you want to confirm which sizes are
+prevalent. Use the -a switch:
+
+# ./memleak -p $(pidof allocs) -a
+Attaching to pid 5193, Ctrl+C to quit.
+[11:16:33] Top 2 stacks with outstanding allocations:
+        addr = 948cd0 size = 16
+        addr = 948d10 size = 16
+        addr = 948d30 size = 16
+        addr = 948cf0 size = 16
+        64 bytes in 4 allocations from stack
+                 main+0x6d [allocs]
+                 __libc_start_main+0xf0 [libc-2.21.so]
+
+[11:16:34] Top 2 stacks with outstanding allocations:
+        addr = 948d50 size = 16
+        addr = 948cd0 size = 16
+        addr = 948d10 size = 16
+        addr = 948d30 size = 16
+        addr = 948cf0 size = 16
+        addr = 948dd0 size = 16
+        addr = 948d90 size = 16
+        addr = 948db0 size = 16
+        addr = 948d70 size = 16
+        addr = 948df0 size = 16
+        160 bytes in 10 allocations from stack
+                 main+0x6d [allocs]
+                 __libc_start_main+0xf0 [libc-2.21.so]
+
+
+When using the -p switch, memleak traces the libc allocations of a particular
+process. Without this switch, kernel allocations are traced instead.
+For example:
+
+# ./memleak
+Attaching to kernel allocators, Ctrl+C to quit.
+...
+        248 bytes in 4 allocations from stack
+                 bpf_prog_load [kernel]
+                 sys_bpf [kernel]
+
+        328 bytes in 1 allocations from stack
+                 perf_mmap [kernel]
+                 mmap_region [kernel]
+                 do_mmap [kernel]
+                 vm_mmap_pgoff [kernel]
+                 sys_mmap_pgoff [kernel]
+                 sys_mmap [kernel]
+
+        464 bytes in 1 allocations from stack
+                 traceprobe_command [kernel]
+                 traceprobe_probes_write [kernel]
+                 probes_write [kernel]
+                 __vfs_write [kernel]
+                 vfs_write [kernel]
+                 sys_write [kernel]
+                 entry_SYSCALL_64_fastpath [kernel]
+
+        8192 bytes in 1 allocations from stack
+                 alloc_and_copy_ftrace_hash.constprop.59 [kernel]
+                 ftrace_set_hash [kernel]
+                 ftrace_set_filter_ip [kernel]
+                 arm_kprobe [kernel]
+                 enable_kprobe [kernel]
+                 kprobe_register [kernel]
+                 perf_trace_init [kernel]
+                 perf_tp_event_init [kernel]
+
+
+Here you can see that arming the kprobe to which our eBPF program is attached
+consumed 8KB of memory. Loading the BPF program also consumed a couple hundred
+bytes (in bpf_prog_load).
+
+memleak stores each allocated block along with its size, timestamp, and the
+stack that allocated it. When the block is deleted, this information is freed
+to reduce the memory overhead.
+
+To avoid false positives, allocations younger than a certain age (500ms by
+default) are not printed. To change this threshold, use the -o switch.
+
+By default, memleak prints its output every 5 seconds. To change this
+interval, pass the interval as a positional parameter to memleak. You can
+also control the number of times the output will be printed before exiting.
+For example:
+
+# ./memleak 1 10
+
+... will print the outstanding allocation statistics every second, for ten
+times, and then exit.
+
+memleak may introduce considerable overhead if your application or kernel is
+allocating and freeing memory at a very high rate. In that case, you can
+control the overhead by sampling every N-th allocation. For example, to sample
+roughly 10% of the allocations and print the outstanding allocations every 5
+seconds, 3 times before quitting:
+
+# ./memleak -p $(pidof allocs) -s 10 5 3
+Attaching to pid 2614, Ctrl+C to quit.
+[11:16:33] Top 2 stacks with outstanding allocations:
+        16 bytes in 1 allocations from stack
+                 main+0x6d [allocs]
+                 __libc_start_main+0xf0 [libc-2.21.so]
+
+[11:16:38] Top 2 stacks with outstanding allocations:
+        16 bytes in 1 allocations from stack
+                 main+0x6d [allocs]
+                 __libc_start_main+0xf0 [libc-2.21.so]
+
+[11:16:43] Top 2 stacks with outstanding allocations:
+        32 bytes in 2 allocations from stack
+                 main+0x6d [allocs]
+                 __libc_start_main+0xf0 [libc-2.21.so]
+
+Note that even though the application leaks 16 bytes of memory every second,
+the report (printed every 5 seconds) doesn't "see" all the allocations because
+of the sampling rate applied.
+
+Profiling in memory part is hard to be accurate because of BPF infrastructure.
+memleak keeps misjudging memory leak on the complicated environment which has
+the action of free in hard/soft irq.
+Add workaround to alleviate misjudgments when free is missing:
+
+# ./memleak --wa-missing-free
+Attaching to kernel allocators, Ctrl+C to quit.
+...
+        248 bytes in 4 allocations from stack
+                 bpf_prog_load [kernel]
+                 sys_bpf [kernel]
+
+        328 bytes in 1 allocations from stack
+                 perf_mmap [kernel]
+                 mmap_region [kernel]
+                 do_mmap [kernel]
+                 vm_mmap_pgoff [kernel]
+                 sys_mmap_pgoff [kernel]
+                 sys_mmap [kernel]
+
+# ./redis_memleak -p $(pidof allocs) -O '/proc/$(pid)/exe' --symbols-prefix='je_'
+Attaching to pid 2623, Ctrl+C to quit.
+[13:30:16] Top 10 stacks with outstanding allocations:
+	45 bytes in 45 allocations from stack
+		0x0000559b4789639f	zmalloc+0x2f [redis-server]
+		0x0000559b478876ee	serverCron+0x2e [redis-server]
+		0x0000559b47875e1b	processTimeEvents+0x5b [redis-server]
+		0x0000559b47876e60	aeMain+0x1d0 [redis-server]
+		0x0000559b478700b7	main+0x4a7 [redis-server]
+		0x00007fdf47029d90	__libc_start_call_main+0x80 [libc.so.6]
+
+When using the --symbols-prefix argument, memleak can trace the third-party memory
+allocations, such as jemalloc whose symbols are usually identified by the "je_" prefix
+in redis project.
+
+USAGE message:
+
+# ./memleak -h
+usage: memleak.py [-h] [-p PID] [-t] [-a] [-o OLDER] [-c COMMAND]
+                  [--combined-only] [--wa-missing-free] [-s SAMPLE_RATE]
+                  [-T TOP] [-z MIN_SIZE] [-Z MAX_SIZE] [-O OBJ]
+                  [--sort KEY] [interval] [count]
+
+Trace outstanding memory allocations that weren't freed.
+Supports both user-mode allocations made with libc functions and kernel-mode
+allocations made with kmalloc/kmem_cache_alloc/get_free_pages and corresponding
+memory release functions.
+
+positional arguments:
+  interval              interval in seconds to print outstanding allocations
+  count                 number of times to print the report before exiting
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PID, --pid PID     the PID to trace; if not specified, trace kernel
+                        allocs
+  -t, --trace           print trace messages for each alloc/free call
+  -a, --show-allocs     show allocation addresses and sizes as well as call
+                        stacks
+  -o OLDER, --older OLDER
+                        prune allocations younger than this age in
+                        milliseconds
+  -c COMMAND, --command COMMAND
+                        execute and trace the specified command
+  --combined-only       show combined allocation statistics only
+  --wa-missing-free     Workaround to alleviate misjudgments when free is
+                        missing
+  -s SAMPLE_RATE, --sample-rate SAMPLE_RATE
+                        sample every N-th allocation to decrease the overhead
+  -T TOP, --top TOP     display only this many top allocating stacks (by size)
+  -z MIN_SIZE, --min-size MIN_SIZE
+                        capture only allocations larger than or equal to this size
+  -Z MAX_SIZE, --max-size MAX_SIZE
+                        capture only allocations smaller than or equal to this size
+  -O OBJ, --obj OBJ     attach to allocator functions in the specified object
+  --sort KEY            report sorted in given key; available key list: size,
+                        count
+
+EXAMPLES:
+
+./memleak -p $(pidof allocs)
+        Trace allocations and display a summary of "leaked" (outstanding)
+        allocations every 5 seconds
+./memleak -p $(pidof allocs) -t
+        Trace allocations and display each individual allocator function call
+./memleak -ap $(pidof allocs) 10
+        Trace allocations and display allocated addresses, sizes, and stacks
+        every 10 seconds for outstanding allocations
+./memleak -c "./allocs"
+        Run the specified command and trace its allocations
+./memleak
+        Trace allocations in kernel mode and display a summary of outstanding
+        allocations every 5 seconds
+./memleak -o 60000
+        Trace allocations in kernel mode and display a summary of outstanding
+        allocations that are at least one minute (60 seconds) old
+./memleak -s 5
+        Trace roughly every 5th allocation, to reduce overhead
+./memleak --sort count
+        Trace allocations in kernel mode and display a summary of outstanding
+        allocations that are sorted in count order

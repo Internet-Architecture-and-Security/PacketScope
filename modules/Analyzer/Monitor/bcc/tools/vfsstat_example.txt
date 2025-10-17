@@ -1,0 +1,58 @@
+Demonstrations of vfsstat, the Linux eBPF/bcc version.
+
+
+This traces some common VFS calls and prints per-second summaries. By default,
+the output interval is one second:
+
+# ./vfsstat
+TIME         READ/s  WRITE/s  FSYNC/s   OPEN/s CREATE/s UNLINK/s  MKDIR/s  RMDIR/s
+10:42:35:      5172      454        0      111        0        0        0        0
+10:42:36:       478      701        0        1        0        0        0        0
+10:42:37:       873      267        0      861        0       72        0        0
+10:42:38:      1599      146        0     1989        0      177        0        0
+10:42:39:      1876      135        0     2379        0      212        0        0
+10:42:40:      2566      201        0     3207        0      287        0        0
+10:42:41:       772      508        0      563        0       49        0        0
+10:42:42:       189      141        0       48        0        0        0        0
+10:42:43:       468      558        0       48        0        0        0        0
+10:42:44:      1144      841        0      624        0        0        0        0
+10:42:45:      4094     2554        0     2715        0        0        0        0
+10:42:46:       397      585        0       12        0        0        0        0
+10:42:47:       684      859        0       56        0        0        0        0
+10:42:48:       432      471        0       63        0        1        0        0
+10:42:49:      1890      259        0     1997        0        0      162      162
+10:42:50:      1990      143        0     2213        0        0      181      180
+10:42:51:      2256      197        0     2472        0        0      205      206
+10:42:52:      1674      351        0     1609        0        0      129      129
+^C
+
+
+Here we are using an output interval of five seconds, and printing three output
+lines:
+
+# ./vfsstat 5 3
+TIME         READ/s  WRITE/s  FSYNC/s   OPEN/s CREATE/s UNLINK/s  MKDIR/s  RMDIR/s
+10:43:46:      2141      273        0     1240        0        0       99       99
+10:43:51:      2673      141        0     3039        0        0      250      249
+10:43:56:      1939      433        0     1895        0        0      154      154
+
+
+Full usage:
+
+# ./vfsstat -h
+usage: vfsstat [-h] [-p PID] [interval] [count]
+
+Count some VFS calls.
+
+positional arguments:
+  interval           output interval, in seconds
+  count              number of outputs
+
+optional arguments:
+  -h, --help         show this help message and exit
+  -p PID, --pid PID  trace this PID only
+
+examples:
+    ./vfsstat             # count some VFS calls per second
+    ./vfsstat -p 185      # trace PID 185 only
+    ./vfsstat 2 5         # print 2 second summaries, 5 times

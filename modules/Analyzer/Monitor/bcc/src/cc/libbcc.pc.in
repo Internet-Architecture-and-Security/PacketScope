@@ -1,0 +1,14 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/include
+datarootdir=${prefix}/share
+
+compatdir=${includedir}/bcc/compat
+
+Name: libbcc
+Version: @REVISION@
+Description: BCC Program library
+Requires:
+Libs: -L${libdir} -lbcc
+Cflags: -I${includedir} -I${compatdir}

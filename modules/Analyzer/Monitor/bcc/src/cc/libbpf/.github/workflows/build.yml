@@ -1,0 +1,92 @@
+name: libbpf-build
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron:  '0 18 * * *'
+
+concurrency:
+  group: ci-build-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  debian:
+    runs-on: ubuntu-latest
+    name: Debian Build (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: default
+            target: RUN
+          - name: ASan+UBSan
+            target: RUN_ASAN
+          - name: clang ASan+UBSan
+            target: RUN_CLANG_ASAN
+          - name: gcc-10 ASan+UBSan
+            target: RUN_GCC10_ASAN
+          - name: clang
+            target: RUN_CLANG
+          - name: clang-14
+            target: RUN_CLANG14
+          - name: clang-15
+            target: RUN_CLANG15
+          - name: clang-16
+            target: RUN_CLANG16
+          - name: gcc-10
+            target: RUN_GCC10
+          - name: gcc-11
+            target: RUN_GCC11
+          - name: gcc-12
+            target: RUN_GCC12
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout
+      - uses: ./.github/actions/setup
+        name: Setup
+      - uses: ./.github/actions/debian
+        name: Build
+        with:
+          target: ${{ matrix.target }}
+
+  ubuntu:
+    runs-on: ubuntu-latest
+    name: Ubuntu Build (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+          - arch: ppc64le
+          - arch: s390x
+          - arch: amd64
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          image: tonistiigi/binfmt:qemu-v8.1.5
+
+      - uses: ./.github/actions/setup
+        name: Pre-Setup
+
+      - run: source /tmp/ci_setup && sudo -E $CI_ROOT/managers/ubuntu.sh
+        if: matrix.arch == 'amd64'
+        name: Setup
+
+      - name: Build in docker
+        if: matrix.arch != 'amd64'
+        run: |
+          cp /tmp/ci_setup ${GITHUB_WORKSPACE}
+          docker run --rm \
+                 --platform linux/${{ matrix.arch }} \
+                 -v ${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE} \
+                 -e GITHUB_WORKSPACE=${GITHUB_WORKSPACE} \
+                 -w /ci/workspace \
+                 ubuntu:noble \
+                 ${GITHUB_WORKSPACE}/ci/build-in-docker.sh
+

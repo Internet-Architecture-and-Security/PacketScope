@@ -1,0 +1,36 @@
+name: libbpf-ci
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron:  '0 18 * * *'
+
+concurrency:
+  group: ci-test-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  vmtest:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kernel: 'LATEST'
+            runs_on: 'ubuntu-24.04'
+            arch: 'x86_64'
+            llvm-version: '18'
+            pahole: 'master'
+          - kernel: 'LATEST'
+            runs_on: 'ubuntu-24.04'
+            arch: 'x86_64'
+            llvm-version: '18'
+            pahole: 'tmp.master'
+    name: Linux ${{ matrix.kernel }} llvm-${{ matrix.llvm-version }}
+    uses: ./.github/workflows/vmtest.yml
+    with:
+      runs_on: ${{ matrix.runs_on }}
+      kernel: ${{ matrix.kernel }}
+      arch: ${{ matrix.arch }}
+      llvm-version: ${{ matrix.llvm-version }}
+      pahole: ${{ matrix.pahole }}

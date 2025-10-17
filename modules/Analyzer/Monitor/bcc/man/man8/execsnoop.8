@@ -1,0 +1,152 @@
+.TH execsnoop 8  "2020-02-20" "USER COMMANDS"
+.SH NAME
+execsnoop \- Trace new processes via exec() syscalls. Uses Linux eBPF/bcc.
+.SH SYNOPSIS
+.B execsnoop [\-h] [\-T] [\-t] [\-x] [\-\-cgroupmap CGROUPMAP] [\-\-mntnsmap MAPPATH]
+.B           [\-u USER] [\-q] [\-n NAME] [\-l LINE] [\-U] [\-\-max-args MAX_ARGS]
+.SH DESCRIPTION
+execsnoop traces new processes, showing the filename executed and argument
+list.
+
+It works by traces the execve() system call (commonly used exec() variant).
+This catches new processes that follow the fork->exec sequence, as well as
+processes that re-exec() themselves. Some applications fork() but do not
+exec(), eg, for worker processes, which won't be included in the execsnoop
+output.
+
+This works by tracing the kernel sys_execve() function using dynamic tracing,
+and will need updating to match any changes to this function.
+
+Since this uses BPF, only the root user can use this tool.
+.SH REQUIREMENTS
+CONFIG_BPF and bcc.
+.SH OPTIONS
+.TP
+\-h
+Print usage message.
+.TP
+\-T
+Include a time column (HH:MM:SS).
+.TP
+\-U
+Include UID column.
+.TP
+\-t
+Include a timestamp column.
+.TP
+\-u USER
+Filter by UID (or username)
+.TP
+\-x
+Include failed exec()s
+.TP
+\-q
+Add "quotemarks" around arguments. Escape quotemarks in arguments with a
+backslash. For tracing empty arguments or arguments that contain whitespace.
+.TP
+\-n NAME
+Only print command lines matching this name (regex)
+.TP
+\-l LINE
+Only print commands where arg contains this line (regex)
+.TP
+\--max-args MAXARGS
+Maximum number of arguments parsed and displayed, defaults to 20
+.TP
+\-\-cgroupmap MAPPATH
+Trace cgroups in this BPF map only (filtered in-kernel).
+.TP
+\-\-mntnsmap  MAPPATH
+Trace mount namespaces in this BPF map only (filtered in-kernel).
+.TP
+\-P PPID
+Trace this parent PID only.
+.TP
+.SH EXAMPLES
+.TP
+Trace all exec() syscalls:
+#
+.B execsnoop
+.TP
+Trace all exec() syscalls, and include timestamps:
+#
+.B execsnoop \-t
+.TP
+Display process UID:
+#
+.B execsnoop \-U
+.TP
+Trace only UID 1000:
+#
+.B execsnoop \-u 1000
+.TP
+Trace only processes launched by root and display UID column:
+#
+.B execsnoop \-Uu root
+.TP
+Include failed exec()s:
+#
+.B execsnoop \-x
+.TP
+Put quotemarks around arguments.
+#
+.B execsnoop \-q
+.TP
+Only trace exec()s where the filename contains "mount":
+#
+.B execsnoop \-n mount
+.TP
+Only trace exec()s where argument's line contains "testpkg":
+#
+.B execsnoop \-l testpkg
+.TP
+Trace a set of cgroups only (see special_filtering.md from bcc sources for more details):
+#
+.B execsnoop \-\-cgroupmap /sys/fs/bpf/test01
+.SH FIELDS
+.TP
+TIME
+Time of exec() return, in HH:MM:SS format.
+.TP
+TIME(s)
+Time of exec() return, in seconds.
+.TP
+UID
+User ID
+.TP
+PCOMM
+Parent process/command name.
+.TP
+PID
+Process ID
+.TP
+PPID
+Parent process ID
+.TP
+RET
+Return value of exec(). 0 == successs. Failures are only shown when using the
+\-x option.
+.TP
+ARGS
+Filename for the exec(), followed be up to 19 arguments. An ellipsis "..." is
+shown if the argument list is known to be truncated.
+.SH OVERHEAD
+This traces the kernel execve function and prints output for each event. As the
+rate of this is generally expected to be low (< 1000/s), the overhead is also
+expected to be negligible. If you have an application that is calling a high
+rate of exec()s, then test and understand overhead before use.
+.SH SOURCE
+This is from bcc.
+.IP
+https://github.com/iovisor/bcc
+.PP
+Also look in the bcc distribution for a companion _examples.txt file containing
+example usage, output, and commentary for this tool.
+.SH OS
+Linux
+.SH STABILITY
+Unstable - in development.
+.SH AUTHOR
+Brendan Gregg, Rocky Xing
+.SH SEE ALSO
+opensnoop(1)

@@ -1,0 +1,52 @@
+Source: bcc
+Maintainer: Brenden Blanco <bblanco@plumgrid.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.5
+Build-Depends: debhelper (>= 9), cmake,
+    libllvm12,
+    llvm-12-dev,
+    libclang-12-dev,
+    clang-format-12,
+    libelf-dev, bison, flex, libfl-dev, libedit-dev, zlib1g-dev, git,
+    python3, python3-netaddr, python3-pyroute2, python3-setuptools, python3-pip,
+    luajit,
+    libluajit-5.1-dev, arping, inetutils-ping | iputils-ping, iperf, netperf,
+    ethtool, devscripts, dh-python, zip
+# add 'libdebuginfod-dev' to Build-Depends for libdebuginfod support
+Homepage: https://github.com/iovisor/bcc
+
+Package: libbcc
+Architecture: any
+Provides: libbpfcc, libbpfcc-dev
+Conflicts: libbpfcc, libbpfcc-dev
+Depends: libc6, libstdc++6, libelf1
+# add 'libdebuginfod1' to Depends if built with libdebuginfod support
+Description: Shared Library for BPF Compiler Collection (BCC)
+ Shared Library for BPF Compiler Collection to control BPF programs
+ from userspace.
+
+Package: libbcc-examples
+Architecture: any
+Depends: libbcc (= ${binary:Version})
+Description: Examples for BPF Compiler Collection (BCC)
+
+Package: python-bcc
+Architecture: all
+Provides: python-bpfcc
+Depends: libbcc (= ${binary:Version}), python3, binutils
+Description: Python3 wrappers for BPF Compiler Collection (BCC)
+
+Package: bcc-tools
+Architecture: all
+Provides: bpfcc-tools
+Conflicts: bpfcc-tools
+Depends: python-bcc (= ${binary:Version})
+Description: Command line tools for BPF Compiler Collection (BCC)
+
+Package: bcc-lua
+Architecture: all
+Provides: bpfcc-lua
+Conflicts: bpfcc-lua
+Depends: libbcc (= ${binary:Version})
+Description: Standalone tool to run BCC tracers written in Lua

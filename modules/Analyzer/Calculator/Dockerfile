@@ -16,8 +16,7 @@ WORKDIR /
 COPY ./* /PacketScope-main/modules/Analyzer/
 # Step3: 配置PacketScope依赖
 # WORKDIR PacketScope-main/modules/Tracer
-RUN pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple && \
-    pip install -r PacketScope-main/modules/Analyzer/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --ignore-installed -r PacketScope-main/modules/Analyzer/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --break-system-packages
 
 # WORKDIR PacketScope-main/modules/Analyzer 
 # 设置默认工作目录
