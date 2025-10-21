@@ -202,9 +202,12 @@ def TcxProber(event):
                 starttime=time.time()
                 if clear_flag_tcx:
                     # ipv4packets,ipv6packets,otherpackets
-                    cursor.execute("DELETE FROM ipv4packets WHERE time < {}".format(starttime))
-                    cursor.execute("DELETE FROM ipv6packets WHERE time < {}".format(starttime))
-                    cursor.execute("DELETE FROM otherpackets WHERE time < {}".format(starttime))
+                    cursor.execute("DROP TABLE IF EXISTS ipv4packets")
+                    cursor.execute("CREATE TABLE IF NOT EXISTS ipv4packets(time, netif, direction, length ,content, srcip, dstip, srcport, dstport, prot, ipid, ttl, frag, option)")
+                    cursor.execute("DROP TABLE IF EXISTS ipv6packets")
+                    cursor.execute("CREATE TABLE IF NOT EXISTS ipv6packets(time, netif, direction, length ,content, srcip, dstip, header ,srcport, dstport)")
+                    cursor.execute("DROP TABLE IF EXISTS otherpackets")
+                    cursor.execute("CREATE TABLE IF NOT EXISTS otherpackets(time, netif, direction, length ,content)")
                     # database.commit()
                     clear_flag_tcx=False
                 database.commit()

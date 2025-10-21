@@ -196,8 +196,10 @@ def AttachAndRunProbers(event):
                 starttime=time.time()
                 database.commit()
                 if clear_flag_func:
-                    cursor.execute("DELETE FROM functionCall WHERE time < {}".format(starttime))
-                    cursor.execute("DELETE FROM SpecfunctionCall WHERE time < {}".format(starttime))
+                    cursor.execute("DROP TABLE IF EXISTS functionCall")
+                    cursor.execute("CREATE TABLE IF NOT EXISTS functionCall(time, isRet, ID ,PID)")
+                    cursor.execute("DROP TABLE IF EXISTS SpecfunctionCall")
+                    cursor.execute("CREATE TABLE IF NOT EXISTS SpecfunctionCall(time, isRet, ID ,PID,family,srcport,dstport,srcip,dstip,pkt)")
                     # database.commit()
                     clear_flag_func=False
                 database.commit()
