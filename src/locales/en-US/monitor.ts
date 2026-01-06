@@ -152,7 +152,8 @@ const FunctionCallChainViewer ={
   "FunctionCallChainViewer.functionId": "Function ID",
   "FunctionCallChainViewer.threadIdLabel": "Thread ID",
   "FunctionCallChainViewer.callDepth": "Call Depth",
-  "FunctionCallChainViewer.metadata": "Metadata"
+  "FunctionCallChainViewer.metadata": "Metadata",
+  "FunctionCallChainViewer.downloadTopology": "Download Topology",
 }
 
 export default {
