@@ -151,7 +151,8 @@ const FunctionCallChainViewer = {
   "FunctionCallChainViewer.functionId": "函数 ID",
   "FunctionCallChainViewer.threadIdLabel": "线程 ID",
   "FunctionCallChainViewer.callDepth": "调用深度",
-  "FunctionCallChainViewer.metadata": "元数据"
+  "FunctionCallChainViewer.metadata": "元数据",
+  "FunctionCallChainViewer.downloadTopology": "下载拓扑数据",
 }
 
 export default {

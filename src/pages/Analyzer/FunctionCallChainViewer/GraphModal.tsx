@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { Modal, ConfigProvider } from 'antd';
+import { Modal, ConfigProvider, Button } from 'antd';
+import { FileDown } from 'lucide-react';
 import * as echarts from 'echarts';
 import { useIntl } from 'react-intl';
 import { useTheme } from '@/stores/useStore';
@@ -33,6 +34,7 @@ const GraphModal: React.FC<GraphModalProps> = ({
   const isDark = currentTheme === 'dark';
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
+  const chartDataRef = useRef<{ graphNodes: any[]; graphLinks: any[] } | null>(null);
 
   const modalTitle = graphChainIndex === 'all' 
     ? intl.formatMessage({ id: 'FunctionCallChainViewer.aggregatedGraphTitle' }) 
@@ -69,6 +71,8 @@ const GraphModal: React.FC<GraphModalProps> = ({
 
     const nodes = new Map<string, any>();
     const links: { source: string; target: string; weight: number }[] = [];
+    const graphNodes = new Map<string, any>();
+    const graphLinks: { source: string; target: string; weight: number }[] = [];
     const functionStats = new Map<string, { callCount: number; totalDuration: number; durations: number[] }>();
 
     const receiveName = intl.formatMessage({ id: 'FunctionCallChainViewer.receive' });
@@ -192,6 +196,30 @@ const GraphModal: React.FC<GraphModalProps> = ({
       const sizeMultiplier = Math.min(Math.log(stats.callCount + 1) * 15, 80);
       const nodeSize = [Math.max(baseSize + sizeMultiplier, funcName.length * 8 + 20), 35 + Math.min(sizeMultiplier / 4, 15)];
       const colorConfig = getColorByDuration(avgDuration, category);
+      // 为 LLM 和后续分析准备更详尽的节点信息：包含地址、统计摘要、分位数与样本
+      const addrNum = parseInt(addr);
+      const addrHex = Number.isNaN(addrNum) ? addr : `0x${addrNum.toString(16)}`;
+      const durationsSorted = stats.durations ? stats.durations.slice().sort((a, b) => a - b) : [];
+      const minDuration = durationsSorted.length > 0 ? durationsSorted[0] : 0;
+      const maxDuration = durationsSorted.length > 0 ? durationsSorted[durationsSorted.length - 1] : 0;
+      const median = durationsSorted.length > 0 ? durationsSorted[Math.floor(durationsSorted.length / 2)] : 0;
+      const p90 = durationsSorted.length > 0 ? durationsSorted[Math.min(Math.floor(durationsSorted.length * 0.9), durationsSorted.length - 1)] : 0;
+      const p95 = durationsSorted.length > 0 ? durationsSorted[Math.min(Math.floor(durationsSorted.length * 0.95), durationsSorted.length - 1)] : 0;
+      const durationsSample = durationsSorted.slice(0, 10);
+
+      graphNodes.set(functionKey, {
+        id: functionKey,
+        name: funcName,
+        category: category,
+        addr: addrNum,
+        callCount: stats.callCount,
+        totalDuration: stats.totalDuration,
+        avgDuration: avgDuration,
+        minDuration,
+        maxDuration,
+        durationsSample,
+        description: `${funcName} (${category}) 被调用 ${stats.callCount} 次，平均 ${avgDuration.toFixed(1)}μs，总耗时 ${stats.totalDuration.toFixed(1)}μs`,
+      });
       nodes.set(functionKey, {
         id: functionKey, name: funcName, category: category, value: [avgDuration, stats.callCount, stats.totalDuration], avgDuration: avgDuration,
         symbol: 'rect', symbolSize: nodeSize,
@@ -216,6 +244,21 @@ const GraphModal: React.FC<GraphModalProps> = ({
       const baseColor = CATEGORY_BASE_COLORS[sourceCategory];
       const lightness = 65 - weightRatio * 25;
       const lineColor = `hsl(${baseColor.hue}, ${baseColor.saturation}%, ${lightness}%)`;
+      // 构建更易被大模型理解的链接信息：同时包含 id、名称、类别、原始权重、归一化权重及可读描述
+      const sourceNode = graphNodes.get(link.source);
+      const targetNode = graphNodes.get(link.target);
+      graphLinks.push({
+        source: link.source,
+        sourceName: sourceNode?.name ?? link.source,
+        sourceCategory: sourceNode?.category ?? null,
+        target: link.target,
+        targetName: targetNode?.name ?? link.target,
+        targetCategory: targetNode?.category ?? null,
+        weight: link.weight,
+        weightNormalized: maxWeight > minWeight ? (link.weight - minWeight) / (maxWeight - minWeight) : 1,
+        direction: `${sourceNode?.name ?? link.source} -> ${targetNode?.name ?? link.target}`,
+        description: `${sourceNode?.name ?? link.source} 调用 ${targetNode?.name ?? link.target}，调用次数: ${link.weight}`,
+      });
       return {
         source: link.source, target: link.target, value: link.weight,
         lineStyle: { color: lineColor, width: Math.min(1 + Math.log(link.weight + 1) * 1.5, 6), opacity: 0.8, curveness: 0.2 },
@@ -237,6 +280,11 @@ const GraphModal: React.FC<GraphModalProps> = ({
       ? intl.formatMessage({ id: 'FunctionCallChainViewer.aggregatedGraphSubtext' }, { durationFilterStart: durationFilter[0], durationFilterEnd: durationFilter[1], nodesCount: nodes.size, linksCount: processedLinks.length })
       : intl.formatMessage({ id: 'FunctionCallChainViewer.singleGraphSubtext' }, { threadId: rawData[receiveChainName]?.[targetChainIndex]?.[0]?.[3], nodesCount: nodes.size, linksCount: processedLinks.length });
 
+    // 保存用于下载的大模型分析数据（节点数组与边数组）
+    chartDataRef.current = {
+      graphNodes: Array.from(graphNodes.values()),
+      graphLinks: graphLinks,
+    };
     return {
       backgroundColor: isDark ? '#1f2937' : '#f8fafc',
       title: {
@@ -381,6 +429,19 @@ const GraphModal: React.FC<GraphModalProps> = ({
     };
   };
 
+  // 下载处理函数：导出 graphNodes 和 graphLinks 为 JSON
+  const handleDownloadTopology = () => {
+    const payload = chartDataRef.current ?? { graphNodes: [], graphLinks: [] };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `function_call_topology_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
   useEffect(() => {
     if (isVisible && chartRef.current) {
       setTimeout(() => {
@@ -416,13 +477,34 @@ const GraphModal: React.FC<GraphModalProps> = ({
     }
   }}>
     <Modal
-      title={modalTitle}
+      title={
+        <div style={{ position: 'relative', paddingRight: 56, display: 'flex', alignItems: 'center' }}>
+          <div style={{ flex: 1 }}>{modalTitle}</div>
+          <Button
+            onClick={handleDownloadTopology}
+            size="small"
+            icon={<FileDown size={14} strokeWidth={2} style={{padding: 0, marginTop:4, marginRight: -4}} />}
+            type="dashed"
+            style={{
+              position: 'absolute',
+              right: 48,
+              top: '35%',
+              transform: 'translateY(-50%)',
+              zIndex: 2,
+              padding: '4px 10px',
+              fontSize: 12,
+            }}
+          >
+            {intl.formatMessage({ id: 'FunctionCallChainViewer.downloadTopology' }) ?? '下载'}
+          </Button>
+        </div>
+      }
       open={isVisible}
       onCancel={onClose}
       footer={null}
       width="95vw"
       style={{ top: 50, padding: 0 }}
-      destroyOnClose
+      destroyOnHidden
       afterOpenChange={(open) => {
         if (open && chartRef.current) {
           setTimeout(() => {
