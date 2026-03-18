@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import ipaddress
 from datetime import datetime
 from pathlib import Path
 
@@ -20,16 +21,39 @@ CORS(app)
 @cross_origin(expose_headers=["Transfer-Encoding"])
 def trace_route():
     target = request.args.get("target")
-    use_cache = request.args.get("cache", "true").lower() == "true"
-
+    use_cache_raw = request.args.get("use_cache", request.args.get("cache", "true"))
+    use_cache = str(use_cache_raw).lower() == "true"
+    protocol = request.args.get("protocol", "icmp").strip().lower()
+    port_raw = request.args.get("port")
+    print(f"use_cache={use_cache}, protocol={protocol}, port={port_raw}")
     if not target:
         return jsonify({"error": "Missing 'target' parameter"}), 400
+    target = target.strip()
 
-    ip_address = service.get_ip_from_url(target) if not target.replace(".", "").isdigit() else target
+    if protocol not in {"icmp", "tcp"}:
+        return jsonify({"error": "Invalid 'protocol', expected one of: icmp, tcp"}), 400
+
+    port = None
+    if protocol == "tcp":
+        if port_raw is None:
+            return jsonify({"error": "Missing 'port' parameter when protocol=tcp"}), 400
+        try:
+            port = int(port_raw)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid 'port', expected integer in range 1-65535"}), 400
+        if not 1 <= port <= 65535:
+            return jsonify({"error": "Invalid 'port', expected integer in range 1-65535"}), 400
+
+    try:
+        ipaddress.ip_address(target)
+        ip_address = target
+    except ValueError:
+        ip_address = service.get_ip_from_url(target)
     if not ip_address:
         return jsonify({"error": f"Invalid target: {target}"}), 400
 
-    ip_dir = os.path.join(service.HISTORY_DIR, target)
+    history_key = ip_address if protocol == "icmp" else f"{ip_address}-tcp-{port}"
+    ip_dir = os.path.join(service.HISTORY_DIR, history_key)
     print(f"Checking history in {ip_dir}, use_cache={use_cache}")
     if use_cache and os.path.exists(ip_dir):
         print(f"Found history directory: {ip_dir}")
@@ -39,7 +63,10 @@ def trace_route():
             with open(latest_file, "r") as f:
                 return Response(f.read(), mimetype="application/json")
 
-    return Response(service.run_traceroute(target, ip_address), mimetype="application/json")
+    return Response(
+        service.run_traceroute(target, ip_address, protocol=protocol, port=port),
+        mimetype="application/json",
+    )
 
 
 @app.route("/api/history", methods=["GET"])
@@ -51,20 +78,42 @@ def get_history():
         if not ip_address:
             return jsonify({"error": f"Invalid target: {target}"}), 400
 
-        ip_dir = os.path.join(service.HISTORY_DIR, ip_address)
-        if not os.path.exists(ip_dir):
+        matched_dirs = []
+        icmp_dir = os.path.join(service.HISTORY_DIR, ip_address)
+        if os.path.exists(icmp_dir) and os.path.isdir(icmp_dir):
+            matched_dirs.append(("icmp", None, icmp_dir))
+        tcp_prefix = f"{ip_address}-tcp-"
+        if os.path.exists(service.HISTORY_DIR):
+            for dir_name in os.listdir(service.HISTORY_DIR):
+                if not dir_name.startswith(tcp_prefix):
+                    continue
+                dir_path = os.path.join(service.HISTORY_DIR, dir_name)
+                if not os.path.isdir(dir_path):
+                    continue
+                port_str = dir_name[len(tcp_prefix) :]
+                if not port_str.isdigit():
+                    continue
+                matched_dirs.append(("tcp", int(port_str), dir_path))
+
+        if not matched_dirs:
             return jsonify({"error": f"No history found for {target} ({ip_address})"}), 404
 
         history = []
-        for file_name in sorted(os.listdir(ip_dir), reverse=True):
-            file_path = os.path.join(ip_dir, file_name)
-            try:
-                with open(file_path, "r") as f:
-                    data = json.load(f)
-                    timestamp = file_name.split("-")[0]
-                    history.append({"timestamp": timestamp, "result": data})
-            except Exception as e:
-                print(f"Error reading {file_path}: {e}")
+        for protocol, port, ip_dir in matched_dirs:
+            for file_name in sorted(os.listdir(ip_dir), reverse=True):
+                file_path = os.path.join(ip_dir, file_name)
+                try:
+                    with open(file_path, "r") as f:
+                        data = json.load(f)
+                        timestamp = file_name.split("-")[0]
+                        record = {"timestamp": timestamp, "protocol": protocol, "result": data}
+                        if protocol == "tcp":
+                            record["port"] = port
+                        history.append(record)
+                except Exception as e:
+                    print(f"Error reading {file_path}: {e}")
+
+        history.sort(key=lambda item: item.get("timestamp", ""), reverse=True)
 
         return jsonify({target: history})
 

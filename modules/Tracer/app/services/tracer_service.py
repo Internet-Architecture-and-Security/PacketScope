@@ -163,10 +163,29 @@ def finalize_hop(hop):
     }
 
 
-def run_traceroute(target: str, ip_address: str):
+def run_traceroute(target: str, ip_address: str, protocol: str = "icmp", port=None):
     hops = []
-    file_path = get_history_file_path(target, ip_address)
-    nexttrace_cmd = ["nexttrace", ip_address]
+    protocol = (protocol or "icmp").lower()
+    if protocol not in {"icmp", "tcp"}:
+        raise ValueError("Invalid protocol, expected one of: icmp, tcp")
+
+    history_key = ip_address
+    if protocol == "tcp":
+        if port is None:
+            raise ValueError("Missing port when protocol=tcp")
+        try:
+            port = int(port)
+        except (TypeError, ValueError):
+            raise ValueError("Invalid port, expected integer in range 1-65535")
+        if not 1 <= port <= 65535:
+            raise ValueError("Invalid port, expected integer in range 1-65535")
+        history_key = f"{ip_address}-tcp-{port}"
+
+    file_path = get_history_file_path(target, history_key)
+    if protocol == "icmp":
+        nexttrace_cmd = ["nexttrace", ip_address]
+    else:
+        nexttrace_cmd = ["nexttrace", "--tcp", "-p", str(port), ip_address]
     result = subprocess.Popen(nexttrace_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     current_hop = None

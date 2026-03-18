@@ -1,0 +1,123 @@
+[
+    {
+        "hop": 1,
+        "ip": "*",
+        "latency": null,
+        "jitter": null,
+        "packet_loss": "100%",
+        "bandwidth_mbps": null,
+        "location": "Unknown",
+        "asn": "Unknown",
+        "isp": "Unknown",
+        "geo": "Unknown"
+    },
+    {
+        "hop": 2,
+        "ip": "*",
+        "latency": null,
+        "jitter": null,
+        "packet_loss": "100%",
+        "bandwidth_mbps": null,
+        "location": "Unknown",
+        "asn": "Unknown",
+        "isp": "Unknown",
+        "geo": "Unknown"
+    },
+    {
+        "hop": 3,
+        "ip": "10.162.72.1",
+        "latency": 0.66,
+        "jitter": null,
+        "packet_loss": "0.0%",
+        "bandwidth_mbps": 60.24,
+        "location": "Unknown",
+        "asn": "Unknown",
+        "isp": "Unknown",
+        "geo": "Unknown"
+    },
+    {
+        "hop": 4,
+        "ip": "30.245.26.157",
+        "latency": 4.78,
+        "jitter": null,
+        "packet_loss": "0.0%",
+        "bandwidth_mbps": 17.3,
+        "location": "Columbus, United States",
+        "asn": "749",
+        "isp": "United States Department of Defense",
+        "geo": {
+            "lat": 39.9819,
+            "lon": -82.9048,
+            "radius_km": null,
+            "timezone": "America/New_York"
+        }
+    },
+    {
+        "hop": 5,
+        "ip": "101.203.88.173",
+        "latency": 2.9,
+        "jitter": 0.06,
+        "packet_loss": "0.0%",
+        "bandwidth_mbps": 25.64,
+        "location": "Minato, Japan",
+        "asn": null,
+        "isp": "BBIXINTLNET",
+        "geo": {
+            "lat": 35.6637,
+            "lon": 139.742,
+            "radius_km": null,
+            "timezone": "Asia/Tokyo"
+        }
+    },
+    {
+        "hop": 6,
+        "ip": "108.170.248.243",
+        "latency": 4.2,
+        "jitter": 0.65,
+        "packet_loss": "0.0%",
+        "bandwidth_mbps": 19.22,
+        "location": "Mountain View, United States",
+        "asn": "15169",
+        "isp": "Google LLC",
+        "geo": {
+            "lat": 37.4225,
+            "lon": -122.085,
+            "radius_km": null,
+            "timezone": "America/Los_Angeles"
+        }
+    },
+    {
+        "hop": 7,
+        "ip": "142.250.61.143",
+        "latency": 2.88,
+        "jitter": 0.03,
+        "packet_loss": "0.0%",
+        "bandwidth_mbps": 25.8,
+        "location": "Mountain View, United States",
+        "asn": "15169",
+        "isp": "Google LLC",
+        "geo": {
+            "lat": 37.4225,
+            "lon": -122.085,
+            "radius_km": null,
+            "timezone": "America/Los_Angeles"
+        }
+    },
+    {
+        "hop": 8,
+        "ip": "142.250.196.36",
+        "latency": 2.78,
+        "jitter": 0.01,
+        "packet_loss": "0.0%",
+        "bandwidth_mbps": 26.48,
+        "location": "Chennai, India",
+        "asn": "15169",
+        "isp": "Google LLC",
+        "geo": {
+            "lat": 13.0843,
+            "lon": 80.2705,
+            "radius_km": null,
+            "timezone": "Asia/Kolkata"
+        }
+    }
+]
