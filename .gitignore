@@ -25,20 +25,14 @@ dist-ssr
 out
 
 
-modules/Locator/.venv
-modules/Locator/venv
-modules/Locator/history
-modules/Locator/.cache
+
 modules/Tracer/.venv
 modules/Tracer/.cache
 # modules/Tracer/.*
-modules/Tracer/bcc-master
 modules/Tracer/__pycache__
 modules/Tracer/*.db
 modules/Tracer/*.db*
-modules/Tracer/history
-modules/Tracer/FuncIDMap.json
-
+modules/Tracer/data/history/.*
 
 modules/Analyzer/Monitor/.cache
 modules/Analyzer/Monitor/__pycache__

@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install -y curl wget && \
     nexttrace -V || true && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 复制 Locator 模块代码
+# 复制 Tracer 模块代码
 COPY ./ /app
 
 # 安装 Python 依赖（使用清华源）
@@ -40,4 +40,4 @@ RUN if [ -f requirements.txt ]; then \
 EXPOSE 8000
 
 # 设置入口
-ENTRYPOINT ["python", "backend.py"]
+ENTRYPOINT ["python", "app/api/http_server.py"]

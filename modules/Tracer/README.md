@@ -1,32 +1,44 @@
+# Tracer v2
 
-
-# Tracer
-
-A Flask-based network path analysis service that integrates real-time `traceroute` tracking, geographic and ASN lookup, historical caching, anomaly detection, and Spamhaus-based malicious IP risk assessment.
+A Flask + MCP network path analysis service that combines real-time `traceroute`, geographic and ASN enrichment, history caching, anomaly analysis, and Spamhaus-based malicious IP risk scoring.
 
 ---
 
 ## Features Overview
 
-* Real-time `traceroute` with per-hop streaming updates.
-* City and ASN information powered by MaxMind GeoLite2.
-* Historical record comparison and deviation/latency anomaly detection.
-* Blacklist IP detection (Spamhaus DROP/EDROP) with risk scoring.
-* Automatic threat intelligence updates maintaining a `risky_ips.json` file.
+* Real-time `traceroute` with per-hop streaming output, supporting both `icmp` and `tcp`.
+* City and ASN enrichment powered by MaxMind GeoLite2.
+* Historical path storage with comparison-based anomaly detection.
+* Malicious IP checks using Spamhaus DROP / EDROP with risk scoring.
+* MCP tools for direct use from MCP clients (Trae/Cline, etc.).
 
 ---
 
-## Project Structure
+## Project Structure (v2)
 
-```
-├── backend.py                  # Main Flask backend application
-├── update_threat_intel.py      # Script to update malicious IPs   (from Spamhaus)
-├── risky_ips.json              # Auto-generated JSON file of risky IP ranges
-├── GeoLite2-City.mmdb          # City-level geolocation database
-├── GeoLite2-ASN.mmdb           # ASN database
-├── history/                    # Cached traceroute results
-├── Dockerfile                  # Dockerfile for building the container
-├── docker-compose.yml          # Docker Compose configuration
+```text
+Tracer/
+├── app/
+│   ├── api/
+│   │   └── http_server.py                # Flask HTTP entry
+│   ├── mcp/
+│   │   └── server.py                     # MCP server entry
+│   ├── services/
+│   │   └── tracer_service.py             # Core business logic
+│   └── jobs/
+│       └── update_threat_intel.py        # Threat intel update job
+├── data/
+│   ├── geoip/
+│   │   ├── GeoLite2-City.mmdb            # City-level geolocation DB
+│   │   └── GeoLite2-ASN.mmdb             # ASN DB
+│   ├── threat/
+│   │   └── risky_ips.json                # Risky IP list
+│   └── history/                          # Traceroute history cache
+├── requirements.txt
+├── start_server.sh                       # Start HTTP service
+├── start_mcp.sh                          # Start MCP service
+├── README-zh-v2.md
+└── README-v2.md
 ```
 
 ---
@@ -35,64 +47,52 @@ A Flask-based network path analysis service that integrates real-time `tracerout
 
 ### 1. Start with Docker or Docker Compose
 
-#### 1.1 Start using Docker Compose (Recommended)
-
-Run the following command to build and start all services automatically:
+#### 1.1 Start using Docker Compose (recommended)
 
 ```bash
 docker-compose up --build
 ```
 
-This will build and start the Flask backend and all dependencies.
-
 #### 1.2 Start manually with Docker
 
-If you prefer to run without Docker Compose, you can start the container manually:
-
 ```bash
-# Build the image
 docker build -t packetscope-tracer .
-
-# Run the container
-docker run --rm -v $(pwd)/history:/app/history -p 8000:8000 packetscope-tracer
+docker run --rm -v $(pwd)/data/history:/app/data/history -p 8000:8000 packetscope-tracer
 ```
 
-By default, the service listens on port `8000`.
+Default port: `8000`
 
 ---
 
-### 2. Manual Setup (Without Docker)
-
-If you prefer to run it locally without Docker:
+### 2. Install dependencies (without Docker)
 
 ```bash
-# Create a virtual environment
+cd /home/ubuntu/PacketScope/modules/Tracer
 python3 -m venv .venv
-
-# Activate the virtual environment
 source .venv/bin/activate
-
-# Install Python dependencies
 pip install -r requirements.txt
 ```
 
 ---
 
-### 3. Download MaxMind GeoIP Databases
+### 3. Download MaxMind GeoIP databases
 
-Register for a free MaxMind account and download the following two databases:
+Register on MaxMind and download:
 
 * [GeoLite2-City.mmdb](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data)
 * [GeoLite2-ASN.mmdb](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data)
 
-Place both files in the project root directory.
+Place them in:
+
+```text
+data/geoip/
+```
 
 ---
 
 ### 4. Install `nexttrace`
 
-To perform traceroute operations, install [`nexttrace`](https://github.com/nexttrace/nexttrace).
-On Linux, simply run:
+To run traceroute, install [`nexttrace`](https://github.com/nexttrace/nexttrace):
 
 ```bash
 curl -sL nxtrace.org/nt | sudo bash
@@ -100,61 +100,97 @@ curl -sL nxtrace.org/nt | sudo bash
 
 ---
 
-### 5. Update Malicious IP Data
+### 5. Start HTTP service
 
-#### Data Source
+Recommended:
 
-The script `update_threat_intel.py` automatically fetches data from:
+```bash
+cd /home/ubuntu/PacketScope/modules/Tracer
+./start_server.sh
+```
+
+Or run directly:
+
+```bash
+python3 app/api/http_server.py
+```
+
+Default port: `8000`
+
+---
+
+### 6. Start MCP service
+
+```bash
+cd /home/ubuntu/PacketScope/modules/Tracer
+./start_mcp.sh
+```
+
+Default env vars (override if needed):
+
+* `TRACER_MCP_TRANSPORT=sse`
+* `TRACER_MCP_HOST=0.0.0.0`
+* `TRACER_MCP_PORT=8011`
+* `TRACER_MCP_HTTP_PATH=/mcp`
+* `TRACER_MCP_SSE_PATH=/sse`
+* `TRACER_MCP_MESSAGE_PATH=/messages/`
+
+---
+
+### 7. Update malicious IP data
+
+Threat intel sources:
 
 * Spamhaus [DROP list](https://www.spamhaus.org/drop/)
 * Spamhaus [EDROP list](https://www.spamhaus.org/drop/edrop/)
 
-#### File Format
-
-The generated `risky_ips.json` will look like this:
-
-```json
-{
-  "192.0.2.0/24": "Spamhaus DROP listed",
-  "203.0.113.0/25": "Known malware distributor"
-}
-```
-
-During analysis, each hop’s IP will be checked against these CIDR ranges.
-
-Run the script to update:
+Run:
 
 ```bash
-python update_threat_intel.py
+python3 app/jobs/update_threat_intel.py
 ```
 
-This will generate or refresh `risky_ips.json` for blacklist risk analysis.
+Output:
+
+```text
+data/threat/risky_ips.json
+```
 
 ---
 
 ## API Reference
 
-### `GET /api/trace?target=<ip|domain>&cache=true|false`
+### `GET /api/trace?target=<ip|domain>&use_cache=true|false&protocol=icmp|tcp&port=<1-65535>`
 
-Performs a traceroute for the given target.
+Runs traceroute for the target.
 
 **Parameters:**
 
 * `target`: Target domain or IP.
-* `cache`: Whether to use cached results (default: `true`).
+* `use_cache`: Whether to use history cache (default: `true`).
+* `protocol`: Probe protocol, `icmp` or `tcp` (default: `icmp`).
+* `port`: Required only when `protocol=tcp`, range `1-65535`.
+* Compatibility: legacy `cache` is still supported; if `protocol` is omitted, `icmp` is used.
 
-**Sample response (per-hop):**
+**Sample response:**
 
 ```json
 {
-    "ip": "106.187.16.93",
-    "latency": 30.998,
-    "jitter": 3.1,
-    "packet_loss": "0%",
-    "bandwidth_mbps": 3.13,
-    "location": "None, Japan",
-    "asn": 2516,
-    "isp": "KDDI CORPORATION"
+  "hop": 1,
+  "ip": "106.187.16.93",
+  "latency": 30.998,
+  "jitter": 3.1,
+  "packet_loss": "0%",
+  "bandwidth_mbps": 3.13,
+  "location": "None, Japan",
+  "asn": 2516,
+  "isp": "KDDI CORPORATION",
+  "geo": {
+    "lat": 35.6895,
+    "lon": 139.6917,
+    "radius_km": 20,
+    "timezone": "Asia/Tokyo"
+  }
 }
 ```
 
@@ -162,7 +198,13 @@ Performs a traceroute for the given target.
 
 ### `GET /api/history?target=<ip|domain>`
 
-Fetch historical traceroute results for a given target (or all if unspecified).
+Returns historical traceroute records for the target, or all records if `target` is omitted.
+
+**Parameters:**
+
+* `target`: Target domain or IP.
+* No need to pass `protocol` or `port`; backend auto-merges both `icmp` and `tcp` records for the same target.
+* Each record includes `protocol`; if `protocol=tcp`, the record also includes `port`.
 
 **Sample response:**
 
@@ -170,29 +212,29 @@ Fetch historical traceroute results for a given target (or all if unspecified).
 {
   "www.youtube.com": [
     {
+      "timestamp": "20250505",
+      "protocol": "icmp",
       "result": [
         {
-          "asn": "Unknown",
-          "bandwidth_mbps": "None",
-          "ip": "*",
-          "isp": "Unknown",
-          "jitter": "None",
-          "latency": null,
-          "location": "Unknown",
-          "packet_loss": "100%"
-        },
-        {
-          "asn": "Unknown",
-          "bandwidth_mbps": 1.68,
-          "ip": "kix06s11-in-f14.1e100.net",
-          "isp": "Unknown",
-          "jitter": 5.86,
-          "latency": 58.592,
-          "location": "Unknown",
+          "hop": 1,
+          "ip": "203.0.113.1",
+          "latency": 12.3,
           "packet_loss": "0%"
         }
-      ],
-      "timestamp": "20250505"
+      ]
+    },
+    {
+      "timestamp": "20250504",
+      "protocol": "tcp",
+      "port": 80,
+      "result": [
+        {
+          "hop": 1,
+          "ip": "198.51.100.10",
+          "latency": 18.6,
+          "packet_loss": "0%"
+        }
+      ]
     }
   ]
 }
@@ -202,14 +244,17 @@ Fetch historical traceroute results for a given target (or all if unspecified).
 
 ### `GET /api/analyze?target=<ip|domain>&cache=true|false`
 
-Performs route anomaly detection and risk scoring using the historical database and blacklist data.
+Runs anomaly analysis and risk scoring based on historical paths and blacklist data.
 
 **Sample response:**
 
 ```json
 {
   "anomalies": [
-    { "type": "PathDeviation", "detail": "Hop 4 shows a new IP 203.0.113.1" }
+    {
+      "type": "PathDeviation",
+      "detail": "Hop 4 shows a new IP 203.0.113.1"
+    }
   ],
   "alerts": [
     "Hop 203.0.113.1 is listed as malicious: listed on Spamhaus DROP"
@@ -220,8 +265,70 @@ Performs route anomaly detection and risk scoring using the historical database 
 
 ---
 
-## Acknowledgments
+### `GET /api/ready`
 
-Special thanks to [nexttrace](https://github.com/nexttrace/nexttrace) for providing the powerful open-source traceroute engine that enables efficient real-time path tracking.
+Service readiness check.
+
+**Sample response:**
+
+```json
+{
+  "ready": true,
+  "timestamp": "2026-03-18T20:00:00.000000"
+}
+```
 
 ---
+
+## MCP Usage
+
+### MCP tools
+
+* `trace_target(target, use_cache=true)`
+* `analyze_target(target, use_cache=true)`
+* `get_history(target=None, limit=20)`
+* `health_check()`
+* `server_capabilities()`
+
+### Client config example
+
+#### sse
+
+```json
+{
+  "mcpServers": {
+    "packetscope-tracer": {
+      "transport": "sse",
+      "url": "http://<server-ip>:8011/sse"
+    }
+  }
+}
+```
+
+#### stdio (local process)
+
+```json
+{
+  "mcpServers": {
+    "packetscope-tracer": {
+      "command": "python3",
+      "args": ["/home/ubuntu/PacketScope/modules/Tracer/app/mcp/server.py"],
+      "env": {
+        "TRACER_MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}
+```
+
+### Natural language examples
+
+* Analyze route risk for `www.google.com`
+* Query the latest 10 route histories for `8.8.8.8`
+* Run readiness check, then trace `1.1.1.1`
+
+---
+
+## Acknowledgments
+
+Special thanks to [nexttrace](https://github.com/nexttrace/nexttrace) for the open-source traceroute engine.

@@ -1,12 +1,15 @@
-import requests
 import json
+import os
 
-# Spamhaus DROP/EDROP列表
+import requests
+
 DROP_URL = "https://www.spamhaus.org/drop/drop.txt"
 EDROP_URL = "https://www.spamhaus.org/drop/edrop.txt"
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+THREAT_DIR = os.path.join(BASE_DIR, "data", "threat")
+os.makedirs(THREAT_DIR, exist_ok=True)
+RISKY_IPS_FILE = os.path.join(THREAT_DIR, "risky_ips.json")
 
-# 本地存储的风险IP文件
-RISKY_IPS_FILE = "risky_ips.json"
 
 def fetch_spamhaus_list(url):
     try:
@@ -16,6 +19,7 @@ def fetch_spamhaus_list(url):
     except Exception as e:
         print(f"Failed to fetch {url}: {e}")
     return ""
+
 
 def parse_spamhaus(text):
     result = {}
@@ -28,6 +32,7 @@ def parse_spamhaus(text):
         description = parts[1].strip() if len(parts) > 1 else "Spamhaus DROP listed"
         result[ip_block] = description
     return result
+
 
 def update_risky_ips():
     print("Fetching Spamhaus DROP and EDROP...")
@@ -46,6 +51,3 @@ def update_risky_ips():
         print(f"Updated {len(risky_ips)} entries into {RISKY_IPS_FILE}")
     else:
         print("No IPs updated.")
-
-# if __name__ == "__main__":
-#     update_risky_ips()
