@@ -357,21 +357,22 @@ const Locator = () => {
   };
 
   // 处理历史记录项点击
-  const handleHistoryItemClick = async (target) => {
+  const handleHistoryItemClick = async (target, protocol = 'icmp', port = null) => {
     setDestinationAddress(target);
+    setProtocol(protocol);
+    if (protocol === 'tcp' && port) setTcpPort(String(port));
     if (!loading) {
-      await handleTraceRoute(target);
+      // 直接把 protocol 和 port 传进去，不依赖 state
+      await handleTraceRoute(target, protocol, port);
     }
   };
 
   // 执行路由追踪
-  const handleTraceRoute = async (targetOverride = null) => {
+  const handleTraceRoute = async (targetOverride = null, protocolOverride = null, portOverride = null) => {
     const target = targetOverride || destinationAddress;
-    // TCP 模式下 port 必填校验
-    if (protocol === 'tcp' && (!tcpPort || isNaN(tcpPort) || tcpPort < 1 || tcpPort > 65535)) {
-      message.warning(intl.formatMessage({ id: 'Locator.tcpPortRequired' }));
-      return;
-    }
+    // 优先用传入的参数，fallback 才用 state
+    const currentProtocol = protocolOverride ?? protocol;
+    const currentPort = portOverride ?? tcpPort;
 
     if (loading) {
       if (cancelRef.current) {
@@ -382,12 +383,18 @@ const Locator = () => {
       return;
     }
 
-    const { promise, cancel } = fetchTraceWithCancel(target, useCache, (hop) => {
-      setTraceResults((prev) => [...prev, hop]);
-    }, 
-    protocol,         // 新增
-    tcpPort || null,  // 新增
-  );
+    if (currentProtocol === 'tcp' && (!currentPort || currentPort < 1 || currentPort > 65535)) {
+      message.warning(intl.formatMessage({ id: 'Locator.tcpPortRequired' }));
+      return;
+    }
+
+    const { promise, cancel } = fetchTraceWithCancel(
+      target,
+      useCache,
+      (hop) => setTraceResults((prev) => [...prev, hop]),
+      currentProtocol,
+      currentProtocol === 'tcp' ? currentPort : null,
+    );
 
     setTraceResults([]);
     setRiskData(null);
@@ -396,7 +403,6 @@ const Locator = () => {
 
     try {
       const results = await promise;
-
       if (results.length > 0) {
         setRiskLoading(true);
         try {
@@ -408,7 +414,6 @@ const Locator = () => {
           setRiskLoading(false);
         }
       }
-
       fetchHistoryData();
     } catch (error) {
       console.error('Trace route failed:', error);
