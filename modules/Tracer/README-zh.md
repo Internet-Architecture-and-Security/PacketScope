@@ -76,7 +76,9 @@ data/geoip/
 为了能够运行 `traceroute`，需要安装 [`nexttrace`](https://github.com/nexttrace/nexttrace) 工具。如果使用的是 Linux 系统，可以使用如下命令安装：
 
 ```bash
-curl -sL nxtrace.org/nt | sudo bash
+curl -sL nxtrace.org/nt | sudo bash && \
+NT_PATH=$(command -v nexttrace) && \
+sudo setcap cap_net_raw,cap_net_admin+eip "$NT_PATH"
 ```
 
 ---

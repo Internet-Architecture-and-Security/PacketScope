@@ -19,11 +19,13 @@ RUN if [ -f /etc/apt/sources.list ] && [ -s /etc/apt/sources.list ]; then \
     fi
 
 # 安装必要工具和 nexttrace
-RUN apt-get update && apt-get install -y curl wget && \
-    # 下载 nexttrace
-    echo "Downloading nexttrace" && \
+RUN apt-get update && \
+    apt-get install -y curl wget libcap2-bin && \
     curl -sL nxtrace.org/nt | bash && \
-    nexttrace -V || true && \
+    \
+    NT_PATH=$(command -v nexttrace || echo /usr/local/bin/nexttrace) && \
+    setcap cap_net_raw,cap_net_admin+eip "$NT_PATH" && \
+    \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 复制 Tracer 模块代码
