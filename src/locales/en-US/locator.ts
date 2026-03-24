@@ -1,7 +1,7 @@
 
 
 const Locator = {
-  'Locator.howto': 'How to use: Enter the destination address (IP or domain name), click the "Start Tracking" button, and the routing path will be displayed on the map.',
+  'Locator.howto': 'How to use: Enter a destination address (IP or domain), then click \"Start Tracing\" to visualize the routing path on the map. By default, ICMP protocol is used for probing. Switch to TCP and specify a port (e.g. 80, 443) to bypass firewalls or probe specific services.',
   'Locator.source': 'Source Address',
   'Locator.destination': 'Destination Address',
   'Locator.sourcePlaceholder': 'Please enter source address',

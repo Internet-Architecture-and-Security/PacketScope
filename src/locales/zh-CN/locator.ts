@@ -1,6 +1,6 @@
 
 const Locator = {
-  'Locator.howto': '「如何使用」输入目的地址（ IP 或域名），点击「追踪分析」按钮，便可在地图上显示路由跳转路径。',
+  'Locator.howto': '「如何使用」输入目的地址（IP 或域名），点击「追踪分析」按钮，便可在地图上显示路由跳转路径。默认使用 ICMP 协议进行探测；如需穿透防火墙或探测特定服务，可切换为 TCP 协议并指定端口（如 80、443）。',
   'Locator.source': '源地址',
   'Locator.destination': '目标地址',
   'Locator.sourcePlaceholder': '请输入源地址',
