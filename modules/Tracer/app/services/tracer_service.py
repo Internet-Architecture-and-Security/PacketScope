@@ -5,6 +5,7 @@ import socket
 import statistics
 import subprocess
 from datetime import datetime
+from functools import lru_cache
 
 import geoip2.database
 import requests
@@ -26,6 +27,7 @@ RISKY_IPS = {}
 
 geoip_reader = geoip2.database.Reader(os.path.join(GEOIP_DIR, "GeoLite2-City.mmdb"))
 asn_reader = geoip2.database.Reader(os.path.join(GEOIP_DIR, "GeoLite2-ASN.mmdb"))
+http_session = requests.Session()
 
 
 def load_risky_ips():
@@ -77,10 +79,11 @@ def list_history():
     return history_records
 
 
+@lru_cache(maxsize=4096)
 def get_ip_info(ip):
     try:
         api_url = f"http://ip-api.com/json/{ip}"
-        response = requests.get(api_url, timeout=5)
+        response = http_session.get(api_url, timeout=3)
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "success":
@@ -143,8 +146,11 @@ def finalize_hop(hop):
     packet_loss = (
         f"{round(hop['rtts'].count('*') / len(hop['rtts']) * 100, 1)}%" if hop["rtts"] else "100%"
     )
-    ip_info = get_ip_info(hop["ip"]) if hop["ip"] else {}
-    if ip_info["isp"] == "DoD Network Information Center":
+    ip_info = get_ip_info(hop["ip"]) if hop.get("ip") else None
+    if not ip_info:
+        ip_info = {"location": "Unknown", "asn": "Unknown", "isp": "Unknown", "geo": "Unknown"}
+
+    if ip_info.get("isp") == "DoD Network Information Center":
         ip_info["isp"] = "unknown"
         ip_info["asn"] = "unknown"
         ip_info["location"] = "unknown"
@@ -156,10 +162,10 @@ def finalize_hop(hop):
         "jitter": round(statistics.pstdev(numeric_rtts), 2) if len(numeric_rtts) > 1 else None,
         "packet_loss": packet_loss,
         "bandwidth_mbps": round(100.0 / (latency + 1), 2) if latency else None,
-        "location": ip_info["location"],
-        "asn": ip_info["asn"],
-        "isp": ip_info["isp"],
-        "geo": ip_info["geo"],
+        "location": ip_info.get("location", "Unknown"),
+        "asn": ip_info.get("asn", "Unknown"),
+        "isp": ip_info.get("isp", "Unknown"),
+        "geo": ip_info.get("geo", "Unknown"),
     }
 
 
@@ -192,7 +198,7 @@ def run_traceroute(target: str, ip_address: str, protocol: str = "icmp", port=No
 
     for line in result.stdout:
         line = ansi_escape.sub("", line).strip()
-        if not line or line.startswith(("traceroute", "NextTrace", "[NextTrace", "IP")):
+        if not line or line.startswith(("traceroute", "NextTrace", "[NextTrace", "IP")) or "->" in line:
             continue
 
         print(f"Processing line: {line}")

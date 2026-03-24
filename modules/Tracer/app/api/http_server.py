@@ -5,7 +5,7 @@ import ipaddress
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify, request, stream_with_context
 from flask_cors import CORS, cross_origin
 
 if __package__ in (None, ""):
@@ -63,10 +63,13 @@ def trace_route():
             with open(latest_file, "r") as f:
                 return Response(f.read(), mimetype="application/json")
 
-    return Response(
-        service.run_traceroute(target, ip_address, protocol=protocol, port=port),
-        mimetype="application/json",
+    response = Response(
+        stream_with_context(service.run_traceroute(target, ip_address, protocol=protocol, port=port)),
+        mimetype="application/x-ndjson",
     )
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["X-Accel-Buffering"] = "no"
+    return response
 
 
 @app.route("/api/history", methods=["GET"])

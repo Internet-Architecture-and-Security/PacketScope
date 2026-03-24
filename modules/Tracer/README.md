@@ -95,7 +95,9 @@ data/geoip/
 To run traceroute, install [`nexttrace`](https://github.com/nexttrace/nexttrace):
 
 ```bash
-curl -sL nxtrace.org/nt | sudo bash
+curl -sL nxtrace.org/nt | sudo bash && \
+NT_PATH=$(command -v nexttrace) && \
+sudo setcap cap_net_raw,cap_net_admin+eip "$NT_PATH"
 ```
 
 ---
@@ -171,7 +173,12 @@ Runs traceroute for the target.
 * `protocol`: Probe protocol, `icmp` or `tcp` (default: `icmp`).
 * `port`: Required only when `protocol=tcp`, range `1-65535`.
 * Compatibility: legacy `cache` is still supported; if `protocol` is omitted, `icmp` is used.
+**Sample request:**
 
+```
+curl 'http://localhost:8000/api/trace?target=8.8.8.8&use_cache=false&protocol=icmp'
+curl 'http://localhost:8000/api/trace?target=8.8.8.8&use_cache=false&protocol=tcp&port=53'
+``` 
 **Sample response:**
 
 ```json
