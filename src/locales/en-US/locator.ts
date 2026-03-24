@@ -11,6 +11,7 @@ const Locator = {
   'Locator.list': 'Route Information List',
   'Locator.history': 'History',
   'Locator.useCache': 'Enable Cache',
+  'Locator.port': 'Port',
 }
 
 const TraceResultsPanel ={

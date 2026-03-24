@@ -10,6 +10,7 @@ const Locator = {
   'Locator.list': '路由信息列表',
   'Locator.history': '历史记录',
   'Locator.useCache': '启用缓存',
+  'Locator.port': '端口',
 }
 
 

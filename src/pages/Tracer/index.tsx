@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Input, Button, Alert, Flex, Checkbox, ConfigProvider } from 'antd';
+import { Input, Button, Alert, Flex, Checkbox, ConfigProvider, Radio, App } from 'antd';
 import { useSearchParams } from 'react-router';
 import * as echarts from 'echarts';
 import { SendOutlined, StopOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
@@ -51,14 +51,21 @@ function getMapViewOptions(coords) {
   return { center, zoom };
 }
 
-function fetchTraceWithCancel(target, useCache = false, onHop) {
+function fetchTraceWithCancel(target, useCache = false, onHop, protocol = 'icmp', port = null) {
   let shouldStop = false;
   let reader = null;
 
   const promise = (async () => {
     if (!target) return [];
 
-    const url = `${APIs['Locator.trace']}?target=${target}&cache=${useCache}`;
+    const params = new URLSearchParams({
+      target,
+      use_cache: useCache,
+      protocol,
+      ...(protocol === 'tcp' && port ? { port } : {}),
+    });
+    const url = `${APIs['Locator.trace']}?${params.toString()}`;
+    // const url = `${APIs['Locator.trace']}?target=${target}&cache=${useCache}`;
     const response = await fetch(url);
     const isStream = response.headers.get('Transfer-Encoding') === 'chunked';
     const results = [];
@@ -317,6 +324,9 @@ const Locator = () => {
   const [historyData, setHistoryData] = useState({});
   const [isDdisabledzoomInBtn, setIsDdisabledzoomInBtn] = useState(false);
   const [isDdisabledzoomOutBtn, setIsDdisabledzoomOutBtn] = useState(true);
+  const { message } = App.useApp();
+  const [protocol, setProtocol] = useState('icmp');
+  const [tcpPort, setTcpPort] = useState('80');
 
   const cancelRef = useRef(null);
   const mapContainerRef = useRef(null);
@@ -357,6 +367,11 @@ const Locator = () => {
   // 执行路由追踪
   const handleTraceRoute = async (targetOverride = null) => {
     const target = targetOverride || destinationAddress;
+    // TCP 模式下 port 必填校验
+    if (protocol === 'tcp' && (!tcpPort || isNaN(tcpPort) || tcpPort < 1 || tcpPort > 65535)) {
+      message.warning(intl.formatMessage({ id: 'Locator.tcpPortRequired' }));
+      return;
+    }
 
     if (loading) {
       if (cancelRef.current) {
@@ -369,7 +384,10 @@ const Locator = () => {
 
     const { promise, cancel } = fetchTraceWithCancel(target, useCache, (hop) => {
       setTraceResults((prev) => [...prev, hop]);
-    });
+    }, 
+    protocol,         // 新增
+    tcpPort || null,  // 新增
+  );
 
     setTraceResults([]);
     setRiskData(null);
@@ -639,12 +657,57 @@ const Locator = () => {
 
         <Flex gap={30} className="mb-2.5">
           <div className="flex-1">
-            <h2 className={classNames(
-              "text-lg font-medium mb-2",
-              isDark ? "text-gray-200" : ""
-            )}>
-              {intl.formatMessage({ id: 'Locator.destination' })}
-            </h2>
+ <Flex align="center" gap={8} className="mb-2">
+  <h2 className={classNames("text-lg font-medium m-0", isDark ? "text-gray-200" : "text-gray-800")}>
+    {intl.formatMessage({ id: 'Locator.destination' })}
+  </h2>
+
+  {/* 协议切换 */}
+<Radio.Group
+  value={protocol}
+  onChange={(e) => setProtocol(e.target.value)}
+  disabled={loading}
+  size="small"
+  optionType="button"
+  buttonStyle="solid"
+  options={[
+    { label: 'ICMP', value: 'icmp' },
+    { label: 'TCP', value: 'tcp' },
+  ]}
+  className="[&_.ant-radio-button-wrapper]:!h-[24px] [&_.ant-radio-button-wrapper]:!leading-[24px] [&_.ant-radio-button-wrapper]:!px-3 [&_.ant-radio-button-wrapper]:!text-xs"
+/>
+
+{/* 端口 */}
+<div
+  className={classNames(
+    "overflow-hidden transition-all duration-200 ease-in-out",
+    protocol === 'tcp' ? "max-w-[130px] opacity-100" : "max-w-0 opacity-0"
+  )}
+>
+  <Input
+    value={tcpPort}
+    disabled={loading || protocol !== 'tcp'}
+    onChange={(e) => setTcpPort(e.target.value)}
+    onPressEnter={() => handleTraceRoute()}
+    placeholder="1-65535"
+    style={{ width: 130 }}
+    size="small"
+    className={classNames(
+      "[&_.ant-input-group-addon]:!text-xs [&_.ant-input-group-addon]:!px-2",
+      isDark
+        ? "[&_.ant-input-group-addon]:!bg-blue-900/30 [&_.ant-input-group-addon]:!border-blue-500/30 [&_.ant-input-group-addon]:!text-blue-400 [&_.ant-input]:!border-blue-500/30"
+        : "[&_.ant-input-group-addon]:!bg-blue-50 [&_.ant-input-group-addon]:!border-blue-200 [&_.ant-input-group-addon]:!text-blue-500 [&_.ant-input]:!border-blue-200"
+    )}
+    addonBefore={
+      <span className={classNames("text-xs font-medium", isDark ? "text-blue-400" : "text-blue-500")}>
+        {intl.formatMessage({ id: 'Locator.port' })}
+      </span>
+    }
+  />
+</div>
+</Flex>
+  
+
             <Input
               placeholder={intl.formatMessage({ id: 'Locator.destinationPlaceholder' })}
               value={destinationAddress}
@@ -655,8 +718,11 @@ const Locator = () => {
                 // isDark ? "placeholder:text-gray-500 text-gray-300 bg-gray-800" : "placeholder:text-gray-400"
               )}
             />
+          
           </div>
           <Flex gap={20} align="end">
+      
+
             <Button
               type={loading ? 'default' : 'primary'}
               danger={loading}
