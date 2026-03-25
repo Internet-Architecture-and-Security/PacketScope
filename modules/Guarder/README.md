@@ -7,6 +7,7 @@ A high-performance network connection tracking tool based on eBPF/XDP technology
 - **High Performance**: Zero-copy data processing with eBPF/XDP technology
 - **Comprehensive Monitoring**: TCP/UDP connection tracking and ICMP traffic analysis
 - **Intelligent Filtering**: AI-powered filter rule generation and management
+- **PCAP Analysis**: AI-powered offline PCAP file analysis and threat detection
 - **Real-time Statistics**: Detailed network performance statistics and analysis
 - **HTTP API**: Complete RESTful API interface
 - **Precise Matching**: Multi-dimensional filtering based on IP, port, protocol, and more
@@ -50,11 +51,13 @@ conn-tracker/
 ├── bpf/                    # eBPF kernel programs
 │   └── conn_tracker.c      # Main XDP program
 ├── cmd/conn-tracker/       # User space application
-│   ├── main.go            # Main program entry
-│   ├── api.go             # HTTP API server
-│   ├── ai_filter.go       # AI filter generation
-│   ├── filter.go          # Filter management
-│   └── common.go          # Common utilities
+│   ├── main.go             # Main program entry
+│   ├── api.go              # HTTP API server
+│   ├── ai_filter.go        # AI filter generation
+│   ├── filter.go           # Filter management
+│   ├── common.go           # Common utilities
+│   ├── pcap_analyzer_pcap.go  # PCAP analysis (with libpcap)
+│   └── pcap_stub.go        # PCAP analysis stub (without libpcap)
 ├── pkg/                   # Go packages
 └── docs/                  # Documentation (this README)
 ```
@@ -825,6 +828,12 @@ ip link show
 - Enable debug mode for detailed error information
 - Increase timeout for slow AI responses
 
+#### PCAP Analysis Issues
+- Ensure Guarder is built with PCAP support: `go build -tags pcap`
+- Check libpcap-dev is installed: `sudo apt-get install libpcap-dev`
+- Verify PCAP file format (supports .pcap and .pcapng)
+- Check file size limit (default 32MB)
+
 #### Permission Errors
 ```bash
 # Run with sudo for eBPF operations
@@ -863,6 +872,174 @@ MIT License - see LICENSE file for details.
 - [eBPF Documentation](https://ebpf.io/)
 - [XDP Tutorial](https://github.com/xdp-project/xdp-tutorial)
 - [OpenAI API Documentation](https://platform.openai.com/docs)
+
+## 📦 PCAP File Analysis
+
+### Overview
+The PCAP analysis feature allows you to upload and analyze packet capture files using AI-powered threat detection. This enables offline analysis of network traffic to identify security threats, anomalies, and attack patterns.
+
+### Features
+- **Protocol Analysis**: Automatic detection of protocols (TCP, UDP, ICMP, HTTP, HTTPS, DNS, SSH, etc.)
+- **Traffic Statistics**: Top source/destination IPs, ports, packet counts
+- **Anomaly Detection**: SYN flood detection, port scanning patterns
+- **AI-Powered Analysis**: Uses LLM to identify threats and provide recommendations
+- **Structured Reports**: JSON output with severity levels, threat types, and actionable suggestions
+
+### Prerequisites
+
+#### Build with PCAP Support
+
+```bash
+# Install libpcap development libraries
+sudo apt-get install libpcap-dev
+
+# Build with PCAP support
+cd modules/Guarder
+go build -tags pcap -o conn-tracker ./cmd/conn-tracker
+```
+
+### API Usage
+
+#### Analyze PCAP File
+
+```bash
+curl -X POST http://localhost:8080/api/pcap/analyze \
+  -F "file=@/path/to/capture.pcap" \
+  -F "analyze_type=security" \
+  -F "custom_prompt=Focus on identifying malware C2 communication"
+```
+
+**Parameters:**
+- `file`: PCAP or PCAPNG file to analyze (required)
+- `analyze_type`: Analysis focus - `security`, `performance`, or `custom` (default: security)
+- `custom_prompt`: Additional instructions for AI analysis (optional)
+
+**Response Example:**
+```json
+{
+  "success": true,
+  "analysis": "Network traffic analysis reveals potential port scanning activity...",
+  "threats": [
+    {
+      "severity": "high",
+      "type": "Port Scanning",
+      "description": "Sequential port scanning detected from 192.168.1.100 targeting ports 22, 80, 443, 3306",
+      "source_ip": "192.168.1.100",
+      "target_ip": "10.0.0.5",
+      "target_port": 0
+    },
+    {
+      "severity": "medium",
+      "type": "SYN Flood",
+      "description": "High volume of SYN packets without completing handshakes",
+      "source_ip": "192.168.1.105",
+      "target_ip": "10.0.0.1",
+      "target_port": 80
+    }
+  ],
+  "statistics": {
+    "total_packets": 5000,
+    "total_bytes": 2450000,
+    "duration": "2m30s",
+    "protocols": {
+      "TCP": 3500,
+      "UDP": 1200,
+      "ICMP": 300
+    },
+    "top_source_ips": [
+      {"ip": "192.168.1.100", "count": 1500},
+      {"ip": "192.168.1.105", "count": 1200}
+    ],
+    "top_ports": [
+      {"port": 80, "protocol": "TCP", "count": 2000},
+      {"port": 443, "protocol": "TCP", "count": 1500}
+    ],
+    "tcp_flags": {
+      "syn": 1800,
+      "ack": 1600,
+      "fin": 800,
+      "rst": 200
+    },
+    "connections": 450
+  },
+  "suggestions": [
+    "Block source IP 192.168.1.100 at firewall level",
+    "Implement rate limiting for SYN packets",
+    "Enable SYN cookies on target servers",
+    "Investigate 192.168.1.105 for potential compromise"
+  ]
+}
+```
+
+### Analysis Types
+
+#### Security Analysis
+Focuses on identifying security threats:
+- Port scanning and reconnaissance
+- SYN floods and DDoS attacks
+- Malware command & control (C2) communication
+- Brute force attacks
+- Data exfiltration attempts
+
+```bash
+curl -X POST http://localhost:8080/api/pcap/analyze \
+  -F "file=@capture.pcap" \
+  -F "analyze_type=security" \
+  -F "custom_prompt=Focus on SSH brute force attempts"
+```
+
+#### Performance Analysis
+Focuses on network performance issues:
+- Bandwidth consumption
+- Latency problems
+- Network bottlenecks
+- Resource-intensive traffic
+
+```bash
+curl -X POST http://localhost:8080/api/pcap/analyze \
+  -F "file=@capture.pcap" \
+  -F "analyze_type=performance"
+```
+
+### Python Client Example
+
+```python
+import requests
+
+def analyze_pcap(file_path, analyze_type="security", custom_prompt=""):
+    url = "http://localhost:8080/api/pcap/analyze"
+    
+    with open(file_path, 'rb') as f:
+        files = {'file': f}
+        data = {
+            'analyze_type': analyze_type,
+            'custom_prompt': custom_prompt
+        }
+        response = requests.post(url, files=files, data=data)
+    
+    return response.json()
+
+# Analyze for security threats
+result = analyze_pcap(
+    file_path="network_capture.pcap",
+    analyze_type="security",
+    custom_prompt="Look for signs of lateral movement"
+)
+
+if result['success']:
+    print(f"Found {len(result['threats'])} threats:")
+    for threat in result['threats']:
+        print(f"  [{threat['severity'].upper()}] {threat['type']}: {threat['description']}")
+else:
+    print(f"Analysis failed: {result['error']}")
+```
+
+### Limitations
+
+- Maximum file size: 32MB (configurable in `api.go`)
+- Maximum packets processed: 5000 per file (for performance)
+- Requires libpcap-dev for full functionality
+- AI analysis requires configured OpenAI API key
 
 ---
 
