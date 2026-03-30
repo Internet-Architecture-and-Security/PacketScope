@@ -1,10 +1,7 @@
 import React from 'react';
 import { useIntl } from 'react-intl';
 import { Card, Tag, Row, Col, Typography, App } from 'antd';
-import {
-  SettingOutlined,
-  ThunderboltOutlined,
-} from '@ant-design/icons';
+import { SettingOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { PackageSearch } from 'lucide-react';
 import { useAIStore } from '@/stores/useAIStore';
 import { useModals } from '@/stores/useStore';
@@ -19,11 +16,7 @@ const FeatureCards: React.FC = () => {
   const { currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
   const { config, isAiConfigValid } = useAIStore();
-  const { 
-    setAiConfigModalVisible, 
-    setAiAnalyzeModalVisible, 
-    setAiGenerateModalVisible 
-  } = useModals();
+  const { setAiConfigModalVisible, setAiAnalyzeModalVisible, setAiGenerateModalVisible } = useModals();
 
   const configValid = isAiConfigValid();
 
@@ -63,29 +56,29 @@ const FeatureCards: React.FC = () => {
       <Col span={8}>
         <Card
           className={classNames(
-            "min-h-[240px] hover:shadow-lg transition-shadow cursor-pointer",
-            isDark && "bg-gray-800 border-gray-700 hover:shadow-2xl"
+            'min-h-[240px] hover:shadow-lg transition-shadow cursor-pointer',
+            isDark && 'bg-gray-800 border-gray-700 hover:shadow-2xl',
           )}
           onClick={() => setAiConfigModalVisible(true)}
         >
           <div className="text-center">
             <SettingOutlined className="text-3xl text-blue-500 mb-3" />
-            <Title level={4} className={classNames(isDark && "text-gray-200")}>
+            <Title level={4} className={classNames(isDark && 'text-gray-200')}>
               {intl.formatMessage({ id: 'AiCenter.aiConfig' })}
             </Title>
-            <Paragraph className={classNames(isDark && "text-gray-400")}>
-              {intl.formatMessage({ id: 'AiCenter.aiConfigDesc' })}
-            </Paragraph>
+            <Paragraph className={classNames(isDark && 'text-gray-400')}>{intl.formatMessage({ id: 'AiCenter.aiConfigDesc' })}</Paragraph>
             <div className="mt-4">
-              <Tag color={configValid ? isDark ? 'lime' : 'green' : isDark ? 'volcano' : 'red'}>
-                {configValid 
-                  ? intl.formatMessage({ id: 'AiCenter.configured' }) 
-                  : intl.formatMessage({ id: 'AiCenter.notConfigured' })
-                }
+              <Tag color={configValid ? (isDark ? 'lime' : 'green') : isDark ? 'volcano' : 'red'}>
+                {configValid ? intl.formatMessage({ id: 'AiCenter.configured' }) : intl.formatMessage({ id: 'AiCenter.notConfigured' })}
               </Tag>
-              <Tag color="blue">
-                {config?.model || intl.formatMessage({ id: 'AiCenter.notSet' })}
+              <Tag color="gold">
+                {config?.provider
+                  ? intl.formatMessage({
+                      id: config.provider === 'anthropic' ? 'AiCenter.providerAnthropicShort' : 'AiCenter.providerOpenAIShort',
+                    })
+                  : intl.formatMessage({ id: 'AiCenter.notSet' })}
               </Tag>
+              <Tag color="blue">{config?.model || intl.formatMessage({ id: 'AiCenter.notSet' })}</Tag>
             </div>
           </div>
         </Card>
@@ -95,16 +88,16 @@ const FeatureCards: React.FC = () => {
         <Card
           className={classNames(
             `min-h-[240px] hover:shadow-lg transition-shadow cursor-pointer ${!configValid ? 'opacity-50' : ''}`,
-            isDark && "bg-gray-800 border-gray-700 hover:shadow-2xl"
+            isDark && 'bg-gray-800 border-gray-700 hover:shadow-2xl',
           )}
           onClick={handleGenerateClick}
         >
           <div className="text-center">
             <ThunderboltOutlined className="text-3xl text-purple-500 mb-3" />
-            <Title level={4} className={classNames(isDark && "text-gray-200")}>
+            <Title level={4} className={classNames(isDark && 'text-gray-200')}>
               {intl.formatMessage({ id: 'AiCenter.intelligentGeneration' })}
             </Title>
-            <Paragraph className={classNames(isDark && "text-gray-400")}>
+            <Paragraph className={classNames(isDark && 'text-gray-400')}>
               {intl.formatMessage({ id: 'AiCenter.intelligentGenerationDesc' })}
             </Paragraph>
             <div className="mt-4">
@@ -125,16 +118,16 @@ const FeatureCards: React.FC = () => {
         <Card
           className={classNames(
             `min-h-[240px] hover:shadow-lg transition-shadow cursor-pointer ${!configValid ? 'opacity-50' : ''}`,
-            isDark && "bg-gray-800 border-gray-700 hover:shadow-2xl"
+            isDark && 'bg-gray-800 border-gray-700 hover:shadow-2xl',
           )}
           onClick={handleAnalyzeClick}
         >
           <div className="text-center">
             <PackageSearch size={30} className="text-green-500 mb-3 inline-block" strokeWidth={1.75} />
-            <Title level={4} className={classNames(isDark && "text-gray-200")}>
+            <Title level={4} className={classNames(isDark && 'text-gray-200')}>
               {intl.formatMessage({ id: 'AiCenter.networkAnalysis' })}
             </Title>
-            <Paragraph className={classNames(isDark && "text-gray-400")}>
+            <Paragraph className={classNames(isDark && 'text-gray-400')}>
               {intl.formatMessage({ id: 'AiCenter.networkAnalysisDesc' })}
             </Paragraph>
             <div className="mt-4">
