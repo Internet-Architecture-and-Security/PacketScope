@@ -583,7 +583,7 @@ The AI intelligent filter generation feature utilizes large language models (lik
 - **Multiple Strategies**: Security-oriented, performance-oriented, and balanced modes
 - **Custom Prompts**: User-provided custom analysis instructions
 - **Detailed Comments**: Generated rules include detailed explanations and suggestions
-- **Flexible Configuration**: Support for custom OpenAI endpoints and model parameters
+- **Flexible Configuration**: Support for both OpenAI-compatible and Anthropic-compatible endpoints and model parameters
 
 ### AI Configuration
 
@@ -597,9 +597,26 @@ curl http://localhost:8080/api/ai/config
 curl -X POST http://localhost:8080/api/ai/config \
   -H "Content-Type: application/json" \
   -d '{
+    "provider": "openai",
     "openai_endpoint": "https://api.openai.com/v1/chat/completions",
     "api_key": "sk-your-openai-api-key",
     "model": "gpt-4",
+    "temperature": 0.7,
+    "timeout": 120,
+    "debug": true
+  }'
+```
+
+#### Update AI Configuration for Anthropic-Compatible APIs
+```bash
+curl -X POST http://localhost:8080/api/ai/config \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "anthropic",
+    "openai_endpoint": "https://api.anthropic.com/v1/messages",
+    "api_key": "your-anthropic-or-kimi-key",
+    "model": "claude-3-5-sonnet-latest",
+    "anthropic_version": "2023-06-01",
     "temperature": 0.7,
     "timeout": 120,
     "debug": true
