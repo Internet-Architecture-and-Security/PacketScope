@@ -16,6 +16,7 @@ type APIServer struct {
     objs          *connTrackerObjects
     filterManager *FilterManager
     aiGenerator   *AIFilterGenerator
+    pcapAnalyzer  *PCAPAnalyzer
     mu            sync.RWMutex
 }
 
@@ -28,11 +29,13 @@ func NewAPIServer(objs *connTrackerObjects) *APIServer {
         Temperature:    0.7,
     }
     aiGenerator := NewAIFilterGenerator(aiConfig)
+    pcapAnalyzer := NewPCAPAnalyzer(aiGenerator)
 
     return &APIServer{
         objs:          objs,
         filterManager: filterManager,
         aiGenerator:   aiGenerator,
+        pcapAnalyzer:  pcapAnalyzer,
     }
 }
 
@@ -46,6 +49,7 @@ func (s *APIServer) Start(addr string) error {
     http.HandleFunc("/api/ai/status", s.handleAIStatus)
     http.HandleFunc("/api/ai/generate", s.handleAIGenerate)
     http.HandleFunc("/api/ai/analyze", s.handleAIAnalyze)
+    http.HandleFunc("/api/pcap/analyze", s.handlePCAPAnalyze)
 
     fs := http.FileServer(http.Dir("./frontend"))
     http.Handle("/", fs)
@@ -164,6 +168,7 @@ func (s *APIServer) handleAIConfig(w http.ResponseWriter, r *http.Request) {
 
         s.mu.Lock()
         s.aiGenerator = NewAIFilterGenerator(config)
+        s.pcapAnalyzer = NewPCAPAnalyzer(s.aiGenerator)
         s.mu.Unlock()
 
         w.Header().Set("Content-Type", "application/json")
