@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -206,18 +205,15 @@ func (pa *PCAPAnalyzer) generatePCAPSummary(handle *pcap.Handle) (string, *PCAPS
 		}
 
 		var srcIP, dstIP string
-		var protocol string
 
 		switch layer := networkLayer.(type) {
 		case *layers.IPv4:
 			srcIP = layer.SrcIP.String()
 			dstIP = layer.DstIP.String()
-			protocol = layer.Protocol.String()
 			stats.Protocols["IPv4"]++
 		case *layers.IPv6:
 			srcIP = layer.SrcIP.String()
 			dstIP = layer.DstIP.String()
-			protocol = "IPv6"
 			stats.Protocols["IPv6"]++
 		}
 
@@ -230,7 +226,6 @@ func (pa *PCAPAnalyzer) generatePCAPSummary(handle *pcap.Handle) (string, *PCAPS
 		if transportLayer != nil {
 			switch layer := transportLayer.(type) {
 			case *layers.TCP:
-				protocol = "TCP"
 				stats.Protocols["TCP"]++
 
 				// 端口统计
@@ -262,7 +257,6 @@ func (pa *PCAPAnalyzer) generatePCAPSummary(handle *pcap.Handle) (string, *PCAPS
 				connectionSet[connKey] = true
 
 			case *layers.UDP:
-				protocol = "UDP"
 				stats.Protocols["UDP"]++
 
 				portKey := fmt.Sprintf("%d/UDP", layer.DstPort)
@@ -270,15 +264,14 @@ func (pa *PCAPAnalyzer) generatePCAPSummary(handle *pcap.Handle) (string, *PCAPS
 
 				connKey := fmt.Sprintf("%s:%d->%s:%d", srcIP, layer.SrcPort, dstIP, layer.DstPort)
 				connectionSet[connKey] = true
-
-			case *layers.ICMPv4:
-				protocol = "ICMP"
-				stats.Protocols["ICMP"]++
-
-			case *layers.ICMPv6:
-				protocol = "ICMPv6"
-				stats.Protocols["ICMPv6"]++
 			}
+		}
+
+		if packet.Layer(layers.LayerTypeICMPv4) != nil {
+			stats.Protocols["ICMP"]++
+		}
+		if packet.Layer(layers.LayerTypeICMPv6) != nil {
+			stats.Protocols["ICMPv6"]++
 		}
 
 		// 应用层协议检测
@@ -375,69 +368,13 @@ func (pa *PCAPAnalyzer) callAIForAnalysis(summary string, req PCAPAnalysisReques
 		prompt += "\n\nAdditional Instructions:\n" + req.CustomPrompt
 	}
 
-	// 构建OpenAI请求
-	request := OpenAIRequest{
-		Model:       pa.aiGenerator.config.Model,
-		Temperature: pa.aiGenerator.config.Temperature,
-		MaxTokens:   3000,
-		ResponseFormat: &OpenAIResponseFormat{
-			Type: "json_object",
-		},
-		Messages: []OpenAIMessage{
-			{
-				Role:    "system",
-				Content: prompt,
-			},
-			{
-				Role:    "user",
-				Content: fmt.Sprintf("Analyze this PCAP data and identify threats:\n\n%s", summary),
-			},
-		},
-	}
-
-	jsonData, err := json.Marshal(request)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %v", err)
-	}
-
-	httpReq, err := http.NewRequest("POST", pa.aiGenerator.config.OpenAIEndpoint, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %v", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", pa.aiGenerator.config.APIKey))
-
-	client := &http.Client{Timeout: time.Duration(pa.aiGenerator.config.Timeout) * time.Second}
-	resp, err := client.Do(httpReq)
+	userPrompt := fmt.Sprintf("Analyze this PCAP data and identify threats:\n\n%s", summary)
+	aiResp, err := pa.aiGenerator.callAIModel(prompt, userPrompt, 3000, true)
 	if err != nil {
 		return "", fmt.Errorf("failed to call AI API: %v", err)
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %v", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("AI API error: %s - %s", resp.Status, string(body))
-	}
-
-	var openaiResp OpenAIResponse
-	if err := json.Unmarshal(body, &openaiResp); err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %v", err)
-	}
-
-	if openaiResp.Error != nil {
-		return "", fmt.Errorf("AI API error: %s", openaiResp.Error.Message)
-	}
-
-	if len(openaiResp.Choices) == 0 {
-		return "", fmt.Errorf("no response from AI")
-	}
-
-	return openaiResp.Choices[0].Message.Content, nil
+	return aiResp.Content, nil
 }
 
 // generateSystemPrompt 生成系统提示词
