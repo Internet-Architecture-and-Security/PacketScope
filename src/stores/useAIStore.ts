@@ -4,22 +4,22 @@ import { APIs } from '@/constants';
 
 // Types
 interface AIConfig {
-  // 根据你的实际配置类型定义
+  provider: 'openai' | 'anthropic';
   model: string;
   temperature: number;
-  maxTokens: number;
   api_key: string;
   openai_endpoint: string;
-  // 添加其他配置字段
+  anthropic_version?: string;
+  debug: boolean;
+  timeout: number;
 }
-// Types
+
 interface AIStatus {
-  // 根据你的实际配置类型定义
+  provider: 'openai' | 'anthropic';
   is_configured: boolean;
   has_api_key: boolean;
   has_endpoint: boolean;
   has_model: boolean;
-  // 添加其他配置字段
 }
 
 interface AIAnalysisResult {

@@ -28,41 +28,49 @@ const AiStatusAlert: React.FC = () => {
             <ExclamationCircleOutlined className="text-xl text-red-400/90" />
           )}
           <div>
-            <Text strong className={classNames(
-              configValid ? 'text-green-600' : 'text-red-400',
-              isDark && configValid && 'text-green-400',
-              isDark && !configValid && 'text-red-400'
-            )}>
-              {configValid 
-                ? intl.formatMessage({ id: 'AiCenter.aiServiceConfigured' }) 
-                : intl.formatMessage({ id: 'AiCenter.aiServiceNotConfigured' })
-              }
+            <Text
+              strong
+              className={classNames(
+                configValid ? 'text-green-600' : 'text-red-400',
+                isDark && configValid && 'text-green-400',
+                isDark && !configValid && 'text-red-400',
+              )}
+            >
+              {configValid
+                ? intl.formatMessage({ id: 'AiCenter.aiServiceConfigured' })
+                : intl.formatMessage({ id: 'AiCenter.aiServiceNotConfigured' })}
             </Text>
-            <div className={classNames(
-              `text-sm`,
-              configValid ? 'text-green-600/80' : 'text-red-400/80',
-              isDark && configValid && 'text-green-400/80',
-              isDark && !configValid && 'text-red-400/80'
-            )}>
+            <div
+              className={classNames(
+                `text-sm`,
+                configValid ? 'text-green-600/80' : 'text-red-400/80',
+                isDark && configValid && 'text-green-400/80',
+                isDark && !configValid && 'text-red-400/80',
+              )}
+            >
               {configValid
                 ? intl.formatMessage(
                     { id: 'AiCenter.aiServiceConfiguredDesc' },
-                    { 
-                      model: config?.model, 
-                      endpoint: config?.openai_endpoint?.split('/')[2] || intl.formatMessage({ id: 'AiCenter.unknown' })
-                    }
+                    {
+                      provider: config?.provider
+                        ? intl.formatMessage({
+                            id: config.provider === 'anthropic' ? 'AiCenter.providerAnthropicShort' : 'AiCenter.providerOpenAIShort',
+                          })
+                        : intl.formatMessage({ id: 'AiCenter.unknown' }),
+                      model: config?.model,
+                      endpoint: config?.openai_endpoint?.split('/')[2] || intl.formatMessage({ id: 'AiCenter.unknown' }),
+                    },
                   )
-                : intl.formatMessage({ id: 'AiCenter.aiServiceNotConfiguredDesc' })
-              }
+                : intl.formatMessage({ id: 'AiCenter.aiServiceNotConfiguredDesc' })}
             </div>
           </div>
         </div>
       }
       type={configValid ? 'success' : 'error'}
       className={classNames(
-        "rounded-xl",
-        isDark && configValid && "bg-green-900/20 border-green-700",
-        isDark && !configValid && "bg-red-900/20 border-red-400/30"
+        'rounded-xl',
+        isDark && configValid && 'bg-green-900/20 border-green-700',
+        isDark && !configValid && 'bg-red-900/20 border-red-400/30',
       )}
       action={
         !configValid && (
