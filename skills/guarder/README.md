@@ -60,10 +60,9 @@ print(f"Created filter with ID: {result['id']}")
 
 # AI 分析流量
 analysis = client.ai_analyze(
-    custom_prompt="Focus on identifying port scanning behavior",
-    analyze_type="security"
+    custom_prompt="Focus on identifying port scanning behavior"
 )
-print(f"AI Analysis: {analysis['summary']}")
+print(f"AI Analysis: {analysis['analysis']}")
 
 # AI 生成过滤器
 filters = client.ai_generate_filters(
