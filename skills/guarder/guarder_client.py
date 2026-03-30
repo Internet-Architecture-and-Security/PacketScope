@@ -61,12 +61,14 @@ class FilterRule:
 @dataclass
 class AIConfig:
     """AI configuration"""
+    provider: str = "openai"
     openai_endpoint: str = "https://api.openai.com/v1/chat/completions"
     api_key: str = ""
     model: str = "gpt-3.5-turbo"
     temperature: float = 0.7
     debug: bool = False
     timeout: int = 120
+    anthropic_version: str = "2023-06-01"
 
 
 @dataclass
