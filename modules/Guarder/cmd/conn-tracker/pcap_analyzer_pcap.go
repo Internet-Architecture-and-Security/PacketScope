@@ -106,13 +106,23 @@ func (pa *PCAPAnalyzer) AnalyzePCAPFile(filePath string, req PCAPAnalysisRequest
 
 // AnalyzePCAPData 分析PCAP数据
 func (pa *PCAPAnalyzer) AnalyzePCAPData(data []byte, req PCAPAnalysisRequest) (*PCAPAnalysisResponse, error) {
-	// 使用临时文件
-	tmpFile := "/tmp/temp_analysis.pcap"
-	if err := writeFile(tmpFile, data); err != nil {
+	// 使用唯一的临时文件，避免并发分析互相覆盖
+	tmpFile, err := os.CreateTemp("", "pcap_analysis_*.pcap")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %v", err)
+	}
+	tmpPath := tmpFile.Name()
+	defer os.Remove(tmpPath)
+
+	if _, err := tmpFile.Write(data); err != nil {
+		tmpFile.Close()
 		return nil, fmt.Errorf("failed to write temp file: %v", err)
 	}
+	if err := tmpFile.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close temp file: %v", err)
+	}
 
-	return pa.AnalyzePCAPFile(tmpFile, req)
+	return pa.AnalyzePCAPFile(tmpPath, req)
 }
 
 // analyze 执行实际分析
@@ -532,13 +542,24 @@ func (s *APIServer) handlePCAPAnalyze(w http.ResponseWriter, r *http.Request) {
 		analyzeType = "security"
 	}
 
-	// 保存到临时文件
-	tmpFile := "/tmp/pcap_analyze_" + fmt.Sprintf("%d", os.Getpid()) + ".pcap"
-	if err := os.WriteFile(tmpFile, fileBytes, 0644); err != nil {
+	// 保存到唯一的临时文件，避免并发请求相互覆盖
+	tmpFile, err := os.CreateTemp("", "pcap_analyze_*.pcap")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to create temp file: %v", err), http.StatusInternalServerError)
+		return
+	}
+	tmpPath := tmpFile.Name()
+	defer os.Remove(tmpPath)
+
+	if _, err := tmpFile.Write(fileBytes); err != nil {
+		tmpFile.Close()
 		http.Error(w, fmt.Sprintf("Failed to save temp file: %v", err), http.StatusInternalServerError)
 		return
 	}
-	defer os.Remove(tmpFile)
+	if err := tmpFile.Close(); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to close temp file: %v", err), http.StatusInternalServerError)
+		return
+	}
 
 	// 执行分析
 	req := PCAPAnalysisRequest{
@@ -546,7 +567,7 @@ func (s *APIServer) handlePCAPAnalyze(w http.ResponseWriter, r *http.Request) {
 		AnalyzeType:  analyzeType,
 	}
 
-	resp, err := s.pcapAnalyzer.AnalyzePCAPFile(tmpFile, req)
+	resp, err := s.pcapAnalyzer.AnalyzePCAPFile(tmpPath, req)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Analysis failed: %v", err), http.StatusInternalServerError)
 		return

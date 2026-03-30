@@ -168,6 +168,7 @@ func (s *APIServer) handleAIConfig(w http.ResponseWriter, r *http.Request) {
 
         s.mu.Lock()
         s.aiGenerator = NewAIFilterGenerator(config)
+        s.pcapAnalyzer = NewPCAPAnalyzer(s.aiGenerator)
         s.mu.Unlock()
 
         w.Header().Set("Content-Type", "application/json")
