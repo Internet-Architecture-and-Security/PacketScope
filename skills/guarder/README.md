@@ -105,11 +105,13 @@ create_simple_filter(
 ## API 端点
 
 ### 连接监控
+
 - `GET /api/connections` - 获取 TCP/UDP 连接
 - `GET /api/icmp` - 获取 ICMP 流量
 - `GET /api/stats` - 获取性能统计
 
 ### 过滤器管理
+
 - `GET /api/filters` - 列出所有过滤器
 - `POST /api/filters` - 创建过滤器
 - `GET /api/filters/{id}` - 获取特定过滤器
@@ -119,6 +121,7 @@ create_simple_filter(
 - `POST /api/filters/{id}/disable` - 禁用过滤器
 
 ### AI 功能
+
 - `GET /api/ai/status` - 获取 AI 配置状态
 - `GET /api/ai/config` - 获取 AI 配置
 - `POST /api/ai/config` - 更新 AI 配置
@@ -126,20 +129,38 @@ create_simple_filter(
 - `POST /api/ai/analyze` - AI 分析流量
 
 ### PCAP 分析
+
 - `POST /api/pcap/analyze` - 上传并分析 PCAP 文件
 
 ## 配置 AI
 
-在使用 AI 功能前，需要配置 OpenAI API：
+在使用 AI 功能前，需要配置 AI provider。默认仍支持 OpenAI 兼容接口，也支持 Anthropic 兼容接口：
 
 ```python
 config = AIConfig(
+    provider="openai",
     openai_endpoint="https://api.openai.com/v1/chat/completions",
     api_key="your-api-key",
     model="gpt-4",
     temperature=0.7,
     debug=False,
     timeout=120
+)
+client.update_ai_config(config)
+```
+
+Anthropic 兼容示例：
+
+```python
+config = AIConfig(
+    provider="anthropic",
+    openai_endpoint="https://api.kimi.com/coding/v1/messages",
+    api_key="your-api-key",
+    model="kimi-for-coding",
+    anthropic_version="2023-06-01",
+    temperature=0.7,
+    debug=False,
+    timeout=120,
 )
 client.update_ai_config(config)
 ```
@@ -158,13 +179,16 @@ packetscope-guarder-skill/
 本项目在 Guarder 模块中添加了 PCAP 分析功能：
 
 ### 新增文件
+
 - `cmd/conn-tracker/pcap_analyzer_pcap.go` - 完整 PCAP 分析实现（带 pcap 构建标签）
 - `cmd/conn-tracker/pcap_stub.go` - 存根实现（无 pcap 依赖）
 
 ### 修改的文件
+
 - `cmd/conn-tracker/api.go` - 添加 PCAPAnalyzer 到 APIServer，注册新路由
 
 ### PCAP 分析功能
+
 - 解析 PCAP 文件并提取网络统计信息
 - 识别协议分布、Top IP、Top 端口
 - 检测 TCP 标志异常（如 SYN Flood）
