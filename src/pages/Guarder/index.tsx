@@ -452,7 +452,7 @@ const Guarder: React.FC = () => {
 
               {isLoading ? (
                 <div className="text-center py-8">
-                  <Spin size="large" indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
+                  <Spin size="large" indicator={<LoadingOutlined style={{ fontSize: 52, color: '#722ed1' }} spin />} />
                   <div className={classNames(
                     "mt-4 text-lg",
                     isDark ? "text-gray-300" : ""

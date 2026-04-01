@@ -23,16 +23,36 @@ interface AIStatus {
 }
 
 interface AIAnalysisResult {
-  // 根据你的实际分析结果类型定义
   filters: any[];
   insights: string[];
-  // 添加其他结果字段
 }
 
 interface AIGenerationResult {
-  // 根据你的实际生成结果类型定义
   filters: any[];
-  // 添加其他结果字段
+}
+
+interface PcapAnalysisResult {
+  success: boolean;
+  analysis: string;
+  threats: Array<{
+    severity: 'high' | 'medium' | 'low';
+    type: string;
+    description: string;
+    source_ip: string;
+    target_ip: string;
+    target_port: number;
+  }>;
+  statistics: {
+    total_packets: number;
+    total_bytes: number;
+    duration: string;
+    protocols: Record<string, number>;
+    top_source_ips: Array<{ ip: string; count: number }>;
+    top_ports: Array<{ port: number; protocol: string; count: number }>;
+    tcp_flags: Record<string, number>;
+    connections: number;
+  };
+  suggestions: string[];
 }
 
 // Store State Interface
@@ -44,12 +64,14 @@ interface AIStore {
   error: string | null;
   lastAnalysisResult: AIAnalysisResult | null;
   lastGenerationResult: AIGenerationResult | null;
+  pcapAnalysisResult: PcapAnalysisResult | null;
 
   // Actions
   getConfig: () => Promise<void>;
   updateConfig: (config: AIConfig) => Promise<void>;
   generateFilters: (params: any) => Promise<AIGenerationResult>;
   analyzeOnly: (params: any) => Promise<AIAnalysisResult>;
+  setPcapAnalysisResult: (data: PcapAnalysisResult) => void;
   clearError: () => void;
   reset: () => void;
   isAiConfigValid: () => boolean;
@@ -64,6 +86,7 @@ const aiAPI = {
     }
     return response.json();
   },
+
   getConfig: async (): Promise<AIConfig> => {
     const response = await fetch(APIs['Guarder.config']);
     if (!response.ok) {
@@ -119,11 +142,13 @@ export const useAIStore = create<AIStore>()(
   devtools(
     (set, get) => ({
       // Initial State
+      status: null,
       config: null,
       isLoading: false,
       error: null,
       lastAnalysisResult: null,
       lastGenerationResult: null,
+      pcapAnalysisResult: null,
 
       // Actions
       getConfig: async () => {
@@ -152,7 +177,7 @@ export const useAIStore = create<AIStore>()(
             error: error instanceof Error ? error.message : 'Unknown error',
             isLoading: false,
           });
-          throw error; // Re-throw for component error handling
+          throw error;
         }
       },
 
@@ -192,17 +217,21 @@ export const useAIStore = create<AIStore>()(
         }
       },
 
+      setPcapAnalysisResult: (data: PcapAnalysisResult) => {
+        set({ pcapAnalysisResult: data });
+      },
+
       clearError: () => {
         set({ error: null });
       },
 
       reset: () => {
         set({
-          // config: null,
           isLoading: false,
           error: null,
           lastAnalysisResult: null,
           lastGenerationResult: null,
+          pcapAnalysisResult: null,
         });
       },
 
@@ -212,7 +241,7 @@ export const useAIStore = create<AIStore>()(
       },
     }),
     {
-      name: 'ai-store', // Store name for devtools
+      name: 'ai-store',
     },
   ),
 );
