@@ -56,9 +56,9 @@ const AiCenter: React.FC = () => {
 
           <CoreFeatures />
 
-          <GenerationResult />
+          {/* <GenerationResult /> */}
 
-          <AnalysisResult />
+          {/* <AnalysisResult /> */}
         </Flex>
       </Spin>
 
