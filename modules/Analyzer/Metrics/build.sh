@@ -57,6 +57,14 @@ cmd_build() {
   success "依赖检查通过（$(go version | awk '{print $3}')，$(clang --version | head -1 | awk '{print $1,$3}')）"
 
   step "生成 BPF Go 绑定（bpf2go）"
+  # 自动生成对应的 go:generate 文件
+  mkdir -p ./pkg/bpf_engine/ebpf
+  cat << 'EOF' > ./pkg/bpf_engine/ebpf/gen.go
+package ebpf
+
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -type filter_v4_t -type filter_v6_t -type agg_val_t -cflags "-O2 -g -Wall -Wno-unused-variable -D__TARGET_ARCH_x86" Bpf ../../../bpf/metrics.c -- -I../../../bpf/headers
+EOF
+
   # bpf2go 需要 clang 在 PATH 中
   go generate ./pkg/bpf_engine/ebpf/
   success "BPF 绑定生成完毕"
