@@ -1,0 +1,58 @@
+{
+  "_comment": "Metrics 模块跨内核 eBPF 兼容性测试矩阵",
+  "_comment2": "内核镜像来自 ghcr.io/cilium/ci-kernels",
+  "_min_version": "5.10",
+  "_min_version_reason": "fentry (BPF_PROG_TYPE_TRACING) 在 5.5 引入，但 cilium/ci-kernels 最早提供 5.10 镜像，且 5.4~5.9 已全部 EOL。最低支持 5.10 LTS。",
+  "kernels": [
+    {
+      "version": "5.10",
+      "tag": "5.10",
+      "features": {
+        "fentry": true,
+        "tp_btf": true,
+        "kfree_skb_reason": false,
+        "comment": "最旧 LTS 目标。kfree_skb 只有 2 个参数，无 reason 字段。"
+      }
+    },
+    {
+      "version": "5.15",
+      "tag": "5.15",
+      "features": {
+        "fentry": true,
+        "tp_btf": true,
+        "kfree_skb_reason": false,
+        "comment": "Ubuntu 22.04 LTS 默认内核。kfree_skb 无 reason。"
+      }
+    },
+    {
+      "version": "6.1",
+      "tag": "6.1",
+      "features": {
+        "fentry": true,
+        "tp_btf": true,
+        "kfree_skb_reason": true,
+        "comment": "LTS。kfree_skb 新增 reason 参数（5.17 引入）。"
+      }
+    },
+    {
+      "version": "6.6",
+      "tag": "6.6",
+      "features": {
+        "fentry": true,
+        "tp_btf": true,
+        "kfree_skb_reason": true,
+        "comment": "LTS。Ubuntu 24.04 HWE 候选版本。"
+      }
+    },
+    {
+      "version": "6.12",
+      "tag": "6.12",
+      "features": {
+        "fentry": true,
+        "tp_btf": true,
+        "kfree_skb_reason": true,
+        "comment": "最新 LTS。"
+      }
+    }
+  ]
+}

@@ -13,7 +13,7 @@ services:
     #   - ./:/app/
     depends_on:
       - analyzer-monitor
-      - analyzer-calculator
+      - analyzer-metrics
       - guarder
       - tracer
 
@@ -27,22 +27,24 @@ services:
     network_mode: host   # ✅ 使用宿主机网络
     volumes:
       - ./modules/Analyzer/Monitor:/monitor
-  analyzer-calculator:
+
+  # 新版 Go/Cilium eBPF Metrics 实现，监听端口 8020
+  analyzer-metrics:
     build:
-      context: ./modules/Analyzer/Calculator
+      context: ./modules/Analyzer/Metrics
       dockerfile: Dockerfile
-    container_name: packetscope-analyzer-calculator
+      network: host
+    image: packetscope-analyzer-metrics:latest
+    container_name: packetscope-analyzer-metrics
     privileged: true
-    network_mode: host   # ✅ 使用宿主机网络
+    network_mode: host
     volumes:
-      - ./modules/Analyzer/Calculator:/calculator
-    depends_on:
-      - analyzer-monitor
-  
+      - /sys/kernel/debug:/sys/kernel/debug:ro
+
   guarder:
     build:
       context: ./modules/Guarder
-      dockerfile: Dockerfile 
+      dockerfile: Dockerfile
     container_name: packetscope-guarder
     privileged: true           # 如果涉及 eBPF/BPF，可能需要特权模式
     network_mode: host   # ✅ 使用宿主机网络
@@ -50,7 +52,7 @@ services:
       - ./modules/Guarder:/guarder
     ports:
       - "8080:8080"
-  
+
   tracer:
     build:                       # 或使用 image: packetscope-tracer
       context: ./modules/Tracer
@@ -65,4 +67,4 @@ services:
       - ./modules/Tracer/GeoLite2-ASN.mmdb:/app/GeoLite2-ASN.mmdb
       - ./modules/Tracer/risky_ips.json:/app/risky_ips.json
 
-  
+

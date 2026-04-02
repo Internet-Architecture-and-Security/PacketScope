@@ -1,0 +1,126 @@
+// ============================================================
+// RX (Receive) probes — packet path: link -> network -> transport
+// ============================================================
+
+// --------------- Shared RX handlers ---------------
+
+// Link layer RX: record timestamps for cross-layer latency, increment PPS
+static __always_inline int handle_link_rx(struct sk_buff *skb) {
+    struct event_t e;
+    __builtin_memset(&e, 0, sizeof(e));
+
+    bpf_printk("rx_network: entered");
+    if (extract_five_tuple(skb, &e) < 0)
+        return 0;
+    bpf_printk("rx_network: extract_ok %d", e.protocol);
+    if (!match_five_tuple_rx(&e)) return 0;
+    bpf_printk("rx_network: match ok");
+    if (0)
+        return 0;
+
+    struct lat_key_t lk;
+    build_lat_key(&e, 1, &lk); // 1 = RX
+
+    record_lat(&start_link, &lk);
+    record_lat(&start_translink, &lk);
+
+    agg_increment(AGG_IDX(AGG_PPS, LAYER_LINK, DIR_RX, e.is_ipv6), 0, &e);
+    return 0;
+}
+
+// Network layer RX: calc link->network latency, record for network->transport
+static __always_inline int handle_network_rx(struct sk_buff *skb) {
+    struct event_t e;
+    __builtin_memset(&e, 0, sizeof(e));
+
+    bpf_printk("rx_network: entered");
+    if (extract_five_tuple(skb, &e) < 0)
+        return 0;
+    bpf_printk("rx_network: extract_ok %d", e.protocol);
+    if (!match_five_tuple_rx(&e)) return 0;
+    bpf_printk("rx_network: match ok");
+    if (0)
+        return 0;
+
+    struct lat_key_t lk;
+    build_lat_key(&e, 1, &lk);
+
+    u64 lat_linknetwork = calc_latency(&start_link, &lk, 1);
+    record_lat(&start_transnetwork, &lk);
+
+    agg_increment(AGG_IDX(AGG_PPS, LAYER_NETWORK, DIR_RX, e.is_ipv6), 0, &e);
+    agg_increment(AGG_IDX(AGG_LAT, CL_LINKNETWORK, DIR_RX, e.is_ipv6), lat_linknetwork, &e);
+    return 0;
+}
+
+// Transport layer RX: calc linktrans + networktrans latencies
+static __always_inline int handle_transport_rx(struct sock *sk) {
+    struct event_t e;
+    __builtin_memset(&e, 0, sizeof(e));
+
+    if (extract_sock_five_tuple(sk, &e) < 0)
+        return 0;
+    bpf_printk("rx_network: extract_ok %d", e.protocol);
+    if (!match_five_tuple_rx(&e)) return 0;
+    bpf_printk("rx_network: match ok");
+    if (0)
+        return 0;
+
+    struct lat_key_t lk;
+    build_lat_key(&e, 1, &lk);
+
+    u64 lat_linktrans = calc_latency(&start_translink, &lk, 1);
+    u64 lat_networktrans = calc_latency(&start_transnetwork, &lk, 1);
+
+    agg_increment(AGG_IDX(AGG_PPS, LAYER_TRANS, DIR_RX, e.is_ipv6), 0, &e);
+    agg_increment(AGG_IDX(AGG_LAT, CL_LINKTRANS, DIR_RX, e.is_ipv6), lat_linktrans, &e);
+    agg_increment(AGG_IDX(AGG_LAT, CL_NETWORKTRANS, DIR_RX, e.is_ipv6), lat_networktrans, &e);
+    return 0;
+}
+
+// --------------- SEC probe definitions ---------------
+
+// BUG FIX (vmtest 发现): tp_btf/netif_receive_skb 在所有内核版本上存在问题：
+//   - 内核 5.10/5.15: BTF type 查找失败，cilium/ebpf 静默丢弃该程序
+//   - 内核 6.x: 验证器报 "doesn't have 2-th argument" 错误
+// 根本原因: netif_receive_skb 是普通内核函数，使用 fentry 而非 tp_btf
+// 可保证与其他所有探针一致的 fentry 加载路径，BTF 类型来自函数签名
+// (int netif_receive_skb(struct sk_buff *skb)) — 1 个参数，完全匹配。
+SEC("fentry/netif_receive_skb")
+int BPF_PROG(netif_receive_skb_func, struct sk_buff *skb) {
+    return handle_link_rx(skb);
+}
+
+SEC("fentry/ip_local_deliver")
+int BPF_PROG(ip_local_deliver_func, struct sk_buff *skb) {
+    return handle_network_rx(skb);
+}
+
+SEC("fentry/ip6_input")
+int BPF_PROG(ip6_input_func, struct sk_buff *skb) {
+    return handle_network_rx(skb);
+}
+
+SEC("fentry/inet_recvmsg")
+int BPF_PROG(inet_recvmsg_func, struct socket *sock, struct msghdr *msg,
+             size_t size, int flags) {
+    return handle_transport_rx(BPF_CORE_READ(sock, sk));
+}
+
+SEC("fentry/inet6_recvmsg")
+int BPF_PROG(inet6_recvmsg_func, struct socket *sock, struct msghdr *msg,
+             size_t size, int flags) {
+    return handle_transport_rx(BPF_CORE_READ(sock, sk));
+}
+
+SEC("fentry/tcp_recvmsg")
+int BPF_PROG(tcp_recvmsg_func, struct sock *sk, struct msghdr *msg,
+             size_t len, int nonblock, int flags, int *addr_len) {
+    return handle_transport_rx(sk);
+}
+
+SEC("fentry/udp_recvmsg")
+int BPF_PROG(udp_recvmsg_func, struct sock *sk, struct msghdr *msg,
+             size_t len, int nonblock, int flags, int *addr_len) {
+    return handle_transport_rx(sk);
+}

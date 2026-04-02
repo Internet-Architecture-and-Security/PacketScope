@@ -18,7 +18,7 @@ NC='\033[0m'
 # 服务列表（按依赖顺序）
 SERVICES=(
     "analyzer-monitor"
-    "analyzer-calculator"
+    "analyzer-metrics"
     "guarder"
     "tracer"
     "app"
@@ -65,17 +65,17 @@ log_warning() {
 # 检查 Docker 是否运行
 check_docker() {
     log_info "检查 Docker 环境..."
-    
+
     if ! command -v docker &> /dev/null; then
         log_error "Docker 未安装！"
         exit 1
     fi
-    
+
     if ! sudo docker info &> /dev/null; then
         log_error "Docker 未运行！请启动 Docker 服务"
         exit 1
     fi
-    
+
     log_success "Docker 环境正常"
 }
 
@@ -99,12 +99,12 @@ build_service() {
     local service=$1
     local index=$2
     local total=$3
-    
+
     echo ""
     print_separator
     echo -e "${YELLOW}[$index/$total] 构建服务: ${CYAN}$service${NC}"
     print_separator
-    
+
     # 显示详细构建过程
     if sudo docker compose build --progress=plain "$service" 2>&1 | tee "/tmp/build-$service.log"; then
         log_success "$service 构建成功"
@@ -120,19 +120,19 @@ build_service() {
 build_all() {
     log_info "开始顺序构建所有服务..."
     echo ""
-    
+
     local total=${#SERVICES[@]}
     local current=0
-    
+
     for service in "${SERVICES[@]}"; do
         current=$((current + 1))
-        
+
         if ! build_service "$service" "$current" "$total"; then
             log_error "构建过程失败，停止执行"
             exit 1
         fi
     done
-    
+
     echo ""
     print_separator
     log_success "所有服务构建完成！"
@@ -144,7 +144,7 @@ build_all() {
 start_services() {
     log_info "启动所有服务..."
     echo ""
-    
+
     if sudo docker compose up -d; then
         log_success "服务启动成功"
     else
@@ -160,7 +160,7 @@ show_services() {
     log_info "服务状态："
     print_separator
     sudo docker compose ps
-    
+
     echo ""
     print_separator
     log_info "服务端点："
@@ -169,8 +169,8 @@ show_services() {
     echo -e "  ${CYAN}Guarder API:${NC}                  http://localhost:8080"
     echo -e "  ${CYAN}Tracer API:${NC}                   http://localhost:8000"
     echo -e "  ${CYAN}Analyzer-Monitor API:${NC}         http://localhost:8010"
-    echo -e "  ${CYAN}Analyzer-Calculator API:${NC}   http://localhost:8020"
-    
+    echo -e "  ${CYAN}Analyzer-Metrics WebSocket:${NC}   ws://localhost:8020"
+
     echo ""
     print_separator
     log_info "常用命令："
@@ -186,32 +186,32 @@ show_services() {
 # 主函数
 main() {
     local start_time=$(date +%s)
-    
+
     # 显示标题
     print_header
-    
+
     # 检查环境
     check_docker
-    
+
     # 显示当前状态
     show_status
-    
+
     # 停止现有服务
     stop_services
-    
+
     # 构建所有服务
     build_all
-    
+
     # 启动服务
     start_services
-    
+
     # 显示服务信息
     show_services
-    
+
     # 计算耗时
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    
+
     log_success "部署完成！总耗时: ${duration}秒"
     echo ""
 }
