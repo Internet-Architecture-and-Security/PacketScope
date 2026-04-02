@@ -1,155 +1,155 @@
-# Metrics 测试指南
+# Metrics Testing Guide
 
-## 概览
+## Overview
 
-Metrics 模块包含三类测试，分别面向开发者的不同需求：
+The Metrics module contains three types of tests targeted at different developer needs:
 
-| 类型 | 命令 | 是否需要 root | 是否需要 QEMU | 运行时间 |
-|------|------|:---:|:---:|------|
-| **单元测试** | `./test.sh unit` | 否 | 否 | < 5 秒 |
-| **BPF 集成测试** | `./test.sh integration` | 是 | 否 | < 10 秒 |
-| **跨内核 vmtest** | `./test.sh vmtest` | 是 | 是 | ~10 分钟 |
+| Type | Command | Requires Root | Requires QEMU | Run Time |
+|------|---------|:-----------:|:-----------:|----------|
+| **Unit Tests** | `./test.sh unit` | No | No | < 5 sec |
+| **BPF Integration Tests** | `./test.sh integration` | Yes | No | < 10 sec |
+| **Cross-kernel vmtest** | `./test.sh vmtest` | Yes | Yes | ~10 mins |
 
 ---
 
-## 快速开始
+## Quick Start
 
 ```bash
 cd modules/Analyzer/Metrics
 
-# 首次使用：安装依赖 + 下载内核镜像
+# First time: Install dependencies + Fetch kernel images
 ./test.sh setup
 
-# 日常开发：只跑单元测试
+# Daily dev: Run unit tests only
 ./test.sh unit
 
-# 提交前：跑完整跨内核测试
+# Pre-commit: Run full cross-kernel testing
 sudo -E ./test.sh vmtest
 ```
 
 ---
 
-## 一、单元测试
+## I. Unit Tests
 
-无需 root 权限，无需 QEMU，适合日常开发迭代。
+Requires no root privileges and no QEMU. Ideal for local daily iteration.
 
 ```bash
 ./test.sh unit
 ```
 
-### 覆盖范围
+### Coverage Scope
 
-| 测试文件 | 测试内容 |
+| Test File | Verification Contents |
 |----------|----------|
-| `test/aggregation_test.go` | AGG slot 编码/解码、PERCPU 求和算法 |
-| `test/websocket_test.go` | WebSocket 消息格式、ParseParams、五元组解析 |
+| `test/aggregation_test.go` | AGG slot encode/decode, PERCPU summation algorithm |
+| `test/websocket_test.go` | WebSocket message formats, ParseParams, 5-tuple payload parsing |
 
-### 直接使用 go test
+### Direct go test usage
 
 ```bash
-# 全部单元测试
+# All unit tests
 go test -count=1 ./test/
 
-# 指定测试名称（支持正则）
+# Specific test name (supports Regex)
 go test -v -run TestAggIdx ./test/
 go test -v -run TestSumPerCPU ./test/
 go test -v -run TestParseParams ./test/
 
-# 带覆盖率
+# With coverage
 go test -cover ./test/
 ```
 
 ---
 
-## 二、BPF 集成测试
+## II. BPF Integration Tests
 
-验证 eBPF 程序能在当前宿主机内核上正常加载。需要 root 权限。
+Verifies that the eBPF program can successfully load into the current host's kernel. Requires root.
 
 ```bash
 sudo -E ./test.sh integration
 ```
 
-### 前置条件
+### Prerequisites
 
 ```bash
-# 宿主机内核需 >= 5.10 并启用 BTF
-ls /sys/kernel/btf/vmlinux   # 存在则 BTF 可用
+# Host kernel must be >= 5.10 with BTF enabled
+ls /sys/kernel/btf/vmlinux   # If it exists, BTF is supported
 
-# 安装 clang/llvm（编译 eBPF 对象）
+# Install clang/llvm (to compile eBPF objects)
 sudo apt install clang llvm
 ```
 
-### 直接使用 go test
+### Direct go test usage
 
 ```bash
-# 先编译 eBPF 对象
+# Compile eBPF objects first
 ./scripts/build-ebpf.sh
 
-# 运行 BPF 引擎加载测试（需要 root）
+# Run BPF engine loading test (root required)
 sudo go test -v -run TestBPFEngine ./test/
 ```
 
 ---
 
-## 三、跨内核 QEMU vmtest
+## III. Cross-Kernel QEMU vmtest
 
-在隔离 QEMU 虚拟机中验证 eBPF 代码对多个 Linux 内核版本的兼容性。
-这是发现内核版本特定 bug 的核心手段。
+Validates the compatibility of eBPF code across multiple Linux kernel versions inside isolated QEMU virtual machines.
+This is the primary way to uncover kernel version-specific bugs.
 
-### 前置条件
+### Prerequisites
 
 ```bash
-# 1. 安装 QEMU
+# 1. Install QEMU
 sudo apt install qemu-system-x86
 
-# 2. 安装 busybox-static（构建 initramfs）
+# 2. Install busybox-static (to build initramfs)
 sudo apt install busybox-static
 
-# 3. 安装 jq（解析内核矩阵配置）
+# 3. Install jq (to parse the kernel matrix spec)
 sudo apt install jq
 
-# 4. 下载内核镜像（来自 ghcr.io/cilium/ci-kernels，约 200MB）
+# 4. Fetch kernel images (from ghcr.io/cilium/ci-kernels, ~200MB)
 ./test/kernel-compat/vmtest/fetch-kernels.sh
 ```
 
-### 运行测试
+### Run Tests
 
 ```bash
-# 测试所有支持的内核版本
+# Test all supported kernel versions
 sudo -E ./test.sh vmtest
 
-# 测试指定内核版本
+# Test specific kernel versions
 sudo -E ./test.sh vmtest 5.15 6.6
 
-# 通过环境变量指定版本
+# Specify versions via environment variable
 KERNELS="5.10 5.15 6.1 6.6 6.12" sudo -E ./test.sh vmtest
 
-# 调整每个 VM 的超时时间（默认 120 秒）
+# Adjust timeout per VM (defaults to 120 secs)
 TIMEOUT=180 sudo -E ./test.sh vmtest
 ```
 
-> **为什么需要 `sudo -E`？**
-> QEMU 启动内核需要创建虚拟硬件设备，需要 root 权限；`-E` 保留当前用户的环境变量（如 `GOPATH`、`PATH`）。
+> **Why `sudo -E`?**
+> Booting QEMU kernels creates virtual hardware devices requiring root; `-E` preserves current user's env vars (e.g. `GOPATH`, `PATH`).
 
-### 直接使用底层脚本
+### Run via Low-Level Scripts
 
 ```bash
 cd modules/Analyzer/Metrics
 
-# 步骤 1：编译 eBPF 对象
+# Step 1: Compile eBPF objects
 ./scripts/build-ebpf.sh
 
-# 步骤 2：构建测试用 initramfs
+# Step 2: Build test initramfs
 ./test/kernel-compat/vmtest/mkrootfs.sh
 
-# 步骤 3：运行 QEMU 测试
+# Step 3: Run QEMU tests
 sudo -E ./test/kernel-compat/vmtest/run-vmtest.sh
-sudo -E ./test/kernel-compat/vmtest/run-vmtest.sh 5.15 6.6    # 指定版本
+sudo -E ./test/kernel-compat/vmtest/run-vmtest.sh 5.15 6.6    # specific versions
 ```
 
-### 查看测试日志
+### View Test Logs
 
-每次 vmtest 运行后，各内核的完整测试日志保存在：
+After a vmtest sequence finishes, complete log outputs per kernel are saved at:
 
 ```
 test/kernel-compat/vmtest/results/
@@ -161,142 +161,142 @@ test/kernel-compat/vmtest/results/
 ```
 
 ```bash
-# 查看某个内核的完整测试输出
+# Check complete output for a specific kernel
 cat test/kernel-compat/vmtest/results/6.6.log
 
-# 只看失败的测试
+# Check only failed tests
 grep -A 5 "FAIL" test/kernel-compat/vmtest/results/6.6.log
 ```
 
 ---
 
-## 四、支持的内核版本矩阵
+## IV. Supported Kernel Version Matrix
 
-**最低支持版本：Linux 5.10**
+**Minimum Supported Version: Linux 5.10**
 
-> RX/TX 探针使用 `fentry`（`BPF_PROG_TYPE_TRACING`），该特性在 Linux 5.5 引入。
-> cilium/ci-kernels 可用的最早镜像为 5.10，且 5.4～5.9 已全部 EOL，故最低支持 5.10 LTS。
-> 下载低于 5.10 的内核镜像时，`fetch-kernels.sh` 会报错并拒绝下载。
+> RX/TX probes use `fentry` (`BPF_PROG_TYPE_TRACING`), a feature introduced in Linux 5.5.
+> The earliest kernel image available from cilium/ci-kernels is 5.10. Further, 5.4-5.9 are EOL, so 5.10 LTS is our baseline.
+> When attempting to download kernels below 5.10, `fetch-kernels.sh` will reject it.
 
-配置文件：`test/kernel-compat/vmtest/kernel-matrix.json`
+Config list: `test/kernel-compat/vmtest/kernel-matrix.json`
 
-| 内核版本 | LTS 用途 | fentry | kfree_skb reason | Drop 钩子 |
+| Kernel Version | LTS Usage | fentry | kfree_skb reason | Drop Hook |
 |--------|---------|:------:|:-------:|------|
-| 5.10 | Ubuntu 20.04，**最低支持版本** | ✓ | ✗ | kprobe/tcp_drop |
-| 5.15 | Ubuntu 22.04 默认 | ✓ | ✗ | kprobe/tcp_drop |
-| 6.1 | Debian 12 默认 | ✓ | ✓ | kprobe/tcp_drop_reason |
-| 6.6 | Ubuntu 24.04 默认 | ✓ | ✓ | kprobe/tcp_drop_reason |
-| 6.12 | 最新 LTS | ✓ | ✓ | kprobe/tcp_drop_reason |
+| 5.10 | Ubuntu 20.04, **Minimum Support Baseline** | ✓ | ✗ | kprobe/tcp_drop |
+| 5.15 | Ubuntu 22.04 default | ✓ | ✗ | kprobe/tcp_drop |
+| 6.1 | Debian 12 default | ✓ | ✓ | kprobe/tcp_drop_reason |
+| 6.6 | Ubuntu 24.04 default | ✓ | ✓ | kprobe/tcp_drop_reason |
+| 6.12 | Latest LTS | ✓ | ✓ | kprobe/tcp_drop_reason |
 
-### Drop 钩子的三层回退策略
+### Drop Hook 3-Tier Fallback Strategy
 
-Drop 探针需要跨内核兼容，Go 加载器在运行时按优先级逐一尝试：
+Drop probes require broad cross-kernel compatibility, so the Go loader attempts the following chain by priority during initialization:
 
 ```
-优先级 1: kprobe/tcp_drop_reason  (内核 >= 6.1)
-    ↓ 失败（符号不存在）
-优先级 2: kprobe/tcp_drop         (内核 5.10 ~ 5.15)
-    ↓ 失败（符号不存在）
-优先级 3: tracepoint/skb/kfree_skb (通用回退，所有内核)
-    - 使用 CO-RE bpf_core_field_exists(ctx->reason) 判断
-    - reason 字段存在时：过滤 reason > 0 的真实丢包
-    - reason 字段不存在时：程序直接返回 0（无法计数）
+Priority 1: kprobe/tcp_drop_reason  (Kernel >= 6.1)
+    ↓ Failed (symbol not found)
+Priority 2: kprobe/tcp_drop         (Kernel 5.10 ~ 5.15)
+    ↓ Failed (symbol not found)
+Priority 3: tracepoint/skb/kfree_skb (Generic fallback, all kernels)
+    - Uses CO-RE bpf_core_field_exists(ctx->reason) check
+    - If 'reason' exists: Filter out reason > 0 representing actual packet drops
+    - If 'reason' does not exist: Directly returns 0 (skips metric collection)
 ```
 
 ---
 
-## 五、测试文件结构
+## V. Testing Directory Tree
 
 ```
 modules/Analyzer/Metrics/
-├── test.sh                              # 一站式测试脚本（本文档主角）
+├── test.sh                              # Main one-stop wrapper script
 ├── test/
-│   ├── aggregation_test.go              # 聚合算法单元测试
-│   ├── integration_test.go              # BPF 引擎集成测试
-│   ├── websocket_test.go                # WebSocket 协议单元测试
+│   ├── aggregation_test.go              # Unit test: Aggregation logic
+│   ├── integration_test.go              # Integration: BPF Engine load tests
+│   ├── websocket_test.go                # Unit test: WebSocket messaging
 │   └── kernel-compat/
 │       └── vmtest/
-│           ├── kernel-matrix.json       # 支持的内核版本及特性矩阵
-│           ├── fetch-kernels.sh         # 下载 CI 内核镜像
-│           ├── mkrootfs.sh              # 构建 initramfs（含测试二进制）
-│           ├── run-vmtest.sh            # 启动 QEMU 运行测试
-│           ├── kernels/                 # 下载的内核镜像（gitignore）
-│           ├── results/                 # 每次测试的 VM 串口日志
+│           ├── kernel-matrix.json       # Supported kernel variants list
+│           ├── fetch-kernels.sh         # Fetch CI kernel images
+│           ├── mkrootfs.sh              # Build initramfs (packs test bins)
+│           ├── run-vmtest.sh            # Boot QEMU & run
+│           ├── kernels/                 # Dropped kernel images (gitignore)
+│           ├── results/                 # Serial logs per VM run
 │           └── runner/
-│               ├── kernel_compat_test.go  # 内核兼容性测试（在 VM 内运行）
-│               └── ws_functional_test.go  # WebSocket 功能测试（在 VM 内运行）
+│               ├── kernel_compat_test.go  # Kernel compat suite (runs inside VM)
+│               └── ws_functional_test.go  # WS functional suite (runs inside VM)
 ```
 
-### vmtest runner 测试用例
+### vmtest Runner Test Cases
 
-| 测试名称 | 验证内容 |
+| Case Name | Scope / Purpose |
 |----------|----------|
-| `TestKernelFeatures` | 打印内核特性（BTF、fentry、kfree_skb_reason 可用性） |
-| `TestObjectLoads` | eBPF 对象加载成功，所有 program/map 存在 |
-| `TestRXHooksAttach` | RX fentry 探针可以挂载 |
-| `TestTXHooksAttach` | TX fentry 探针可以挂载 |
-| `TestDropHookAttach` | Drop 三级回退链：至少一个钩子可挂载 |
-| `TestDropHookBehavior` | **行为验证**：挂载后真实丢包计数 > 0 |
-| `TestAggMapReadWrite` | PERCPU_ARRAY agg_map 可读写 |
-| `TestFilterMapsReadWrite` | 五元组过滤 map 可读写 |
-| `TestAllProbesAttachSimultaneously` | 全部探针同时挂载不冲突 |
-| `TestWSFunctional` | WebSocket 服务启动 + 接收到有效数据帧 |
-| `TestWSMessageFormat` | 消息 JSON 格式符合协议规范 |
+| `TestKernelFeatures` | Echoes kernel support (BTF, fentry, kfree_skb_reason) |
+| `TestObjectLoads` | Main eBPF ELF loads perfectly and map/progs are present |
+| `TestRXHooksAttach` | RX fentry hooks are capable of attaching |
+| `TestTXHooksAttach` | TX fentry hooks are capable of attaching |
+| `TestDropHookAttach` | Asserts Drop hook multi-fallback successfully attached to at least one |
+| `TestDropHookBehavior` | **Behavioral Validate**: Real drop counters > 0 upon simulated fault |
+| `TestAggMapReadWrite` | PERCPU_ARRAY agg_map r/w functionality |
+| `TestFilterMapsReadWrite` | Filter Maps r/w capability |
+| `TestAllProbesAttachSimultaneously` | Attach all links alongside each other smoothly |
+| `TestWSFunctional` | Start local WebSocket service and correctly process traffic frames |
+| `TestWSMessageFormat` | Checks valid conformity of emitted JSON formats |
 
 ---
 
-## 六、常见问题
+## VI. FAQ
 
-### Q: `./test.sh vmtest` 报 "内核未找到，跳过"
+### Q: `./test.sh vmtest` throws "kernel not found, skipping"
 
-说明对应版本的内核镜像未下载。
+The required kernel version image is missing from disks.
 
 ```bash
-# 下载缺失的内核
+# Fetch missing images explicitly
 ./test/kernel-compat/vmtest/fetch-kernels.sh 5.15 6.6
 
-# 或重新下载全部
+# Or fetch everything
 ./test/kernel-compat/vmtest/fetch-kernels.sh
 ```
 
-### Q: vmtest 报 "⚠ KVM 不可用，回退到 TCG（速度变慢）"
+### Q: vmtest indicates "⚠ KVM unavailable, falling back to TCG (slow)"
 
-说明当前环境没有 KVM 支持（如嵌套虚拟化被禁用）。测试仍可以运行，但速度会慢 5~10 倍，可增大超时时间：
+The current environment does not have KVM natively exposed (like disabled nested virt). Tests can still complete, but expect a 5-10x slowdown. Extend timeout parameters to compensate:
 
 ```bash
 TIMEOUT=300 sudo -E ./test.sh vmtest
 ```
 
-### Q: `TestDropHookBehavior` 在某个内核上被 skip
+### Q: `TestDropHookBehavior` gets skipped on a certain kernel
 
-这是预期行为。该测试在 tracepoint format 无 `reason` 字段时自动跳过（意味着 CO-RE `bpf_core_field_exists` 会返回 0，无法统计有效丢包）。查看跳过原因：
+This is the expected outcome. It happens when the `kfree_skb` tracepoint payload misses the `reason` struct attribute, driving CO-RE `bpf_core_field_exists` to gracefully back off (effectively blocking valid drop filtering). Look inside serial logs:
 
 ```bash
 grep "SKIP\|kfree_skb" test/kernel-compat/vmtest/results/5.10.log
 ```
 
-### Q: 如何添加新的内核版本
+### Q: How to introduce tests for a new kernel baseline
 
-1. 在 `kernel-matrix.json` 中添加新条目（参照现有格式）
-2. 运行 `fetch-kernels.sh <新版本>` 下载镜像
-3. 运行 `./test.sh vmtest <新版本>` 验证
+1. Insert a new stanza inside `kernel-matrix.json` (match schema format)
+2. Run `./test/kernel-compat/vmtest/fetch-kernels.sh <new_version>`
+3. Prove logic holds up using `./test.sh vmtest <new_version>`
 
-### Q: BPF 集成测试失败，报 "permission denied"
+### Q: BPF integration tests fail with "permission denied"
 
 ```bash
-# 确认以 root 运行
+# Always use sudo -E
 sudo -E ./test.sh integration
 
-# 检查 BTF 是否可用
+# Assure Kernel space exhibits BTF payloads
 ls /sys/kernel/btf/vmlinux
 ```
 
-### Q: 如何在 CI/CD 中运行 vmtest
+### Q: How to automate vmtest inside CI/CD
 
-由于需要 QEMU 和 KVM，建议在 CI 中使用支持嵌套虚拟化的 runner（如 GitHub Actions 的 `ubuntu-latest` + 自托管 bare-metal runner）：
+Since it explicitly calls upon QEMU and optimal KVM access, preferably select a runner endowed with nested virt capabilities (like typical GitHub Actions `ubuntu-latest` nodes or self-hosted bare metal servers):
 
 ```yaml
-# .github/workflows/vmtest.yml 示例片段
+# .github/workflows/vmtest.yml snippet example
 - name: Install dependencies
   run: sudo apt install -y qemu-system-x86 busybox-static jq
 
