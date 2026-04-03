@@ -92,6 +92,9 @@ sudo -E ./bin/metrics
 ### 3. 测试
 
 ```bash
+# 下载必要的依赖
+./test.sh setup
+
 # 单元测试（无需 root）
 ./test.sh
 

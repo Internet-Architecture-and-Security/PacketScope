@@ -92,6 +92,9 @@ After startup, the service listens on `ws://0.0.0.0:8020` (frontend address) and
 ### 3. Test
 
 ```bash
+# Download necessary dependencies
+./test.sh setup
+
 # Unit tests (no root required)
 ./test.sh
 
