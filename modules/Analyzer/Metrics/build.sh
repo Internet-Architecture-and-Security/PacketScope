@@ -1,28 +1,34 @@
 #!/usr/bin/env bash
-# build.sh — PacketScope Metrics 一键编译 & 部署脚本
+# build.sh — PacketScope Metrics one-click build & deploy script
 #
-# 用法:
-#   ./build.sh               # 编译（生成 BPF 绑定 + Go 二进制）
-#   ./build.sh run           # 编译并以 root 运行
-#   ./build.sh docker        # 构建 Docker 镜像
-#   ./build.sh docker run    # 构建并以 Docker 容器运行
-#   ./build.sh clean         # 清理编译产物
+# Usage:
+#   ./build.sh               # Build (generate BPF bindings + Go binary)
+#   ./build.sh run           # Build and run as root
+#   ./build.sh docker        # Build Docker image
+#   ./build.sh docker run    # Build and run in Docker container
+#   ./build.sh clean         # Clean build artifacts
 #
-# 环境变量:
-#   OUTPUT=bin/metrics       # 输出二进制路径
-#   IMAGE=packetscope/metrics:latest  # Docker 镜像名称
-#   GOPROXY=https://goproxy.cn,direct # Go 模块代理（国内环境）
+# Build dependencies (Ubuntu/Debian example):
+#   sudo apt install -y go clang llvm libbpf-dev
+#   - go:         Build the Go service
+#   - clang/llvm: Compile eBPF C sources (bpf2go)
+#   - libbpf-dev: Provide bpf_helpers.h / bpf_tracing.h / bpf_endian.h
+#
+# Environment variables:
+#   OUTPUT=bin/metrics       # Output binary path
+#   IMAGE=packetscope/metrics:latest  # Docker image name
+#   GOPROXY=https://goproxy.cn,direct # Go module proxy
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# ── 配置 ──────────────────────────────────────────────────────────────────────
+# ── Config ─────────────────────────────────────────────────────────────────────
 OUTPUT="${OUTPUT:-bin/metrics}"
 IMAGE="${IMAGE:-packetscope/metrics:latest}"
 
-# ── 颜色 ──────────────────────────────────────────────────────────────────────
+# ── Colors ─────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[0;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
@@ -32,13 +38,18 @@ warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 step()    { echo -e "\n${BOLD}▶ $*${NC}"; }
 
-# ── 前置检查 ──────────────────────────────────────────────────────────────────
+# ── Prerequisite checks ────────────────────────────────────────────────────────
 check_deps() {
+  # bpf2go invokes clang during go generate to compile eBPF sources,
+  # so BPF headers from libbpf-dev are required in addition to go/clang.
   local missing=()
   command -v go    &>/dev/null || missing+=("go (https://go.dev/dl/)")
   command -v clang &>/dev/null || missing+=("clang (sudo apt install clang llvm)")
+  if [[ ! -f /usr/include/bpf/bpf_helpers.h ]] || [[ ! -f /usr/include/bpf/bpf_tracing.h ]] || [[ ! -f /usr/include/bpf/bpf_endian.h ]]; then
+    missing+=("libbpf headers (sudo apt install libbpf-dev)")
+  fi
   if [[ ${#missing[@]} -gt 0 ]]; then
-    error "缺少以下依赖："
+    error "Missing required dependencies:"
     for dep in "${missing[@]}"; do echo "  · $dep"; done
     exit 1
   fi
@@ -46,18 +57,18 @@ check_deps() {
   local major minor
   IFS='.' read -r major minor <<< "$gover"
   if (( major < 1 || (major == 1 && minor < 22) )); then
-    warn "推荐 Go >= 1.22，当前版本 go${gover} 可能不受支持"
+    warn "Go >= 1.22 is recommended; current version go${gover} may be unsupported"
   fi
 }
 
-# ── 子命令: build ─────────────────────────────────────────────────────────────
+# ── Subcommand: build ─────────────────────────────────────────────────────────
 cmd_build() {
-  step "检查依赖"
+  step "Checking dependencies"
   check_deps
-  success "依赖检查通过（$(go version | awk '{print $3}')，$(clang --version | head -1 | awk '{print $1,$3}')）"
+  success "Dependency check passed ($(go version | awk '{print $3}'), $(clang --version | head -1 | awk '{print $1,$3}'))"
 
-  step "生成 BPF Go 绑定（bpf2go）"
-  # 自动生成对应的 go:generate 文件
+  step "Generating BPF Go bindings (bpf2go)"
+  # Auto-generate the go:generate file
   mkdir -p ./pkg/bpf_engine/ebpf
   cat << 'EOF' > ./pkg/bpf_engine/ebpf/gen.go
 package ebpf
@@ -65,66 +76,66 @@ package ebpf
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -type filter_v4_t -type filter_v6_t -type agg_val_t -cflags "-O2 -g -Wall -Wno-unused-variable -D__TARGET_ARCH_x86" Bpf ../../../bpf/metrics.c -- -I../../../bpf/headers
 EOF
 
-  # bpf2go 需要 clang 在 PATH 中
+  # bpf2go requires clang in PATH
   go generate ./pkg/bpf_engine/ebpf/
-  success "BPF 绑定生成完毕"
+  success "BPF bindings generated"
 
-  step "编译 Go 二进制 → $OUTPUT"
+  step "Building Go binary -> $OUTPUT"
   mkdir -p "$(dirname "$OUTPUT")"
   go build -o "$OUTPUT" ./cmd/metrics/
-  success "编译完成: $SCRIPT_DIR/$OUTPUT  ($(du -sh "$OUTPUT" | cut -f1))"
+  success "Build complete: $SCRIPT_DIR/$OUTPUT  ($(du -sh "$OUTPUT" | cut -f1))"
 
   echo ""
-  echo -e "${GREEN}${BOLD}构建成功！${NC}"
-  echo "  运行服务: sudo -E ./$OUTPUT"
-  echo "  或使用:   sudo -E ./build.sh run"
+  echo -e "${GREEN}${BOLD}Build succeeded!${NC}"
+  echo "  Run service: sudo -E ./$OUTPUT"
+  echo "  Or use:      sudo -E ./build.sh run"
 }
 
-# ── 子命令: run ───────────────────────────────────────────────────────────────
+# ── Subcommand: run ───────────────────────────────────────────────────────────
 cmd_run() {
   if [[ ! -f "$OUTPUT" ]]; then
-    info "二进制不存在，先执行编译..."
+    info "Binary not found, building first..."
     cmd_build
   fi
 
   if [[ $EUID -ne 0 ]]; then
-    error "运行 eBPF 探针需要 root 权限。请使用: sudo -E ./build.sh run"
+    error "Running eBPF probes requires root privileges. Use: sudo -E ./build.sh run"
     exit 1
   fi
 
-  step "启动 Metrics 服务"
-  info "WebSocket 端点: ws://0.0.0.0:8020/ws"
-  info "按 Ctrl+C 停止"
+  step "Starting Metrics service"
+  info "WebSocket endpoint: ws://0.0.0.0:8020/ws"
+  info "Press Ctrl+C to stop"
   exec "./$OUTPUT"
 }
 
-# ── 子命令: docker build ──────────────────────────────────────────────────────
+# ── Subcommand: docker build ──────────────────────────────────────────────────
 cmd_docker_build() {
   if ! command -v docker &>/dev/null; then
-    error "未找到 docker。安装: https://docs.docker.com/engine/install/"
+    error "docker not found. Install: https://docs.docker.com/engine/install/"
     exit 1
   fi
 
-  step "构建 Docker 镜像: $IMAGE"
+  step "Building Docker image: $IMAGE"
   docker build -t "$IMAGE" .
-  success "镜像构建完成: $IMAGE"
+  success "Image build complete: $IMAGE"
 
   echo ""
-  echo "  运行容器: docker run --privileged --net=host $IMAGE"
-  echo "  或使用:   ./build.sh docker run"
+  echo "  Run container: docker run --privileged --net=host $IMAGE"
+  echo "  Or use:        ./build.sh docker run"
 }
 
-# ── 子命令: docker run ────────────────────────────────────────────────────────
+# ── Subcommand: docker run ────────────────────────────────────────────────────
 cmd_docker_run() {
   if ! docker image inspect "$IMAGE" &>/dev/null 2>&1; then
-    info "镜像不存在，先构建..."
+    info "Image not found, building first..."
     cmd_docker_build
   fi
 
-  step "启动 Docker 容器"
-  info "镜像:     $IMAGE"
+  step "Starting Docker container"
+  info "Image:     $IMAGE"
   info "WebSocket: ws://0.0.0.0:8020/ws"
-  info "按 Ctrl+C 停止（容器将自动删除）"
+  info "Press Ctrl+C to stop (container will be removed automatically)"
   docker run --rm \
     --privileged \
     --net=host \
@@ -132,21 +143,21 @@ cmd_docker_run() {
     "$IMAGE"
 }
 
-# ── 子命令: clean ─────────────────────────────────────────────────────────────
+# ── Subcommand: clean ─────────────────────────────────────────────────────────
 cmd_clean() {
-  step "清理编译产物"
+  step "Cleaning build artifacts"
   rm -f "$OUTPUT"
   rm -rf bpf/out/
-  # bpf2go 生成的文件（保留以避免 go build 失败，仅提示）
-  info "提示: bpf2go 生成文件（pkg/bpf_engine/ebpf/bpf_bpf*.go/.o）已保留。"
-  info "  如需重新生成请运行: go generate ./pkg/bpf_engine/ebpf/"
-  success "清理完成"
+  # Keep bpf2go-generated files to avoid go build failures.
+  info "Note: bpf2go-generated files (pkg/bpf_engine/ebpf/bpf_bpf*.go/.o) were kept."
+  info "  To regenerate, run: go generate ./pkg/bpf_engine/ebpf/"
+  success "Cleanup complete"
 }
 
-# ── 入口 ──────────────────────────────────────────────────────────────────────
+# ── Entry ──────────────────────────────────────────────────────────────────────
 echo -e "${CYAN}${BOLD}"
 echo "╔══════════════════════════════════════════════╗"
-echo "║      PacketScope Metrics — 编译 & 部署       ║"
+echo "║      PacketScope Metrics — Build & Deploy    ║"
 echo "╚══════════════════════════════════════════════╝"
 echo -e "${NC}"
 
@@ -167,7 +178,7 @@ case "$CMD" in
       build) cmd_docker_build ;;
       run)   cmd_docker_run   ;;
       *)
-        error "未知 docker 子命令: $SUBCMD。可用: build, run"
+        error "Unknown docker subcommand: $SUBCMD. Available: build, run"
         exit 1
         ;;
     esac
@@ -176,23 +187,23 @@ case "$CMD" in
     cmd_clean
     ;;
   help|--help|-h)
-    echo "用法: ./build.sh [命令] [子命令]"
+    echo "Usage: ./build.sh [command] [subcommand]"
     echo ""
-    echo "命令:"
-    echo "  build          编译（生成 BPF 绑定 + Go 二进制）  [默认]"
-    echo "  run            编译并以 root 运行"
-    echo "  docker build   构建 Docker 镜像"
-    echo "  docker run     构建并运行 Docker 容器"
-    echo "  clean          清理编译产物"
-    echo "  help           显示此帮助"
+    echo "Commands:"
+    echo "  build          Build (generate BPF bindings + Go binary)  [default]"
+    echo "  run            Build and run as root"
+    echo "  docker build   Build Docker image"
+    echo "  docker run     Build and run Docker container"
+    echo "  clean          Clean build artifacts"
+    echo "  help           Show this help"
     echo ""
-    echo "环境变量:"
-    echo "  OUTPUT=bin/metrics               输出二进制路径"
-    echo "  IMAGE=packetscope/metrics:latest Docker 镜像名称"
-    echo "  GOPROXY=https://goproxy.cn,...   Go 模块代理"
+    echo "Environment variables:"
+    echo "  OUTPUT=bin/metrics               Output binary path"
+    echo "  IMAGE=packetscope/metrics:latest Docker image name"
+    echo "  GOPROXY=https://goproxy.cn,...   Go module proxy"
     ;;
   *)
-    error "未知命令: $CMD。运行 ./build.sh help 查看帮助。"
+    error "Unknown command: $CMD. Run ./build.sh help for usage."
     exit 1
     ;;
 esac

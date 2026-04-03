@@ -1,0 +1,10 @@
+# Build artifacts
+bin/
+
+# bpf2go generated bindings
+pkg/bpf_engine/ebpf/
+
+# test output
+test/kernel-compat/vmtest/kernels
+test/kernel-compat/vmtest/results
+test/kernel-compat/vmtest/rootfs.cpio.gz
