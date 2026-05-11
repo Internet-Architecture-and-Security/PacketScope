@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Test cases for database tables and data status
+"""
+
+import os
+import unittest
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+
+class TestDatabaseTables(unittest.TestCase):
+    """Test cases for database tables and data status"""
+    
+    def setUp(self):
+        """Set up database connection before each test"""
+        # Get database connection parameters from environment variables
+        self.db_params = {
+            "host": os.getenv("PG_HOST", "localhost"),
+            "port": os.getenv("PG_PORT", "5432"),
+            "user": os.getenv("PG_USER", "postgres"),
+            "password": os.getenv("PG_PASSWORD", "password"),
+            "dbname_function": os.getenv("PG_DBNAME_FUNCTION", "functioninfo"),
+            "dbname_packet": os.getenv("PG_DBNAME_PACKET", "tcxprober")
+        }
+        
+    def get_db_connection(self, dbname):
+        """Get database connection for a specific database"""
+        try:
+            conn = psycopg2.connect(
+                host=self.db_params["host"],
+                port=self.db_params["port"],
+                user=self.db_params["user"],
+                password=self.db_params["password"],
+                dbname=dbname
+            )
+            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            return conn
+        except psycopg2.OperationalError as e:
+            self.skipTest(f"Cannot connect to database {dbname}: {e}")
+            return None
+
+    def test_functioninfo_database_exists(self):
+        """Test if functioninfo database exists"""
+        # Connect to default postgres database to check if our database exists
+        try:
+            conn = psycopg2.connect(
+                host=self.db_params["host"],
+                port=self.db_params["port"],
+                user=self.db_params["user"],
+                password=self.db_params["password"],
+                dbname="postgres"
+            )
+            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", 
+                          (self.db_params["dbname_function"],))
+            exists = cursor.fetchone()
+            
+            self.assertIsNotNone(exists, f"Database {self.db_params['dbname_function']} does not exist")
+            
+            cursor.close()
+            conn.close()
+        except psycopg2.OperationalError as e:
+            self.skipTest(f"Cannot connect to postgres database: {e}")
+
+    def test_tcxprober_database_exists(self):
+        """Test if tcxprober database exists"""
+        # Connect to default postgres database to check if our database exists
+        try:
+            conn = psycopg2.connect(
+                host=self.db_params["host"],
+                port=self.db_params["port"],
+                user=self.db_params["user"],
+                password=self.db_params["password"],
+                dbname="postgres"
+            )
+            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", 
+                          (self.db_params["dbname_packet"],))
+            exists = cursor.fetchone()
+            
+            self.assertIsNotNone(exists, f"Database {self.db_params['dbname_packet']} does not exist")
+            
+            cursor.close()
+            conn.close()
+        except psycopg2.OperationalError as e:
+            self.skipTest(f"Cannot connect to postgres database: {e}")
+
+    def test_functionCall_table_exists(self):
+        """Test if functionCall table exists in functioninfo database"""
+        conn = self.get_db_connection(self.db_params["dbname_function"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_name = 'functioncall'
+        """)
+        exists = cursor.fetchone()
+        
+        self.assertIsNotNone(exists, "Table functionCall does not exist in functioninfo database")
+        
+        cursor.close()
+        conn.close()
+
+    def test_SpecfunctionCall_table_exists(self):
+        """Test if SpecfunctionCall table exists in functioninfo database"""
+        conn = self.get_db_connection(self.db_params["dbname_function"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_name = 'specfunctioncall'
+        """)
+        exists = cursor.fetchone()
+        
+        self.assertIsNotNone(exists, "Table SpecfunctionCall does not exist in functioninfo database")
+        
+        cursor.close()
+        conn.close()
+
+    def test_packets_table_exists(self):
+        """Test if packets table exists in tcxprober database"""
+        conn = self.get_db_connection(self.db_params["dbname_packet"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 1 FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_name = 'packets'
+        """)
+        exists = cursor.fetchone()
+        
+        self.assertIsNotNone(exists, "Table packets does not exist in tcxprober database")
+        
+        cursor.close()
+        conn.close()
+
+    def test_functionCall_table_structure(self):
+        """Test structure of functionCall table"""
+        conn = self.get_db_connection(self.db_params["dbname_function"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_schema = 'public' AND table_name = 'functioncall'
+            ORDER BY ordinal_position
+        """)
+        columns = cursor.fetchall()
+        
+        # Expected columns based on kbatch.go
+        expected_columns = [
+            ('time', 'double precision'),
+            ('isret', 'bigint'),
+            ('id', 'bigint'),
+            ('pid', 'integer')
+        ]
+        
+        self.assertEqual(columns, expected_columns, "functionCall table structure is incorrect")
+        
+        cursor.close()
+        conn.close()
+
+    def test_SpecfunctionCall_table_structure(self):
+        """Test structure of SpecfunctionCall table"""
+        conn = self.get_db_connection(self.db_params["dbname_function"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_schema = 'public' AND table_name = 'specfunctioncall'
+            ORDER BY ordinal_position
+        """)
+        columns = cursor.fetchall()
+        
+        # Expected columns based on kbatch.go
+        expected_columns = [
+            ('time', 'double precision'),
+            ('isret', 'bigint'),
+            ('id', 'bigint'),
+            ('pid', 'integer'),
+            ('family', 'bigint'),
+            ('srcport', 'bigint'),
+            ('dstport', 'bigint'),
+            ('srcip', 'character varying'),
+            ('dstip', 'character varying'),
+            ('pkt', 'character varying')
+        ]
+        
+        self.assertEqual(columns, expected_columns, "SpecfunctionCall table structure is incorrect")
+        
+        cursor.close()
+        conn.close()
+
+    def test_packets_table_structure(self):
+        """Test structure of packets table"""
+        conn = self.get_db_connection(self.db_params["dbname_packet"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_schema = 'public' AND table_name = 'packets'
+            ORDER BY ordinal_position
+        """)
+        columns = cursor.fetchall()
+        
+        # Expected columns based on tcxprober.go
+        expected_columns = [
+            ('id', 'integer'),
+            ('direction', 'bigint'),
+            ('timestamp', 'bigint'),
+            ('netifidx', 'bigint'),
+            ('payloadlen', 'bigint'),
+            ('payload', 'bytea')
+        ]
+        
+        self.assertEqual(columns, expected_columns, "packets table structure is incorrect")
+        
+        cursor.close()
+        conn.close()
+
+    def test_functionCall_data_count(self):
+        """Test data count in functionCall table"""
+        conn = self.get_db_connection(self.db_params["dbname_function"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM functionCall")
+        count = cursor.fetchone()[0]
+        
+        # Just check that we can retrieve count, don't assert a specific value
+        self.assertIsInstance(count, int, "Count should be an integer")
+        print(f"functionCall table has {count} records")
+        
+        cursor.close()
+        conn.close()
+
+    def test_SpecfunctionCall_data_count(self):
+        """Test data count in SpecfunctionCall table"""
+        conn = self.get_db_connection(self.db_params["dbname_function"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM SpecfunctionCall")
+        count = cursor.fetchone()[0]
+        
+        # Just check that we can retrieve count, don't assert a specific value
+        self.assertIsInstance(count, int, "Count should be an integer")
+        print(f"SpecfunctionCall table has {count} records")
+        
+        cursor.close()
+        conn.close()
+
+    def test_packets_data_count(self):
+        """Test data count in packets table"""
+        conn = self.get_db_connection(self.db_params["dbname_packet"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM packets")
+        count = cursor.fetchone()[0]
+        
+        # Just check that we can retrieve count, don't assert a specific value
+        self.assertIsInstance(count, int, "Count should be an integer")
+        print(f"packets table has {count} records")
+        
+        cursor.close()
+        conn.close()
+
+    def test_functionCall_data_sample(self):
+        """Test sample data from functionCall table"""
+        conn = self.get_db_connection(self.db_params["dbname_function"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM functionCall ORDER BY time DESC LIMIT 5")
+        rows = cursor.fetchall()
+        
+        # Check if we can retrieve sample data (if any exists)
+        if rows:
+            self.assertEqual(len(rows[0]), 4, "functionCall row should have 4 columns")
+            print(f"functionCall sample data: {rows}")
+        
+        cursor.close()
+        conn.close()
+
+    def test_SpecfunctionCall_data_sample(self):
+        """Test sample data from SpecfunctionCall table"""
+        conn = self.get_db_connection(self.db_params["dbname_function"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM SpecfunctionCall ORDER BY time DESC LIMIT 5")
+        rows = cursor.fetchall()
+        
+        # Check if we can retrieve sample data (if any exists)
+        if rows:
+            self.assertEqual(len(rows[0]), 10, "SpecfunctionCall row should have 10 columns")
+            print(f"SpecfunctionCall sample data: {rows}")
+        
+        cursor.close()
+        conn.close()
+
+    def test_packets_data_sample(self):
+        """Test sample data from packets table"""
+        conn = self.get_db_connection(self.db_params["dbname_packet"])
+        if not conn:
+            return
+            
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM packets ORDER BY timestamp DESC LIMIT 5")
+        rows = cursor.fetchall()
+        
+        # Check if we can retrieve sample data (if any exists)
+        if rows:
+            self.assertEqual(len(rows[0]), 6, "packets row should have 6 columns")
+            print(f"packets sample data: {rows}")
+        
+        cursor.close()
+        conn.close()
+
+
+if __name__ == "__main__":
+    print("Running database table tests...")
+    print("Note: Make sure PostgreSQL is running and accessible\n")
+    unittest.main()
