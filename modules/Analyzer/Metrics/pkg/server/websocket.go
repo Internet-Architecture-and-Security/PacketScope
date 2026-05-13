@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -113,6 +115,23 @@ func ParseParams(params map[string]interface{}) (*MetricsParams, []string) {
 	return p, nil
 }
 
+func isExpectedWebSocketDisconnect(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if websocket.IsCloseError(
+		err,
+		websocket.CloseNormalClosure,
+		websocket.CloseGoingAway,
+		websocket.CloseNoStatusReceived,
+	) {
+		return true
+	}
+
+	return errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed)
+}
+
 // ==================== WebSocket Handler ====================
 
 func WsHandler(w http.ResponseWriter, r *http.Request, engine FilterUpdater, aggMap aggregation.AggMapReader) {
@@ -131,7 +150,9 @@ func WsHandler(w http.ResponseWriter, r *http.Request, engine FilterUpdater, agg
 	for {
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			log.Println("read:", err)
+			if !isExpectedWebSocketDisconnect(err) {
+				log.Println("read:", err)
+			}
 			break
 		}
 
@@ -236,9 +257,9 @@ func WsHandler(w http.ResponseWriter, r *http.Request, engine FilterUpdater, agg
 				case <-ticker.C:
 					msgs := collector.CollectAll(1.0)
 					for _, msg := range msgs {
-							if (msg.Type == "ipv4" && !params.IPv4) || (msg.Type == "ipv6" && !params.IPv6) {
-								continue
-							}
+						if (msg.Type == "ipv4" && !params.IPv4) || (msg.Type == "ipv6" && !params.IPv6) {
+							continue
+						}
 						// Frontend does JSON.parse(response.data), so data must be a JSON string
 						innerJSON, err := json.Marshal(msg)
 						if err != nil {
