@@ -1,0 +1,4 @@
+# PacketScope Monitor MCP Server Dependencies
+
+fastmcp>=0.5.0
+requests>=2.31.0
