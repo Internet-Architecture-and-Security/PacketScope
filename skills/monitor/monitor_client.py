@@ -244,8 +244,14 @@ def get_established_tcp_sockets(client: MonitorClient) -> List[List[Any]]:
         List of established TCP sockets
     """
     sockets = client.get_socket_list()
-    tcp_sockets = sockets.get("tcpipv4", [])
-    return [sock for sock in tcp_sockets if "ESTABLISHED" in sock[4]]
+    if sockets is None:
+        return []
+    if isinstance(sockets, list):
+        return [sock for sock in sockets if len(sock) > 4 and "ESTABLISHED" in sock[4]]
+    if isinstance(sockets, dict):
+        tcp_sockets = sockets.get("tcpipv4", [])
+        return [sock for sock in tcp_sockets if len(sock) > 4 and "ESTABLISHED" in sock[4]]
+    return []
 
 
 def get_function_name(client: MonitorClient, func_id: int) -> Optional[str]:
@@ -260,7 +266,16 @@ def get_function_name(client: MonitorClient, func_id: int) -> Optional[str]:
         Function name or None if not found
     """
     func_table = client.get_func_table()
-    return func_table.get(str(func_id))
+    if func_table is None:
+        return None
+    entry = func_table.get(str(func_id))
+    if entry is None:
+        return None
+    if isinstance(entry, str):
+        return entry
+    if isinstance(entry, dict) and "name" in entry:
+        return entry["name"]
+    return str(entry)
 
 
 # ============== Example Usage ==============

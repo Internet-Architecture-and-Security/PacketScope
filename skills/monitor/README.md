@@ -57,39 +57,26 @@ print(f"Function calls: {func_send}")
 
 ### MCP Server
 
-#### 方式一：使用启动脚本
+Monitor MCP Server 支持两种运行模式：
+
+---
+
+#### 📟 模式一：Stdio 模式（推荐）
+MCP 客户端直接启动服务器进程，通过标准输入输出通信。
+
+**启动方式：**
 
 ```bash
 cd skills/monitor
 
-# 设置环境变量（可选）
-export MONITOR_API_URL="http://localhost:8010"
-export MONITOR_MCP_PORT="8012"
-
-# 启动服务器
+# 使用启动脚本
 ./start.sh
-```
 
-#### 方式二：直接运行
-
-```bash
-cd skills/monitor
+# 或直接运行
 python3 mcp_server.py
 ```
 
-#### 环境变量
-
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `MONITOR_MCP_NAME` | `packetscope-monitor` | MCP 服务器名称 |
-| `MONITOR_MCP_HOST` | `127.0.0.1` | HTTP 服务器主机 |
-| `MONITOR_MCP_PORT` | `8012` | HTTP 服务器端口 |
-| `MONITOR_API_URL` | `http://localhost:8010` | Monitor API 地址 |
-| `MONITOR_MCP_TRANSPORT` | `stdio` | 传输方式 (`stdio` 或 `http`) |
-
-#### MCP 配置示例
-
-在 Claude Desktop 的配置文件中添加：
+**MCP 客户端配置：** (`config.example.json`)
 
 ```json
 {
@@ -103,6 +90,49 @@ python3 mcp_server.py
   }
 }
 ```
+
+---
+
+#### 🌐 模式二：HTTP 模式（独立运行）
+用户先手动启动服务器，MCP 客户端通过 HTTP SSE 连接。
+
+**启动服务器：**
+
+```bash
+cd skills/monitor
+
+# 使用HTTP启动脚本
+./start-http.sh
+
+# 或设置环境变量后运行
+export MONITOR_MCP_TRANSPORT="http"
+export MONITOR_MCP_PORT="8012"
+python3 mcp_server.py
+```
+
+**MCP 客户端配置：** (`config.http.json`)
+
+```json
+{
+  "mcpServers": {
+    "packetscope-monitor": {
+      "url": "http://localhost:8012/sse"
+    }
+  }
+}
+```
+
+---
+
+#### 环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `MONITOR_MCP_NAME` | `packetscope-monitor` | MCP 服务器名称 |
+| `MONITOR_MCP_HOST` | `127.0.0.1` | HTTP 服务器主机（仅HTTP模式） |
+| `MONITOR_MCP_PORT` | `8012` | HTTP 服务器端口（仅HTTP模式） |
+| `MONITOR_API_URL` | `http://localhost:8010` | Monitor API 地址 |
+| `MONITOR_MCP_TRANSPORT` | `stdio` | 传输方式 (`stdio` 或 `http`) |
 
 #### MCP 工具列表
 

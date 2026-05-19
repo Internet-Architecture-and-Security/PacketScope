@@ -1,4 +1,4 @@
-# PacketScope Monitor API Skill
+# PacketScope Monitor API Skill & MCP Server
 
 This skill enables LLM to interact with the PacketScope Monitor module API for network packet analysis, function call tracking, and socket monitoring.
 
@@ -9,6 +9,66 @@ Monitor is a network analysis module that provides:
 - Kernel network function call tracking
 - Socket state monitoring
 - Function ID mapping lookup
+
+## MCP Server Tools
+
+The Monitor MCP Server provides the following tools for LLM interaction:
+
+### Packet Query Tools
+
+- `get_recent_packets` - Get recent network packets with optional filters
+  - Parameters: `src_ip`, `dst_ip`, `src_port`, `dst_port`, `ip_ver`, `count`
+  - Returns: List of packets with timestamp, IPs, ports, payload, etc.
+
+- `query_packets` - Query packets matching specific criteria
+  - Parameters: `src_ip`, `dst_ip`, `src_port`, `dst_port`, `ip_ver`
+  - Returns: List of matching packet entries
+
+### Function Call Tracking Tools
+
+- `get_recent_map` - Get recent function call mappings
+  - Parameters: `src_ip`, `dst_ip`, `src_port`, `dst_port`, `count`, `time_down_limit`
+  - Returns: List of function call entries
+
+- `get_func_table` - Get function ID to name mapping
+  - Parameters: None
+  - Returns: Dictionary mapping function IDs to names
+
+- `get_function_name` - Get function name from function ID
+  - Parameters: `func_id`
+  - Returns: Function name or None if not found
+
+- `query_func_send` - Query function calls related to send operations
+  - Parameters: `src_ip`, `dst_ip`, `src_port`, `dst_port`
+  - Returns: List of send-related function call entries
+
+- `query_func_recv` - Query function calls related to receive operations
+  - Parameters: `src_ip`, `dst_ip`, `src_port`, `dst_port`
+  - Returns: List of receive-related function call entries
+
+### Socket Monitoring Tools
+
+- `get_socket_list` - Get current network socket list
+  - Parameters: None
+  - Returns: Dictionary with socket types as keys and lists of socket entries
+
+- `get_established_tcp_sockets` - Get all established TCP IPv4 sockets
+  - Parameters: None
+  - Returns: List of established TCP sockets
+
+### Status Check Tools
+
+- `is_attach_finished` - Check if eBPF probes are attached
+  - Parameters: None
+  - Returns: True if probes are attached
+
+- `health_check` - Check server health and readiness
+  - Parameters: None
+  - Returns: Health status information
+
+- `server_capabilities` - Get server capabilities and tool usage examples
+  - Parameters: None
+  - Returns: Server capabilities and tool documentation
 
 ## API Endpoints
 
