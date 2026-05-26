@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "packetscope-monitor": {
+      "url": "http://localhost:8012/sse",
+      "env": {
+        "MONITOR_API_URL": "http://localhost:8010"
+      }
+    }
+  }
+}

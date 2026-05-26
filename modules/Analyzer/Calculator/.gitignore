@@ -1,0 +1,6 @@
+# Build artifacts
+bin/
+
+# bpf2go generated bindings
+# pkg/bpf_engine/ebpf/
+

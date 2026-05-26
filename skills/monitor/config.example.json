@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "packetscope-monitor": {
+      "command": "/path/to/packetscope/skills/monitor/start.sh",
+      "env": {
+        "MONITOR_API_URL": "http://localhost:8010"
+      }
+    }
+  }
+}

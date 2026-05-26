@@ -1,60 +1,102 @@
-# 使用Ubuntu作为基础镜像（基于apt命令推测，可根据实际需求调整版本）
-FROM dockerpa2025/packetscope:v1
+# 配置国内 Go 代理
+FROM ubuntu:24.04
 
-# 镜像元信息（可选）
-LABEL maintainer="Your Name" \
-      description="PacketScope IAS Environment"
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CGO_ENABLED=1
 
-SHELL ["/bin/bash", "-c"]
+# Go proxy configuration (can be overridden at build time)
+# ARG GOPROXY=https://proxy.golang.org,direct
+# ARG GOSUMDB=sum.golang.org
+# ENV GOPROXY=${GOPROXY}
+# ENV GOSUMDB=${GOSUMDB}
+# 配置 Go 代理
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOSUMDB=sum.golang.google.cn
+# ARG GOSUMDB=sum.golang.org
+# ENV GOPROXY=${GOPROXY}
+# ENV GOSUMDB=${GOSUMDB}
+
+# Keep default Ubuntu sources (no mirror changes for other dependencies)
+
+# Update package lists and install system dependencies
+RUN apt-get update && apt-get install -y \
+    # Basic tools
+    curl \
+    wget \
+    git \
+    make \
+    build-essential \
+    # Go programming language
+    golang-go \
+    # C/C++ development
+    gcc \
+    g++ \
+    clang \
+    llvm \
+    # eBPF/XDP dependencies
+    libbpf-dev \
+    linux-headers-generic \
+    linux-tools-generic \
+    linux-tools-common \
+    # Additional eBPF tools
+    bpfcc-tools \
+    libbpf-tools \
+    # Network tools
+    iproute2 \
+    net-tools \
+    tcpdump \
+    # Development libraries
+    libelf-dev \
+    zlib1g-dev \
+    pkg-config \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/*
+
+# Verify Go installation
+RUN go version
+
+# 复制模块代码到容器中
+COPY . /Monitor
+
+WORKDIR /Monitor   
+
+# 安装项目依赖
+RUN go mod tidy
+
+# 通过make编译模块
 
 
-# Step0: 配置基础环境并安装node.js（Step0+Step1合并，减少镜像层数）
-RUN apt-get update && \
-    # Step1: 安装curl及node.js依赖
-    apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y nodejs && \
-    # 清理apt缓存，减小镜像体积
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Download Go dependencies
+RUN go mod download
 
-# 复制本地文件到容器（需确保构建上下文包含bcc-master和modules目录）
-# 注意：若bcc-master需从源码编译，需提前将源码放置于构建上下文
+# Install bpf2go tool for eBPF code generation
+RUN go install github.com/cilium/ebpf/cmd/bpf2go@latest
 
-# Step2: 配置bcc环境
-# WORKDIR /bcc-master
-WORKDIR /
-RUN cd ./bcc-master && apt-get update && \
-    # 安装bcc编译依赖
-    apt-get install -y zip bison build-essential cmake flex git libedit-dev \
-    libllvm14 llvm-14-dev libclang-14-dev python3 zlib1g-dev libelf-dev \
-    libfl-dev python3-setuptools liblzma-dev libdebuginfod-dev arping netperf \
-    iperf python3-pip linux-tools-$(uname -r) iproute2 linux-headers-$(uname -r) && \
-    # 创建构建目录并编译安装bcc
-    mkdir ./build && cd ./build && \
-    cmake .. && make && make install && \
-    # 配置Python3支持
-    cmake -DPYTHON_CMD=python3 .. && \
-    pushd src/python/ && make && make install && popd && \
-    # 清理apt缓存
-    apt-get clean && rm -rf /var/lib/apt/lists/* 
+# 安装PostgreSQL客户端
+RUN apt-get update && apt-get install -y postgresql-client
 
-    
-COPY ./* /PacketScope-main/modules/Tracer/
-# Step3: 配置PacketScope依赖
-# WORKDIR PacketScope-main/modules/Tracer
-RUN pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple && \
-    pip install -r PacketScope-main/modules/Tracer/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-# WORKDIR PacketScope-main/modules/Analyzer 
-# 设置默认工作目录
-# WORKDIR PacketScope-main/modules/Tracer
-CMD ["/bin/bash", "-c", "mount -t tracefs nodev /sys/kernel/tracing && ulimit -n 65535 && python3 PacketScope-main/modules/Tracer/flaskServerMain.py"]
+# 配置 PostgreSQL 环境变量
+ENV PG_HOST=localhost \
+    PG_PORT=5432 \
+    PG_USER=postgres \
+    PG_PASSWORD=password \
+    PG_DBNAME_PACKET=tcxprober \
+    PG_DBNAME_FUNCTION=functioninfo \
+    PG_SSLMODE=disable
 
-# 容器启动命令（根据实际需求补充，例如启动服务脚本）
+# 启动PostgreSQL服务
+RUN service postgresql start
 
+# 保证PostgreSQL的正常运行，配置用户权限
+RUN psql -h $PG_HOST -p $PG_PORT -U $PG_USER -c "ALTER USER $PG_USER WITH PASSWORD '$PG_PASSWORD';"
 
+# 创建PostgreSQL数据库
+RUN createdb -h $PG_HOST -p $PG_PORT -U $PG_USER $PG_DBNAME_PACKET
+RUN createdb -h $PG_HOST -p $PG_PORT -U $PG_USER $PG_DBNAME_FUNCTION
 
-# 注意：mount命令在Dockerfile构建阶段无法执行，需在容器运行时手动挂载
-# 建议运行时通过--privileged参数及以下命令挂载：
-# mount -t tracefs nodev /sys/kernel/tracing
-# ulimit -n 65535
-# python3 flaskServerMain.py
+# make 编译模块
+RUN make prepare && make && make server
+
+# 先后启动 analyzer 和 qserver
+CMD ["./analyzer", "./qserver"]
