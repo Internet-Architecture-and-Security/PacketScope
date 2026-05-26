@@ -48,4 +48,4 @@ modules/Analyzer/Calculator/__pycache__
 modules/Analyzer/Calculator/.venv
 
 
-testscript
+testscript__pycache__/

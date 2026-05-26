@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "packetscope-tracer": {
+      "command": "/path/to/packetscope/skills/tracer/start.sh",
+      "env": {
+        "TRACER_API_URL": "http://localhost:8000"
+      }
+    }
+  }
+}

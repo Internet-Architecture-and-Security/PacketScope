@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "packetscope-tracer": {
+      "url": "http://localhost:8013/sse"
+    }
+  }
+}
