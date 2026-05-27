@@ -31,12 +31,12 @@ PacketScope Analyzer Server 提供了一组 RESTful API 接口，用于查询和
 **请求参数：**
 | 参数名 | 类型 | 描述 | 必填 |
 |--------|------|------|------|
-| srcip | string | 源 IP 地址 | 否 |
-| dstip | string | 目标 IP 地址 | 否 |
-| srcport | string | 源端口 | 否 |
-| dstport | string | 目标端口 | 否 |
-| ipver | string | IP 版本（"4" 或 "6"） | 否 |
-| count | string | 返回的数据包数量 | 否 |
+| srcip | string | 源 IP 地址 | 是 |
+| dstip | string | 目标 IP 地址 | 是 |
+| srcport | string | 源端口 | 是 |
+| dstport | string | 目标端口 | 是 |
+| ipver | string | IP 版本（"4" 或 "6"） | 是 |
+| count | string | 返回的数据包数量 | 是 |
 
 **响应示例：**
 ```json
@@ -65,12 +65,12 @@ PacketScope Analyzer Server 提供了一组 RESTful API 接口，用于查询和
 **请求参数：**
 | 参数名 | 类型 | 描述 | 必填 |
 |--------|------|------|------|
-| srcip | string | 源 IP 地址 | 否 |
-| dstip | string | 目标 IP 地址 | 否 |
-| srcport | string | 源端口 | 否 |
-| dstport | string | 目标端口 | 否 |
-| count | string | 返回的映射数量 | 否 |
-| timeDownLimit | string | 最小时间戳 | 否 |
+| srcip | string | 源 IP 地址 | 是 |
+| dstip | string | 目标 IP 地址 | 是 |
+| srcport | string | 源端口 | 是 |
+| dstport | string | 目标端口 | 是 |
+| count | string | 返回的映射数量 | 是 |
+| timeDownLimit | string | 最小时间戳 | 是 |
 
 **响应示例：**
 ```json
@@ -113,10 +113,10 @@ PacketScope Analyzer Server 提供了一组 RESTful API 接口，用于查询和
 **请求参数：**
 | 参数名 | 类型 | 描述 | 必填 |
 |--------|------|------|------|
-| srcip | string | 源 IP 地址 | 否 |
-| dstip | string | 目标 IP 地址 | 否 |
-| srcport | string | 源端口 | 否 |
-| dstport | string | 目标端口 | 否 |
+| srcip | string | 源 IP 地址 | 是 |
+| dstip | string | 目标 IP 地址 | 是 |
+| srcport | string | 源端口 | 是 |
+| dstport | string | 目标端口 | 是 |
 
 **响应示例：**
 ```json
@@ -141,10 +141,10 @@ PacketScope Analyzer Server 提供了一组 RESTful API 接口，用于查询和
 **请求参数：**
 | 参数名 | 类型 | 描述 | 必填 |
 |--------|------|------|------|
-| srcip | string | 源 IP 地址 | 否 |
-| dstip | string | 目标 IP 地址 | 否 |
-| srcport | string | 源端口 | 否 |
-| dstport | string | 目标端口 | 否 |
+| srcip | string | 源 IP 地址 | 是 |
+| dstip | string | 目标 IP 地址 | 是 |
+| srcport | string | 源端口 | 是 |
+| dstport | string | 目标端口 | 是 |
 
 **响应示例：**
 ```json
@@ -169,11 +169,11 @@ PacketScope Analyzer Server 提供了一组 RESTful API 接口，用于查询和
 **请求参数：**
 | 参数名 | 类型 | 描述 | 必填 |
 |--------|------|------|------|
-| srcip | string | 源 IP 地址 | 否 |
-| dstip | string | 目标 IP 地址 | 否 |
-| srcport | string | 源端口 | 否 |
-| dstport | string | 目标端口 | 否 |
-| ipver | string | IP 版本（"4" 或 "6"） | 否 |
+| srcip | string | 源 IP 地址 | 是 |
+| dstip | string | 目标 IP 地址 | 是 |
+| srcport | string | 源端口 | 是 |
+| dstport | string | 目标端口 | 是 |
+| ipver | string | IP 版本（"4" 或 "6"） | 是 |
 
 **响应示例：**
 ```json
