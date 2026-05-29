@@ -85,12 +85,12 @@ http://localhost:8010
 - **Endpoint**: `POST /GetRecentPacket`
 - **Description**: Get recent network packets with optional filters
 - **Request Body**: form-data
-  - `srcip`: Source IP address (optional)
-  - `dstip`: Destination IP address (optional)
-  - `srcport`: Source port (optional)
-  - `dstport`: Destination port (optional)
+  - `srcip`: Source IP address 
+  - `dstip`: Destination IP address 
+  - `srcport`: Source port 
+  - `dstport`: Destination port 
   - `ipver`: IP version ("4" or "6", optional)
-  - `count`: Number of packets to return (optional)
+  - `count`: Number of packets to return 
 
 **Response**:
 
@@ -116,10 +116,10 @@ http://localhost:8010
 - **Endpoint**: `POST /QueryPacket`
 - **Description**: Query packets matching specific criteria
 - **Request Body**: form-data
-  - `srcip`: Source IP address (optional)
-  - `dstip`: Destination IP address (optional)
-  - `srcport`: Source port (optional)
-  - `dstport`: Destination port (optional)
+  - `srcip`: Source IP address 
+  - `dstip`: Destination IP address 
+  - `srcport`: Source port 
+  - `dstport`: Destination port 
   - `ipver`: IP version ("4" or "6", optional)
 
 **Response**:
@@ -144,12 +144,12 @@ http://localhost:8010
 - **Endpoint**: `POST /GetRecentMap`
 - **Description**: Get recent function call mappings
 - **Request Body**: form-data
-  - `srcip`: Source IP address (optional)
-  - `dstip`: Destination IP address (optional)
-  - `srcport`: Source port (optional)
-  - `dstport`: Destination port (optional)
-  - `count`: Number of entries to return (optional)
-  - `timeDownLimit`: Minimum timestamp (optional)
+  - `srcip`: Source IP address 
+  - `dstip`: Destination IP address 
+  - `srcport`: Source port 
+  - `dstport`: Destination port 
+  - `count`: Number of entries to return 
+  - `timeDownLimit`: Minimum timestamp 
 
 **Response**:
 
@@ -186,10 +186,10 @@ http://localhost:8010
 - **Endpoint**: `POST /QueryFuncSend`
 - **Description**: Query function calls related to send operations
 - **Request Body**: form-data
-  - `srcip`: Source IP address (optional)
-  - `dstip`: Destination IP address (optional)
-  - `srcport`: Source port (optional)
-  - `dstport`: Destination port (optional)
+  - `srcip`: Source IP address 
+  - `dstip`: Destination IP address 
+  - `srcport`: Source port 
+  - `dstport`: Destination port 
 
 **Response**:
 
@@ -211,10 +211,10 @@ http://localhost:8010
 - **Endpoint**: `POST /QueryFuncRecv`
 - **Description**: Query function calls related to receive operations
 - **Request Body**: form-data
-  - `srcip`: Source IP address (optional)
-  - `dstip`: Destination IP address (optional)
-  - `srcport`: Source port (optional)
-  - `dstport`: Destination port (optional)
+  - `srcip`: Source IP address 
+  - `dstip`: Destination IP address 
+  - `srcport`: Source port 
+  - `dstport`: Destination port 
 
 **Response**:
 
