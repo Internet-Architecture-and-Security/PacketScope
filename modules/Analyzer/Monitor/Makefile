@@ -12,9 +12,8 @@ BPF_CFLAGS=-O2 -g -Wall -Werror -target bpf -D__TARGET_ARCH_$(ARCH) -c
 
 # 默认目标
 all: ./kbatch/$(BPF_BATCH_PROGRAM)_bpfel.go ./tcxprober/$(BPF_TCX_PROGRAM)_bpfel.go analyzer server
-	
 prepare: ./base/baserun.go ./base/main.go ./base/ReadBTFandGetItsMember.go ./base/TransUtilSec.go ./base/translateJSON.go
-    go mod tidy
+	go mod tidy
 	cd ./base && go mod tidy && go build -o ../baserun ./baserun.go ./main.go ./ReadBTFandGetItsMember.go ./TransUtilSec.go ./translateJSON.go
 	./baserun
 

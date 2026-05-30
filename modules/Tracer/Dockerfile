@@ -2,9 +2,7 @@
 FROM python:3.11-slim
 
 # 设置环境变量
-ENV DEBIAN_FRONTEND=noninteractive \
-    PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
-    PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
+ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
@@ -31,11 +29,10 @@ RUN apt-get update && \
 # 复制 Tracer 模块代码
 COPY ./ /app
 
-# 安装 Python 依赖（使用清华源）
+# 安装 Python 依赖
 RUN if [ -f requirements.txt ]; then \
         pip install --no-cache-dir -r requirements.txt \
-            -i https://pypi.tuna.tsinghua.edu.cn/simple \
-            --trusted-host pypi.tuna.tsinghua.edu.cn; \
+            -i https://pypi.org/simple/; \
     fi
 
 # 暴露端口
