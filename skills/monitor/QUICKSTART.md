@@ -5,7 +5,7 @@
 ### 1. 安装依赖
 
 ```bash
-cd /home/p/桌面/PacketScopen/skills/monitor
+cd skills/monitor
 pip install -r requirements.txt
 ```
 
@@ -38,7 +38,7 @@ MCP 客户端自动管理服务器进程。
 {
   "mcpServers": {
     "packetscope-monitor": {
-      "command": "/home/p/桌面/PacketScopen/skills/monitor/start.sh",
+      "command": "/path/to/PacketScope/skills/monitor/start.sh",
       "env": {
         "MONITOR_API_URL": "http://localhost:8010"
       }
@@ -57,7 +57,7 @@ MCP 客户端自动管理服务器进程。
 **启动服务器：**
 
 ```bash
-cd /home/p/桌面/PacketScopen/skills/monitor
+cd skills/monitor
 ./start-http.sh
 ```
 
@@ -84,7 +84,7 @@ cd /home/p/桌面/PacketScopen/skills/monitor
 如果 Monitor API 没有运行，先启动它：
 
 ```bash
-cd /home/p/桌面/PacketScopen/modules/Analyzer/Monitor/server
+cd modules/Analyzer/Monitor/server
 go run main.go
 ```
 

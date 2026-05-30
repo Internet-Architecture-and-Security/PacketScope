@@ -66,7 +66,7 @@ conn-tracker/
 
 ### Prerequisites
 - Linux kernel 5.4+ (with eBPF/XDP support)
-- Go 1.19+
+- Go >= 1.22
 - libbpf development libraries
 - clang compiler
 - OpenAI API key (optional, for AI functionality)
@@ -311,7 +311,7 @@ curl -X POST http://localhost:8080/api/filters \
   }'
 ```
 
-**8. Block ICMP Error Messages Containing UDP Traffic:**
+**3. Block ICMP Error Messages Containing UDP Traffic:**
 ```bash
 curl -X POST http://localhost:8080/api/filters \
   -H "Content-Type: application/json" \
@@ -326,7 +326,7 @@ curl -X POST http://localhost:8080/api/filters \
   }'
 ```
 
-**9. Advanced ICMP Filtering - Block Specific Inner UDP Ports:**
+**4. Advanced ICMP Filtering - Block Specific Inner UDP Ports:**
 ```bash
 # Block ICMP errors containing DNS traffic (inner UDP port 53)
 curl -X POST http://localhost:8080/api/filters \
@@ -354,7 +354,7 @@ curl -X POST http://localhost:8080/api/filters \
   }'
 ```
 
-**10. Block All ICMP Echo Requests (Comprehensive Ping Block):**
+**5. Block All ICMP Echo Requests (Comprehensive Ping Block):**
 ```bash
 curl -X POST http://localhost:8080/api/filters \
   -H "Content-Type: application/json" \
@@ -368,7 +368,7 @@ curl -X POST http://localhost:8080/api/filters \
   }'
 ```
 
-**4. Block Dangerous Ports - Remote Access:**
+**6. Block Dangerous Ports - Remote Access:**
 ```bash
 curl -X POST http://localhost:8080/api/filters \
   -H "Content-Type: application/json" \
@@ -395,7 +395,7 @@ curl -X POST http://localhost:8080/api/filters \
   }'
 ```
 
-**5. Block Dangerous Ports - File Sharing:**
+**7. Block Dangerous Ports - File Sharing:**
 ```bash
 curl -X POST http://localhost:8080/api/filters \
   -H "Content-Type: application/json" \
@@ -422,7 +422,7 @@ curl -X POST http://localhost:8080/api/filters \
   }'
 ```
 
-**6. Block Dangerous Ports - Database Services:**
+**8. Block Dangerous Ports - Database Services:**
 ```bash
 curl -X POST http://localhost:8080/api/filters \
   -H "Content-Type: application/json" \
@@ -449,7 +449,7 @@ curl -X POST http://localhost:8080/api/filters \
   }'
 ```
 
-**7. Block Dangerous Ports - Remote Desktop:**
+**9. Block Dangerous Ports - Remote Desktop:**
 ```bash
 curl -X POST http://localhost:8080/api/filters \
   -H "Content-Type: application/json" \
@@ -828,7 +828,7 @@ fi
 #### Compilation Errors
 - Ensure Linux kernel headers are installed
 - Verify clang and libbpf development packages
-- Check Go version (1.19+ required)
+- Check Go version (1.22+ required)
 
 #### API Connection Issues
 ```bash

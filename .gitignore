@@ -49,3 +49,6 @@ modules/Analyzer/Calculator/.venv
 
 
 testscript__pycache__/
+
+# IDE tool configs
+**/# Tools Configuration.md

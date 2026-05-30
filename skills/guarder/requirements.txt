@@ -1,0 +1,3 @@
+# PacketScope Guarder Skill Dependencies
+
+requests>=2.31.0

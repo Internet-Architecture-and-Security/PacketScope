@@ -171,6 +171,9 @@ client.update_ai_config(config)
 packetscope-guarder-skill/
 ├── SKILL.md              # Skill 文档（API 参考）
 ├── guarder_client.py     # Python 客户端库
+├── QUICKSTART.md         # 快速入门指南
+├── PROMPTS.md            # 调用提示词组大全
+├── requirements.txt      # Python 依赖
 └── README.md             # 使用说明
 ```
 

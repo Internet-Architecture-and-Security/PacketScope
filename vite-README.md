@@ -1,54 +1,59 @@
-# React + TypeScript + Vite
+# PacketScope Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Tech Stack
 
-Currently, two official plugins are available:
+- **React** — UI framework
+- **TypeScript** — Type-safe JavaScript
+- **Vite** — Build tool and dev server
+- **Tailwind CSS** — Utility-first CSS framework
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Development
 
-## Expanding the ESLint configuration
+```bash
+# Install dependencies
+npm install
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+# Start dev server (with HMR)
+npm run dev
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-});
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Lint
+npm run lint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Docker
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
+The frontend is built and served via Docker Compose:
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-});
+```bash
+docker compose up app
 ```
+
+Production build runs on port 4173.
+
+## Project Structure
+
+```
+src/
+├── components/     # React components
+├── pages/          # Page-level components
+├── assets/         # Static assets
+├── App.tsx         # Root component
+└── main.tsx        # Entry point
+```
+
+## API Integration
+
+The frontend connects to backend services:
+
+| Service | Port | Endpoint |
+|---------|------|----------|
+| Monitor API | 8010 | `/GetRecentPacket`, `/QuerySockList`, etc. |
+| Calculator API | 8020 | WebSocket |
+| Tracer API | 8000 | `/api/trace`, `/api/analyze`, etc. |
+| Guarder API | 8080 | `/api/connections`, `/api/filters`, etc. |
