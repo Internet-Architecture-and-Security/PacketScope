@@ -684,7 +684,8 @@ def run():
     # 运行服务器
     try:
         # 使用 streamable-http 传输方式（这是功能最全的 HTTP 传输）
-        mcp.run(transport="streamable-http")
+        transport = os.environ.get("MONITOR_MCP_TRANSPORT", "streamable-http")
+        mcp.run(transport=transport)
     except KeyboardInterrupt:
         print()
         print_status("正在关闭服务器...", "info")

@@ -52,3 +52,18 @@ testscript__pycache__/
 
 # IDE tool configs
 **/# Tools Configuration.md
+
+# Build artifacts
+skills/monitor/.deps_installed
+skills/monitor/__pycache__/
+skills/tracer/.deps_installed
+skills/tracer/__pycache__/
+
+# Runtime data
+modules/Tracer/data/history/*.json
+
+# Claude Code local config
+.claude/
+
+# Third-party BCC library (large)
+modules/Analyzer/Monitor/bcc/

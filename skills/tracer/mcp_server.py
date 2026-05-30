@@ -535,7 +535,8 @@ def run():
 
     # 运行服务器
     try:
-        mcp.run(transport="streamable-http")
+        transport = os.environ.get("TRACER_MCP_TRANSPORT", "streamable-http")
+        mcp.run(transport=transport)
     except KeyboardInterrupt:
         print()
         print_status("正在关闭服务器...", "info")

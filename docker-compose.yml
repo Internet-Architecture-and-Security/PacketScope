@@ -1,68 +1,116 @@
 version: '3.8'
 
 services:
-  # 根目录主服务
+  # 前端服务
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
     container_name: packetscope_app
     ports:
       - "4173:4173"
-    # volumes:
-    #   - ./:/app/
     depends_on:
       - analyzer-monitor
       - analyzer-calculator
       - guarder
       - tracer
+    restart: unless-stopped
 
+  # Analyzer - Monitor 模块（eBPF + PostgreSQL）
   analyzer-monitor:
     build:
       context: ./modules/Analyzer/Monitor
       dockerfile: Dockerfile
+      network: host
     image: packetscope-analyzer-monitor:v1.0
     container_name: packetscope-analyzer-monitor
     privileged: true
-    network_mode: host   # ✅ 使用宿主机网络
+    network_mode: host
+    environment:
+      # qserver 使用的 PG_* 变量
+      PG_HOST: localhost
+      PG_PORT: "5432"
+      PG_USER: postgres
+      PG_PASSWORD: password
+      PG_DBNAME_PACKET: tcxprober
+      PG_DBNAME_FUNCTION: functioninfo
+      PG_SSLMODE: disable
+      # analyzer/kbatch 使用的 POSTGRES_* 变量
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      # POSTGRES_DB 不设置，让 tcxprober(kbatch) 各自使用默认值
+      # tcxprober 默认写入 tcxprober 库，kbatch 默认写入 functioninfo 库
+      # 网卡自动检测（空值=自动检测）
+      IFACE: ""
     volumes:
-      - ./modules/Analyzer/Monitor:/monitor
+      - /sys/kernel/btf:/sys/kernel/btf:ro
+      - /sys/kernel/debug:/sys/kernel/debug:ro
+      - packetscope-pgdata:/var/lib/postgresql
+    restart: unless-stopped
+
+  # Analyzer - Calculator 模块（eBPF WebSocket）
   analyzer-calculator:
     build:
       context: ./modules/Analyzer/Calculator
       dockerfile: Dockerfile
+      network: host
+    image: packetscope-analyzer-calculator:v1.0
     container_name: packetscope-analyzer-calculator
     privileged: true
-    network_mode: host   # ✅ 使用宿主机网络
+    network_mode: host
     volumes:
-      - ./modules/Analyzer/Calculator:/calculator
+      - /sys/kernel/btf:/sys/kernel/btf:ro
+      - /sys/kernel/debug:/sys/kernel/debug:ro
     depends_on:
       - analyzer-monitor
-  
+    restart: unless-stopped
+
+  # Guarder 模块（XDP + AI 安全检测）
   guarder:
     build:
       context: ./modules/Guarder
-      dockerfile: Dockerfile 
+      dockerfile: Dockerfile
+      network: host
+    image: packetscope-guarder:v1.0
     container_name: packetscope-guarder
-    privileged: true           # 如果涉及 eBPF/BPF，可能需要特权模式
-    network_mode: host   # ✅ 使用宿主机网络
+    privileged: true
+    network_mode: host
+    environment:
+      IFACE: ""
     volumes:
-      - ./modules/Guarder:/guarder
-    ports:
-      - "8080:8080"
-  
+      - /sys/kernel/btf:/sys/kernel/btf:ro
+      - /sys/kernel/debug:/sys/kernel/debug:ro
+    command: >
+      bash -c '
+      IFACE="$${IFACE:-$$(ip -br route show default | awk "{for(i=1;i<=NF;i++) if($$i==\"dev\") print $$(i+1)}")}";
+      IFACE="$${IFACE:-eth0}";
+      echo "Using network interface: $$IFACE";
+      ./conn-tracker -iface "$$IFACE" -interval 5 -api ":8080"
+      '
+    restart: unless-stopped
+
+  # Tracer 模块（路由追踪）
   tracer:
-    build:                       # 或使用 image: packetscope-tracer
+    build:
       context: ./modules/Tracer
       dockerfile: Dockerfile
+      network: host
     container_name: packetscope-tracer
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
+    privileged: true
+    network_mode: host
+    environment:
+      PIP_INDEX_URL: ""
+      PIP_TRUSTED_HOST: ""
     volumes:
-      - ./modules/Tracer/history:/app/history   # 挂载历史记录目录
-      - ./modules/Tracer/GeoLite2-City.mmdb:/app/GeoLite2-City.mmdb
-      - ./modules/Tracer/GeoLite2-ASN.mmdb:/app/GeoLite2-ASN.mmdb
-      - ./modules/Tracer/risky_ips.json:/app/risky_ips.json
+      - ./modules/Tracer/data/geoip:/app/data/geoip:ro
+      - ./modules/Tracer/data/history:/app/data/history
+      - ./modules/Tracer/data/threat:/app/data/threat
+    restart: unless-stopped
 
-  
+
+volumes:
+  packetscope-pgdata:
+    driver: local
