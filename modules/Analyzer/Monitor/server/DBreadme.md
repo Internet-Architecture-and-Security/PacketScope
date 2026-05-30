@@ -1,3 +1,5 @@
+> **📄 Note**: This document covers the legacy server's database setup. For current database configuration, see [../README.md](../README.md).
+
 # PostgreSQL数据库安装与配置说明
 
 ## 1. 安装PostgreSQL
@@ -60,13 +62,13 @@ ALTER USER qserver_user CREATEDB;
 ### 创建数据库
 ```sql
 -- 创建数据包数据库
-CREATE DATABASE packetinfo;
+CREATE DATABASE tcxprober;
 
 -- 创建函数信息数据库
 CREATE DATABASE functioninfo;
 
 -- 授权用户访问数据库
-GRANT ALL PRIVILEGES ON DATABASE packetinfo TO qserver_user;
+GRANT ALL PRIVILEGES ON DATABASE tcxprober TO qserver_user;
 GRANT ALL PRIVILEGES ON DATABASE functioninfo TO qserver_user;
 ```
 
@@ -76,9 +78,9 @@ GRANT ALL PRIVILEGES ON DATABASE functioninfo TO qserver_user;
 
 ## 3. 创建表结构
 
-### 连接到packetinfo数据库
+### 连接到tcxprober数据库
 ```bash
-sudo -u postgres psql -d packetinfo
+sudo -u postgres psql -d tcxprober
 ```
 
 ### 创建IPv4数据包表
@@ -170,7 +172,7 @@ CREATE INDEX idx_functioncall_isret ON functionCall(isRet);
 | PG_PORT | 5432 | PostgreSQL服务器端口 |
 | PG_USER | postgres | 数据库用户名 |
 | PG_PASSWORD | 空 | 数据库密码 |
-| PG_DBNAME_PACKET | packetinfo | 数据包数据库名 |
+| PG_DBNAME_PACKET | tcxprober | 数据包数据库名 |
 | PG_DBNAME_FUNCTION | functioninfo | 函数信息数据库名 |
 | PG_SSLMODE | disable | SSL连接模式 |
 
@@ -180,7 +182,7 @@ export PG_HOST=localhost
 export PG_PORT=5432
 export PG_USER=postgres
 export PG_PASSWORD=your_password
-export PG_DBNAME_PACKET=packetinfo
+export PG_DBNAME_PACKET=tcxprober
 export PG_DBNAME_FUNCTION=functioninfo
 export PG_SSLMODE=disable
 ```
@@ -236,7 +238,7 @@ go build
 sudo apt install pgloader
 
 # 迁移数据包数据库
-pgloader sqlite://./.cache/PacketInfo.db postgresql://qserver_user:your_password@localhost/packetinfo
+pgloader sqlite://./.cache/PacketInfo.db postgresql://qserver_user:your_password@localhost/tcxprober
 
 # 迁移函数信息数据库
 pgloader sqlite://./.cache/FunctionInfo.db postgresql://qserver_user:your_password@localhost/functioninfo

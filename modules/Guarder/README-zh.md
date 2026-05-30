@@ -63,7 +63,7 @@ conn-tracker/
 
 ### 系统要求
 - Linux内核 5.4+ (支持eBPF/XDP)
-- Go 1.19+
+- Go >= 1.22
 - libbpf开发库
 - clang编译器
 - OpenAI API密钥 (可选，用于AI功能)
@@ -264,37 +264,9 @@ curl http://localhost:8080/api/stats
 curl http://localhost:8080/api/filters
 ```
 
-#### 添加新过滤规则
+##### 内置安全过滤器示例
 
-**封禁可疑IP:**
-```bash
-curl -X POST http://localhost:8080/api/filters \
-  -H "Content-Type: application/json" \
-  -d '{
-    "rule_type": "basic",
-    "src_ip": "192.168.1.100",
-    "action": "drop",
-    "enabled": true,
-    "comment": "封禁可疑IP"
-  }'
-```
-
-**阻止SYN扫描:**
-```bash
-curl -X POST http://localhost:8080/api/filters \
-  -H "Content-Type: application/json" \
-  -d '{
-    "rule_type": "tcp",
-    "protocol": "tcp",
-    "tcp_flags": 2,
-    "tcp_flags_mask": 2,
-    "action": "drop",
-    "enabled": true,
-    "comment": "阻止SYN扫描"
-  }'
-```
-
-**阻止ICMP Ping:**
+**1. 封禁所有ICMP Ping请求:**
 ```bash
 curl -X POST http://localhost:8080/api/filters \
   -H "Content-Type: application/json" \
@@ -304,8 +276,200 @@ curl -X POST http://localhost:8080/api/filters \
     "icmp_type": 8,
     "icmp_code": 0,
     "action": "drop",
+    "enabled": false,
+    "comment": "封禁所有ICMP ping请求（Echo Request）"
+  }'
+```
+
+**2. 封禁ICMP目标不可达和源抑制消息:**
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "icmp",
+    "protocol": "icmp",
+    "icmp_type": 3,
+    "action": "drop",
     "enabled": true,
-    "comment": "阻止ICMP ping请求"
+    "comment": "封禁ICMP目标不可达消息"
+  }'
+```
+
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "icmp",
+    "protocol": "icmp",
+    "icmp_type": 4,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁ICMP源抑制消息"
+  }'
+```
+
+**3. 封禁包含UDP流量的ICMP错误消息:**
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "icmp",
+    "protocol": "icmp",
+    "icmp_type": 3,
+    "inner_protocol": "udp",
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁包含内部UDP数据包的ICMP目标不可达消息"
+  }'
+```
+
+**4. 高级ICMP过滤 - 封禁特定内部UDP端口:**
+```bash
+# 封禁包含DNS流量的ICMP错误（内部UDP端口53）
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "icmp",
+    "protocol": "icmp",
+    "icmp_type": 3,
+    "inner_protocol": "udp",
+    "inner_dst_ip": "",
+    "comment": "封禁暴露DNS查询的ICMP错误消息"
+  }'
+
+# 封禁包含内部UDP的ICMP超时消息（traceroute检测）
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "icmp",
+    "protocol": "icmp",
+    "icmp_type": 11,
+    "inner_protocol": "udp",
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁UDP traceroute尝试（ICMP超时）"
+  }'
+```
+
+**5. 封禁所有ICMP回显请求（综合Ping封禁）:**
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "icmp",
+    "protocol": "icmp",
+    "icmp_type": 8,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁所有ICMP回显请求（综合ping封禁）"
+  }'
+```
+
+**6. 封禁危险端口 - 远程访问:**
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "tcp",
+    "protocol": "tcp",
+    "dst_port": 23,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁Telnet（不安全的远程访问）"
+  }'
+```
+
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "tcp",
+    "protocol": "tcp",
+    "dst_port": 135,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁RPC端点映射器（Windows漏洞）"
+  }'
+```
+
+**7. 封禁危险端口 - 文件共享:**
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "tcp",
+    "protocol": "tcp",
+    "dst_port": 445,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁SMB/CIFS（勒索软件传播途径）"
+  }'
+```
+
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "tcp",
+    "protocol": "tcp",
+    "dst_port": 139,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁NetBIOS会话服务"
+  }'
+```
+
+**8. 封禁危险端口 - 数据库服务:**
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "tcp",
+    "protocol": "tcp",
+    "dst_port": 1433,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁MS SQL Server（外部访问）"
+  }'
+```
+
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "tcp",
+    "protocol": "tcp",
+    "dst_port": 3306,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁MySQL（外部访问）"
+  }'
+```
+
+**9. 封禁危险端口 - 远程桌面:**
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "tcp",
+    "protocol": "tcp",
+    "dst_port": 3389,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁RDP（暴力破解目标）"
+  }'
+```
+
+```bash
+curl -X POST http://localhost:8080/api/filters \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_type": "tcp",
+    "protocol": "tcp",
+    "dst_port": 5900,
+    "action": "drop",
+    "enabled": true,
+    "comment": "封禁VNC（不安全的远程访问）"
   }'
 ```
 
@@ -604,7 +768,7 @@ fi
 #### 编译错误
 - 确保安装了Linux内核头文件
 - 验证clang和libbpf开发包
-- 检查Go版本（需要1.19+）
+- 检查Go版本（需要1.22+）
 
 #### API连接问题
 ```bash
@@ -635,6 +799,174 @@ sudo ./conn-tracker -iface eth0
 - **网络协议**: IPv4, TCP, UDP, ICMP
 - **最大连接**: 支持1M+并发追踪
 - **过滤规则**: 支持1000+规则
+
+## 📦 PCAP文件分析
+
+### 概述
+PCAP分析功能允许您上传并分析数据包捕获文件，使用AI驱动的威胁检测。这可以对网络流量进行离线分析，以识别安全威胁、异常和攻击模式。
+
+### 功能特性
+- **协议分析**: 自动检测协议（TCP、UDP、ICMP、HTTP、HTTPS、DNS、SSH等）
+- **流量统计**: 源/目标IP、端口、数据包计数排名
+- **异常检测**: SYN洪水检测、端口扫描模式识别
+- **AI驱动分析**: 使用大语言模型识别威胁并提供建议
+- **结构化报告**: JSON格式输出，包含严重级别、威胁类型和可操作建议
+
+### 前提条件
+
+#### 启用PCAP支持编译
+
+```bash
+# 安装libpcap开发库
+sudo apt-get install libpcap-dev
+
+# 启用PCAP支持编译
+cd modules/Guarder
+go build -tags pcap -o conn-tracker ./cmd/conn-tracker
+```
+
+### API使用方法
+
+#### 分析PCAP文件
+
+```bash
+curl -X POST http://localhost:8080/api/pcap/analyze \
+  -F "file=@/path/to/capture.pcap" \
+  -F "analyze_type=security" \
+  -F "custom_prompt=重点关注识别恶意软件C2通信"
+```
+
+**参数说明:**
+- `file`: 要分析的PCAP或PCAPNG文件（必需）
+- `analyze_type`: 分析类型 - `security`（安全）、`performance`（性能）或 `custom`（自定义）（默认: security）
+- `custom_prompt`: AI分析的附加指令（可选）
+
+**响应示例:**
+```json
+{
+  "success": true,
+  "analysis": "网络流量分析发现潜在的端口扫描活动...",
+  "threats": [
+    {
+      "severity": "high",
+      "type": "Port Scanning",
+      "description": "检测到来自192.168.1.100的顺序端口扫描，目标端口为22、80、443、3306",
+      "source_ip": "192.168.1.100",
+      "target_ip": "10.0.0.5",
+      "target_port": 0
+    },
+    {
+      "severity": "medium",
+      "type": "SYN Flood",
+      "description": "检测到大量未完成握手的SYN数据包",
+      "source_ip": "192.168.1.105",
+      "target_ip": "10.0.0.1",
+      "target_port": 80
+    }
+  ],
+  "statistics": {
+    "total_packets": 5000,
+    "total_bytes": 2450000,
+    "duration": "2m30s",
+    "protocols": {
+      "TCP": 3500,
+      "UDP": 1200,
+      "ICMP": 300
+    },
+    "top_source_ips": [
+      {"ip": "192.168.1.100", "count": 1500},
+      {"ip": "192.168.1.105", "count": 1200}
+    ],
+    "top_ports": [
+      {"port": 80, "protocol": "TCP", "count": 2000},
+      {"port": 443, "protocol": "TCP", "count": 1500}
+    ],
+    "tcp_flags": {
+      "syn": 1800,
+      "ack": 1600,
+      "fin": 800,
+      "rst": 200
+    },
+    "connections": 450
+  },
+  "suggestions": [
+    "在防火墙层面封禁源IP 192.168.1.100",
+    "对SYN数据包实施速率限制",
+    "在目标服务器上启用SYN Cookie",
+    "调查192.168.1.105是否已被入侵"
+  ]
+}
+```
+
+### 分析类型
+
+#### 安全分析
+专注于识别安全威胁：
+- 端口扫描和侦察
+- SYN洪水和DDoS攻击
+- 恶意软件命令与控制（C2）通信
+- 暴力破解攻击
+- 数据泄露尝试
+
+```bash
+curl -X POST http://localhost:8080/api/pcap/analyze \
+  -F "file=@capture.pcap" \
+  -F "analyze_type=security" \
+  -F "custom_prompt=重点关注SSH暴力破解尝试"
+```
+
+#### 性能分析
+专注于网络性能问题：
+- 带宽消耗
+- 延迟问题
+- 网络瓶颈
+- 资源密集型流量
+
+```bash
+curl -X POST http://localhost:8080/api/pcap/analyze \
+  -F "file=@capture.pcap" \
+  -F "analyze_type=performance"
+```
+
+### Python客户端示例
+
+```python
+import requests
+
+def analyze_pcap(file_path, analyze_type="security", custom_prompt=""):
+    url = "http://localhost:8080/api/pcap/analyze"
+    
+    with open(file_path, 'rb') as f:
+        files = {'file': f}
+        data = {
+            'analyze_type': analyze_type,
+            'custom_prompt': custom_prompt
+        }
+        response = requests.post(url, files=files, data=data)
+    
+    return response.json()
+
+# 安全威胁分析
+result = analyze_pcap(
+    file_path="network_capture.pcap",
+    analyze_type="security",
+    custom_prompt="查找横向移动的迹象"
+)
+
+if result['success']:
+    print(f"发现 {len(result['threats'])} 个威胁:")
+    for threat in result['threats']:
+        print(f"  [{threat['severity'].upper()}] {threat['type']}: {threat['description']}")
+else:
+    print(f"分析失败: {result['error']}")
+```
+
+### 限制
+
+- 最大文件大小: 32MB（可在 `api.go` 中配置）
+- 每个文件最大处理数据包数: 5000（出于性能考虑）
+- 完整功能需要安装libpcap-dev
+- AI分析需要配置OpenAI API密钥
 
 ## 🤝 贡献指南
 

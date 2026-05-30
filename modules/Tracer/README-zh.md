@@ -1,5 +1,7 @@
 # Tracer v2
 
+中文 | [English](README.md)
+
 一个基于 Flask + MCP 的网络路径分析服务，集成实时 `traceroute` 路由追踪、地理与 ASN 查询、历史缓存记录、异常分析和 Spamhaus 恶意 IP 风险评估功能。
 
 ---
@@ -272,6 +274,8 @@ data/threat/risky_ips.json
 * `trace_target(target, use_cache=true)`
 * `analyze_target(target, use_cache=true)`
 * `get_history(target=None, limit=20)`
+* `get_trace_detail(target, hop_index, protocol="icmp")`
+* `compare_routes(target, limit=5)`
 * `health_check()`
 * `server_capabilities()`
 

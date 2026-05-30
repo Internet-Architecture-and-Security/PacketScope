@@ -1,95 +1,123 @@
 # Contribution Guide
 
-Welcome to contribute to this project! Please take a few minutes to read this guide before submitting issues or pull requests.
+Welcome to contribute to PacketScope! Please take a few minutes to read this guide before submitting issues or pull requests.
+
+## Development Environment
+
+### Prerequisites
+
+| Tool | Version | Used By |
+|------|---------|---------|
+| Go | >= 1.24 | Analyzer (Monitor, Calculator) |
+| Go | >= 1.22 | Guarder |
+| Python | >= 3.10 | Tracer, MCP Skills |
+| Docker | >= 20.10 | All modules |
+| Linux Kernel | >= 6.8 | Analyzer (eBPF fentry/bpf2go) |
+| Linux Kernel | >= 5.4 | Guarder (XDP) |
+
+### Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Internet-Architecture-and-Security/PacketScope.git
+   cd PacketScope
+   ```
+
+2. Start services with Docker:
+   ```bash
+   docker compose up --build
+   ```
+
+3. For individual module development, see each module's README:
+   - [Analyzer (Monitor + Calculator)](modules/Analyzer/README.md)
+   - [Tracer](modules/Tracer/README.md)
+   - [Guarder](modules/Guarder/README.md)
 
 ## Contribution Process
 
-1. Fork the project
+1. **Fork** the project
 
-   - Click the "Fork" button at the top right of the GitHub page
-   - This will create a copy of the project under your GitHub account
-
-2. Create your branch
-
+2. **Create your branch**
    ```bash
    git checkout -b feature/AmazingFeature
    ```
 
-   Branch naming suggestions:
+   Branch naming conventions:
+   - `feature/` — New feature
+   - `fix/` — Bug fix
+   - `docs/` — Documentation update
 
-   - feature/ New feature
-   - bugfix/ Bug fix
-   - hotfix/ Hotfix
-   - docs/ Documentation update
+   See [GitHub Flow](./.github/GITHUB_FLOW.md) for details.
 
-   See details in [github flow](./.github/GITHUB_FLOW.md)
-
-3. Commit your changes
-
+3. **Commit your changes**
    ```bash
-   git commit -m 'type(scope): short description'
+   git commit -m 'feat(scope): short description'
    ```
 
-   Commit message format:
+   Commit message format (Conventional Commits):
+   - `feat:` New feature
+   - `fix:` Bug fix
+   - `docs:` Documentation update
+   - `style:` Code formatting
+   - `refactor:` Code refactoring
+   - `test:` Test related
+   - `chore:` Build process or tooling changes
 
-   - feat: New feature
-   - fix: Bug fix
-   - docs: Documentation update
-   - style: Code formatting
-   - refactor: Code refactoring
-   - test: Test related
-   - chore: Build process or tooling changes
+   See [Git Commit Specification](./.github/GITCOMMIT.md) for details.
 
-   See details in [git commit specification](./.github/GITCOMMIT.md)
-
-4. Push to the branch
-
+4. **Push to the branch**
    ```bash
    git push origin feature/AmazingFeature
    ```
 
-5. Submit Pull Request
-   - Create a Pull Request on GitHub
+5. **Submit Pull Request**
    - Provide clear title and description
    - Link related issues (if any)
 
 ## Code Standards
 
-### General Standards
+### Go (Analyzer, Guarder)
 
-- Follow existing code style
-- Use meaningful variable and function names
-- Keep code clean and readable
-- Add necessary comments
+- Follow [Effective Go](https://go.dev/doc/effective_go) guidelines
+- Run `gofmt` before committing
+- Use `go vet` and `golangci-lint`
+- eBPF code: use `bpf2go` for C-to-Go compilation
+- Error handling: always check errors, wrap with context using `fmt.Errorf("...: %w", err)`
 
-### Language-Specific Standards
+### Python (Tracer, Skills)
 
-// ... Add specific standards based on project's programming language ...
+- Follow [PEP 8](https://peps.python.org/pep-0008/) style guide
+- Use type hints for function signatures
+- Dependencies: list in `requirements.txt`
+- MCP servers: use `FastMCP` framework
 
-### Commit Standards
+### eBPF
 
-- Use English for commit messages
-- Follow Conventional Commits specification
-- Examples:
-  - `feat(api): add user authentication endpoint`
-  - `fix(login): handle null pointer exception`
-  - `docs(readme): update installation instructions`
+- Use BTF-enabled kernel (6.8+ for fentry)
+- Prefer `bpf2go` (Go) or `BCC` (Python, legacy only)
+- Test with `bpftool` before integration
 
-## Development Process
+### Frontend (React + TypeScript + Vite)
 
-// ... Detailed instructions for setting up development environment ...
+- Follow existing project structure under `src/`
+- Use TypeScript strict mode
+- Run `npm run lint` before committing
+
+## Testing
+
+- Go modules: `go test ./...`
+- Python modules: `pytest` or module-specific test scripts
+- MCP Skills: see `skills/*/test/` directories
+- Integration: use Docker Compose to test full stack
 
 ## Code of Conduct
 
-We have a [Code of Conduct](./CODE_OF_CONDUCT.md) that we expect all contributors to follow. Please take a moment to read it to understand what is acceptable and what is not.
+We have a [Code of Conduct](./CODE_OF_CONDUCT.md) that we expect all contributors to follow.
 
 ## Getting Help
 
-If you have any questions, you can get help through:
+- Review project documentation in each module's `README.md`
+- Search existing [Issues](https://github.com/Internet-Architecture-and-Security/PacketScope/issues)
+- Ask questions in [Discussions](https://github.com/Internet-Architecture-and-Security/PacketScope/discussions)
 
-- Reviewing project documentation
-- Searching related issues
-- Asking questions in Discussions
-- Contacting project maintainers
-
-Thank you for your ❤️ contribution! Your participation is crucial to the project's development.
+Thank you for your contribution!

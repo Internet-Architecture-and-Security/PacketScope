@@ -1,5 +1,7 @@
 # Tracer v2
 
+[中文文档](README-zh.md) | English
+
 A Flask + MCP network path analysis service that combines real-time `traceroute`, geographic and ASN enrichment, history caching, anomaly analysis, and Spamhaus-based malicious IP risk scoring.
 
 ---
@@ -37,8 +39,8 @@ Tracer/
 ├── requirements.txt
 ├── start_server.sh                       # Start HTTP service
 ├── start_mcp.sh                          # Start MCP service
-├── README-zh-v2.md
-└── README-v2.md
+├── README-zh.md
+└── README.md
 ```
 
 ---
@@ -294,6 +296,8 @@ Service readiness check.
 * `trace_target(target, use_cache=true)`
 * `analyze_target(target, use_cache=true)`
 * `get_history(target=None, limit=20)`
+* `get_trace_detail(target, hop_index, protocol="icmp")`
+* `compare_routes(target, limit=5)`
 * `health_check()`
 * `server_capabilities()`
 

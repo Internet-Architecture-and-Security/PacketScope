@@ -1,3 +1,6 @@
+> **⚠️ DEPRECATED**: This module has been replaced by [Calculator](../Calculator/), which is rewritten in Go + cilium/ebpf.
+> The Metric module (Python + BCC) is no longer actively maintained.
+
 # Analyzer 模块说明
 
 本模块通过 HTTP API 接口实现协议栈中分组数据流动数量、延迟、跨层交互频率、丢包等多维度信息的实时统计。

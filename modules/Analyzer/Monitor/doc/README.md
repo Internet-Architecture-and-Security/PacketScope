@@ -1,3 +1,5 @@
+> **📄 Note**: This document may contain outdated information. For up-to-date documentation, see [../README.md](../README.md).
+
 # PacketScope Analyzer 项目文档
 
 ## 1. 项目概述
@@ -105,8 +107,8 @@ Analyzer/
 
 ### 4.1 环境要求
 
-- Go 1.16 或更高版本
-- Linux 内核 5.4 或更高版本（支持 eBPF）
+- Go >= 1.24
+- Linux 内核 6.8 或更高版本（支持 eBPF）
 - PostgreSQL 数据库
 - 网络接口设备（如 ens33）
 
@@ -116,7 +118,7 @@ Analyzer/
 
 - `functioninfo`：存储内核功能调用信息（kbatch 模块使用）
 - `tcxprober`：存储网络数据包信息（tcxprober 模块使用）
-- `packetinfo`：存储数据包详细信息（server 模块使用）
+- `tcxprober`：存储数据包详细信息（server 模块使用）
 
 **配置环境变量：**
 
@@ -125,13 +127,13 @@ export POSTGRES_HOST=localhost
 export POSTGRES_PORT=5432
 export POSTGRES_USER=postgres
 export POSTGRES_PASSWORD=password
-export POSTGRES_DB=functioninfo  # 或 tcxprober、packetinfo
+export POSTGRES_DB=functioninfo  # 或 tcxprober、tcxprober
 export PG_HOST=localhost
 export PG_PORT=5432
 export PG_USER=postgres
 export PG_PASSWORD=password
 export PG_DBNAME_FUNCTION=functioninfo
-export PG_DBNAME_PACKET=packetinfo
+export PG_DBNAME_PACKET=tcxprober
 export PG_SSLMODE=disable
 ```
 
@@ -269,7 +271,7 @@ python3 server_api_test.py
 
 **问题：** 无法加载 eBPF 程序
 **解决方案：**
-1. 确保内核版本支持 eBPF（5.4+）
+1. 确保内核版本支持 eBPF（6.8+）
 2. 确保系统已安装必要的依赖
 3. 检查 eBPF 程序代码是否正确
 

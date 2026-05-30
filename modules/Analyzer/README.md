@@ -1,22 +1,27 @@
 # PacketScope Analyzer Module
 
+[中文文档](README-zh.md) | English
+
 ## Overview
 
-The Analyzer module of PacketScope provides unprecedented panoramic visualization of protocol interactions. The Monitor component can capture the complete processing path of packets from the protocol stack entry to application-level handling, producing a cross-layer, cross-protocol interaction panorama. The Calculator component further organizes packet paths through the protocol stack and computes statistics of cross-layer interactions, including: per-layer traffic, cross-layer interaction frequency, cross-layer latency, and packet loss rate.
+The Analyzer module of PacketScope provides unprecedented panoramic visualization of protocol interactions. The **Monitor** component captures the complete processing path of packets from the protocol stack entry to application-level handling, producing a cross-layer, cross-protocol interaction panorama. The **Calculator** component further computes cross-layer interaction statistics, including: per-layer traffic, cross-layer interaction frequency, cross-layer latency, and packet loss rate.
+
+Both components are now implemented in Go + cilium/ebpf, replacing the original Python + BCC implementation.
 
 ## Features
 
 ### Monitor component
 - Real-time monitoring of local sockets and network interface status
-- Capture traffic packets passing through any network interface
+- Capture traffic packets passing through any network interface (ingress/egress)
 - Capture the kernel function path and timings for packets
 - Organize kernel paths into call graphs for visualization
+- Store all data in PostgreSQL for querying via RESTful API
 
 ### Calculator component
 - Real-time monitoring of key protocol stack paths: observe packets flowing through link, network, and transport layers
 - Real-time computation of cross-layer interaction metrics: per-layer traffic, cross-layer interaction frequency, cross-layer latency, packet loss rate
 - Historical trend analysis: view metric changes over time via charts
-- API interface: a single API can compute all cross-layer interaction metrics
+- WebSocket interface: real-time metrics pushed every second
 
 ---
 
@@ -24,47 +29,48 @@ The Analyzer module of PacketScope provides unprecedented panoramic visualizatio
 
 ```
 Analyzer/
-├──Calculator/
-│   ├── Dokcerfile  # Dockerfile for building the container
-│   ├── NumLatencyFrequency # Real-time calculation of cross-layer interaction metrics
-│   └── monitor.py  # Interface to start the calculator
-├── Monitor/       # User space application
-│   ├── Dokcerfile  # Dockerfile for building the container
-│   ├── AttachAndRunProbers.py # Attach function flow graph interface
-│   ├── flaskServerMain.py # Organize server and provide APIs
-│   ├── GetRecentMaps.py # Query recent function flow maps
-│   ├── Inspector.py # Functional tests; can observe current kernel function calls
-│   ├── ListSockets.py # Query current socket status
-│   ├── PSUtil.py # Utility helper library
-│   ├── QueryAndGetFuncMapRecv.py # Query recent function flow maps (receive side)
-│   ├── QueryAndGetFuncMapSend.py # Query recent function flow maps (send side)
-│   ├── ReadBTFandGetItsMember.py # Read and preprocess BTF information
-│   ├── tcxProber.c # eBPF C file for attaching to TC
-│   ├── TcxProber.py # Attach eBPF on TC
-│   ├── TcxQuery.py # Query packets passing through a socket
-│   ├── TestFilterAndGet.py # Functional tests
-│   ├── TestPacket.py # Functional tests
-│   ├── TestRecentMap.py # Functional tests
-│   └── translateJSON.py # Translate BTF information into C for attaching
-├── README.md                   # Readme
-└── README-zh.md                # Documentation (this README)
+├── Calculator/                # Cross-layer metrics calculator (Go)
+│   ├── cmd/metrics/main.go    # Program entry point
+│   ├── pkg/bpf_engine/        # eBPF engine (cilium/ebpf)
+│   │   ├── metrics.c          # eBPF C source
+│   │   └── engine.go          # Engine: load, attach, filter
+│   ├── pkg/aggregation/       # Aggregation & message builder
+│   ├── pkg/server/            # WebSocket server
+│   ├── Makefile               # Build file
+│   ├── build.sh               # Build script
+│   └── README.md              # Detailed docs
+├── Monitor/                   # Packet capture & function call monitor (Go)
+│   ├── main.go                # Program entry point
+│   ├── kbatch/                # Kernel function call monitoring (eBPF)
+│   ├── tcxprober/             # Network packet capture (eBPF TC)
+│   ├── server/                # RESTful API query service
+│   ├── base/                  # Base utilities (BTF parsing, JSON)
+│   ├── doc/                   # Detailed documentation
+│   │   ├── install.md         # Installation guide
+│   │   ├── database.md        # Database configuration
+│   │   ├── server-api.md      # API reference
+│   │   ├── kbatch.md          # kbatch module docs
+│   │   └── tcxprober.md       # tcxprober module docs
+│   ├── Makefile               # Build file
+│   ├── Dockerfile             # Docker build
+│   └── readme.md              # Detailed docs
+├── README.md                  # This file (English)
+└── README-zh.md               # This file (Chinese)
 ```
+
+---
 
 ## Installation Guide
 
 ### System Requirements
 
 - Linux kernel with eBPF support (version 6.8+)
-- Docker (for containerized deployment)
+- Go >= 1.24
+- clang / llvm (for eBPF C compilation)
+- PostgreSQL (for Monitor data storage)
 - Root/sudo privileges
 
 ### Recommended: Docker-based deployment
-
-Docker provides the most reliable and consistent runtime. Follow these build steps in order to ensure dependencies are resolved correctly:
-
-#### Build instructions
-
-Important: build in sequence to ensure dependencies are resolved.
 
 ```bash
 # Step 1: Build Monitor module
@@ -76,59 +82,70 @@ docker build -t packetscope-analyzer-calculator:v1.0 ./Calculator/
 
 #### Run containers
 
-Both modules require specific runtime configurations:
-
 ```bash
-# Run Monitor module (port 19999)
-docker run --privileged --network host -p 19999:19999 packetscope:tracer
+# Run Monitor module
+docker run --privileged --network host packetscope-analyzer-monitor:v1.0
 
-# Run Calculator module (port 5000)
-docker run --privileged --network host -p 5000:5000 packetscope:analyzer
+# Run Calculator module
+docker run --privileged --network host packetscope-analyzer-calculator:v1.0
 ```
 
 Configuration notes:
 - `--privileged`: required to load eBPF programs and perform kernel tracing
 - `--network host`: enables host network access for full traffic visibility
   - Without host network mode, only container-internal traffic will be captured
-- Port mappings: Monitor (19999), Calculator (5000)
 
 ### Alternative: Manual installation
 
-Manual installation offers more flexibility but requires careful environment configuration.
+#### Monitor module
 
-#### Manual installation steps
+> Full installation steps: [Monitor/doc/install.md](Monitor/doc/install.md)
 
-1. Install BCC (BPF Compiler Collection)
+```bash
+cd Monitor/
 
-   Refer to the official installation guide: https://github.com/iovisor/bcc/blob/master/INSTALL.md
+# 1. Install system dependencies
+sudo apt-get update && sudo apt-get install -y \
+    curl wget git make cmake build-essential golang-go \
+    gcc g++ clang llvm libbpf-dev linux-headers-generic \
+    linux-tools-generic linux-tools-common bpfcc-tools \
+    libbpf-tools iproute2 net-tools tcpdump \
+    libelf-dev zlib1g-dev pkg-config postgresql-client
 
-   ⚠️ Compatibility warning: manual installation is not recommended for production due to potential kernel compatibility issues. BCC cannot guarantee backward compatibility across all kernel versions.
+# 2. Install bpf2go
+go install github.com/cilium/ebpf/cmd/bpf2go@latest
 
-2. Install Python dependencies
+# 3. Configure PostgreSQL
+sudo service postgresql start
+psql -h localhost -U postgres -c "ALTER USER postgres WITH PASSWORD 'password';"
+createdb -h localhost -U postgres tcxprober
+createdb -h localhost -U postgres functioninfo
 
-   Enter each module directory and install dependencies:
-   ```bash
-   # Install Monitor dependencies
-   cd Monitor/
-   sudo pip install -r requirements.txt
+# 4. Configure environment variables
+export CGO_ENABLED=1
+export PG_HOST=localhost PG_PORT=5432 PG_USER=postgres PG_PASSWORD=password
+export PG_DBNAME_PACKET=tcxprober PG_DBNAME_FUNCTION=functioninfo PG_SSLMODE=disable
 
-   # Install Calculator dependencies
-   cd ../Calculator/
-   sudo pip install -r requirements.txt
-   ```
+# 5. Build
+make prepare && make && make server
 
-3. Start modules
+# 6. Run
+sudo ./analyzer    # Data collection (kbatch + tcxprober)
+./qserver          # API query service (port 8010)
+```
 
-   Both modules must run as root:
-   ```bash
-   # Terminal 1: start Monitor
-   sudo su
-   ulimit -n 65535
-   python3 Monitor/flaskServerMain.py
+#### Calculator module
 
-   # Terminal 2: start Calculator
-   sudo python3 Calculator/monitor.py
-   ```
+```bash
+cd Calculator/
+
+# 1. Build
+make
+
+# 2. Run
+sudo ./metrics               # WebSocket server (port 8020)
+sudo METRICS_PORT=9090 ./metrics  # Custom port
+```
 
 ---
 
@@ -136,96 +153,107 @@ Manual installation offers more flexibility but requires careful environment con
 
 ### Monitor API
 
-GET  /IsAttachFinished          - Check startup status  
-Parameters: GET, none  
-Return: [True] or [False]
+The Monitor API server listens on `http://localhost:8010`.
 
-GET  /GetRecentPacket           - Get recent packet info  
-Parameters: srcip, dstip, srcport, dstport, limit  
-Note: For IPv6, a non-standard IPv6 format is used, e.g.:
-fe80:0000:0000:0000:0250:56ff:fec0:2222  
-Return: an array like [[packet_info], [packet_info], ...]  
-IPv4 format example: [(time, if_index, direction, length, payload, src_addr, dst_addr, src_port, dst_port, lower_proto, IPID, TTL, fragmentation, optional_fields), ...]  
-IPv6 format example: [(time, if_index, direction, length, payload, src_addr, dst_addr, next_header, src_port, dst_port), ...]
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/GetRecentPacket` | Get recent packets |
+| POST | `/GetRecentMap` | Get recent function call maps |
+| GET | `/GetFuncTable` | Get function ID mapping table |
+| POST | `/QueryFuncSend` | Query send-side function calls |
+| POST | `/QueryFuncRecv` | Query receive-side function calls |
+| POST | `/QueryPacket` | Query packets by 5-tuple |
+| GET | `/QuerySockList` | Get socket and device list |
 
-GET  /GetRecentMap              - Get recent function flow info  
-Parameters: srcip, dstip, srcport, dstport, limit  
-Note: IPv6 uses the same non-standard format shown above.  
-Return: an array like [[func_call_chain], [func_call_chain], ...]  
-Example:
-[[[1750773060.8924384, 0, 200007, 7489], [1750773060.89244, 0, 52954, 7489], [1750773060.8924415, 0, 52920, 7489]],
- [[1750773060.8924422, 1, 52920, 7489], [1750773060.8924434, 0, 52949, 7489]]]
-
-GET /UnsetFilter               - Remove filter  
-Parameters: GET, none  
-Return: none
-
-GET /SetFilter                 - Set filter  
-Parameters: POST with fields: srcip, dstip, srcport, dstport, ipver (4/6)  
-Note: IPv6 uses the non-standard format shown above.  
-Return: none
-
-GET /ClearData                 - Clear data  
-Parameters: GET, none  
-Return: none
-
-GET /QuerySockList             - Get socket and device info  
-Parameters: GET, none  
-Return: a dict like:
-{"tcpipv4":[],"tcpipv6":[],"udpipv4":[],"udpipv6":[],"icmpipv4":[],"icmpipv6":[],"rawipv4":[],"rawipv6":[],"dev":[]}  
-Socket arrays contain lists; each element is [current_time, index, srcIP, dstIP, state]  
-"dev" contains lists; each element is [current_time, interface_name]  
-Note: provided srcIP and dstIP are in HEX format, e.g., 8002A8C0:AA36; simple conversion is needed to make them human-readable.
+> Full API documentation: [Monitor/doc/server-api.md](Monitor/doc/server-api.md)
 
 ### Calculator API
 
-GET  /api/NumLatencyFrequency  - Get current metrics
+The Calculator module exposes a WebSocket server at `ws://<host>:8020/` (or `/ws`).
 
-Function: compute packet movement, packet loss, cross-layer latency and cross-layer interaction frequency for a specified 5-tuple across link, network, and transport layers.  
+**Endpoint:** `NumLatencyFrequency`
+
 Request example:
 ```json
 {"type":"NumLatencyFrequency","params":{"ipv4":true,"ipv6":false,"sip":"192.168.126.128","dip":"103.143.17.156","sport":57892,"dport":443,"protocol":"tcp"}}
 ```
-Output example:
+
+The server returns an acknowledgment first:
+```json
+{"type":"NumLatencyFrequency","status":"started"}
 ```
-{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linknetwork\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": 3206, \"pid_name\": \"Socket Thread\", \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 57892, \"dport\": 443, \"LAT(ms)\": 0.01, \"frequency(s)\": 35.3051937862859}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linknetwork\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"pid_name\": \"StreamT~ns #162\", \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"LAT(ms)\": 0.099, \"frequency(s)\": 35.30391275226362}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"networktrans\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": -1, \"pid_name\": \"NULL\", \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 57892, \"dport\": 443, \"LAT(ms)\": 0, \"frequency(s)\": 0}"}
-{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"networktrans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"pid_name\": \"StreamT~ns #162\", \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"LAT(ms)\": 0.269, \"frequency(s)\": 35.30557465216654}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linktrans\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": -1, \"pid_name\": \"NULL\", \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 57892, \"dport\": 443, \"LAT(ms)\": 0, \"frequency(s)\": 0}"}
-{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linktrans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"pid_name\": \"StreamT~ns #162\", \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"LAT(ms)\": 0.308, \"frequency(s)\": 35.30560927674498}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"layer\": \"trans\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": 3206, \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 37630, \"dport\": 443, \"num\": 2, \"pps(s)\": 2.4280114828756396}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"layer\": \"trans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3206, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 35, \"pps(s)\": 35.30557465216654}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"layer\": \"network\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": 3206, \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 37630, \"dport\": 443, \"num\": 2, \"pps(s)\": 2.428141185078587}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"layer\": \"network\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 35, \"pps(s)\": 35.303947373582446}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"layer\": \"link\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": 3206, \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 37630, \"dport\": 443, \"num\": 2, \"pps(s)\": 2.428158872816276}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"layer\": \"link\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3617, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 35, \"pps(s)\": 35.30346268129799}\n"}
-{"type": "NumLatencyFrequency", "data": "{\"type\": \"ipv4\", \"pid\": 0, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57244, \"drop(s)\": 1.2019447465999988}\n"}
+
+Then pushes metrics every second:
+```json
+{"type": "NumLatencyFrequency", "data": "{\"crosslayer\": \"linknetwork\", \"direction\": \"send\", \"type\": \"ipv4\", \"pid\": 3206, \"pid_name\": \"Socket Thread\", \"saddr\": \"192.168.126.128\", \"daddr\": \"103.143.17.156\", \"sport\": 57892, \"dport\": 443, \"LAT(ms)\": 0.01, \"frequency(s)\": 35}"}
+{"type": "NumLatencyFrequency", "data": "{\"layer\": \"trans\", \"direction\": \"receive\", \"type\": \"ipv4\", \"pid\": 3206, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57892, \"num\": 35, \"pps(s)\": 35}"}
+{"type": "NumLatencyFrequency", "data": "{\"type\": \"ipv4\", \"pid\": 0, \"saddr\": \"103.143.17.156\", \"daddr\": \"192.168.126.128\", \"sport\": 443, \"dport\": 57244, \"drop(s)\": 1}"}
 ```
+
+> Full API documentation: [Calculator/README.md](Calculator/README.md)
+
+---
+
+## Technology Stack
+
+| Feature | Monitor | Calculator |
+|---------|---------|------------|
+| Language | Go | Go |
+| eBPF loading | cilium/ebpf (bpf2go) | cilium/ebpf (bpf2go) |
+| eBPF attach | fentry/kprobe + TC | fentry/kprobe + tracepoint |
+| Communication | HTTP REST (port 8010) | WebSocket (port 8020) |
+| Data storage | PostgreSQL | In-kernel BPF map aggregation |
+| eBPF compilation | CO-RE (bpf2go) | CO-RE (bpf2go) |
+| Kernel dependency | None (no BCC) | None (no BCC) |
+
+---
+
+## Environment Variables
+
+### Monitor
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| PG_HOST | localhost | PostgreSQL host |
+| PG_PORT | 5432 | PostgreSQL port |
+| PG_USER | postgres | PostgreSQL user |
+| PG_PASSWORD | password | PostgreSQL password |
+| PG_DBNAME_PACKET | tcxprober | Packet database name |
+| PG_DBNAME_FUNCTION | functioninfo | Function info database name |
+| PG_SSLMODE | disable | SSL connection mode |
+
+### Calculator
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| METRICS_PORT | 8020 | WebSocket server port |
+
+---
 
 ## Troubleshooting
 
 ### Common issues
 
-Permission denied errors
-- Ensure modules run with root privileges
+**Permission denied errors**
+- Ensure modules run with root privileges (`sudo`)
 - Verify eBPF is enabled in kernel configuration
-- Verify debugfs and related components are mounted
 
-No packets captured
-- Ensure Docker is run with `--network host`
+**No packets captured**
+- If using Docker, ensure `--network host` is set
 - Check network interface is up and receiving traffic
 
-BCC compatibility issues
-- Ensure kernel headers are installed: `sudo apt-get install linux-headers-$(uname -r)`
-- Consult BCC compatibility matrix for your kernel version
+**eBPF program loading fails**
+- Ensure kernel version supports eBPF (6.8+ recommended)
+- Install matching kernel headers: `sudo apt-get install linux-headers-$(uname -r)`
 
-Missing function list
-- Run: `ulimit -n 65535` to increase the maximum number of open file descriptors; this value can be increased further. Generally it should be at least 4x the number of kernel functions of interest.
+**Database connection fails (Monitor)**
+- Ensure PostgreSQL service is running: `sudo systemctl status postgresql`
+- Verify connection parameters match the environment variables
+- Ensure the database user has correct permissions
 
-Module keeps failing
-- Restart the affected module. Often BCC-related code was not properly unloaded.
+**Missing function list**
+- Run: `ulimit -n 65535` to increase the maximum number of open file descriptors
 
 ## Acknowledgements
 
-Thanks to BCC for the open-source tooling and SQLite for the open-source database functionality.
+Thanks to cilium/ebpf for the Go eBPF library, PostgreSQL for the database engine, and the original BCC project for inspiration.
