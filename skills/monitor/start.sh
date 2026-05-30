@@ -30,7 +30,7 @@ fi
 # Check and install dependencies
 if [ ! -f .deps_installed ]; then
     echo "Installing dependencies..."
-    pip3 install -r requirements.txt
+    pip3 install --break-system-packages -r requirements.txt
     touch .deps_installed
 fi
 
