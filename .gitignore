@@ -62,8 +62,10 @@ skills/tracer/__pycache__/
 # Runtime data
 modules/Tracer/data/history/*.json
 
-# Claude Code local config
-.claude/
+# Claude Code local config (allow skills/commands)
+.claude/*
+!.claude/commands/
+!.claude/skills/
 
 # Third-party BCC library (large)
 modules/Analyzer/Monitor/bcc/
