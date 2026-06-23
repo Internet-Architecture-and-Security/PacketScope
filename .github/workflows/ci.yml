@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same ref when a new commit is pushed.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Frontend: build is a hard gate; lint is reported but not yet blocking.
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend (build + lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Existing code has pre-existing lint errors; surface them without
+      # failing the build. Promote to a hard gate once the backlog is cleared.
+      - name: Lint (non-blocking)
+        run: npm run lint
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Python: lightweight syntax check (py_compile). Importing modules has
+  # side effects (reads GeoIP databases at import time) and external deps,
+  # so we only validate that source parses. Scratch helpers under test/ are
+  # excluded (they contain known-broken debug snippets).
+  # ---------------------------------------------------------------------------
+  python:
+    name: Python (syntax)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Syntax check (py_compile)
+        run: |
+          files=$(find modules/Tracer/app modules/Analyzer skills \
+            -name "*.py" \
+            -not -path "*/__pycache__/*" \
+            -not -path "*/test/*")
+          echo "Checking $(echo "$files" | wc -l) files"
+          python -m py_compile $files
+
+  # ---------------------------------------------------------------------------
+  # Go: vet + build per module. Informational for now — Guarder's eBPF object
+  # (conntracker_bpfel.o) is generated at build time and not committed, so its
+  # build fails until eBPF codegen is wired into CI. Promote to a hard gate
+  # once codegen (clang + bpf2go) is added.
+  # ---------------------------------------------------------------------------
+  go:
+    name: Go (vet + build)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - modules/Analyzer/Monitor
+          - modules/Analyzer/Calculator
+          - modules/Guarder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: gofmt
+        working-directory: ${{ matrix.module }}
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Unformatted files:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: go vet
+        working-directory: ${{ matrix.module }}
+        run: go vet ./...
+
+      - name: go build
+        working-directory: ${{ matrix.module }}
+        run: go build ./...
