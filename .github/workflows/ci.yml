@@ -64,15 +64,19 @@ jobs:
           python -m py_compile $files
 
   # ---------------------------------------------------------------------------
-  # Go: vet + build per module. Informational for now — Guarder's eBPF object
-  # (conntracker_bpfel.o) is generated at build time and not committed, so its
-  # build fails until eBPF codegen is wired into CI. Promote to a hard gate
-  # once codegen (clang + bpf2go) is added.
+  # Go: gofmt is a hard gate; vet + build are informational per step.
+  #
+  # gofmt never compiles code, so it is safe to enforce across every module.
+  # vet and build DO compile: Guarder embeds a bpf2go-generated object
+  # (conntracker_bpfel.o) that is produced at build time and not committed, so
+  # those steps fail there until eBPF codegen (clang + bpf2go) is wired into
+  # CI. Marking them continue-on-error keeps the job (and the checks list)
+  # green while still surfacing failures as step annotations. Promote to hard
+  # gates once codegen runs first.
   # ---------------------------------------------------------------------------
   go:
-    name: Go (vet + build)
+    name: Go (gofmt + vet + build)
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -96,10 +100,12 @@ jobs:
             echo "Unformatted files:"; echo "$unformatted"; exit 1
           fi
 
-      - name: go vet
+      - name: go vet (informational)
         working-directory: ${{ matrix.module }}
+        continue-on-error: true
         run: go vet ./...
 
-      - name: go build
+      - name: go build (informational)
         working-directory: ${{ matrix.module }}
+        continue-on-error: true
         run: go build ./...
