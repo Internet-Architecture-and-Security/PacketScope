@@ -30,6 +30,10 @@ def trace_route():
         return jsonify({"error": "Missing 'target' parameter"}), 400
     target = target.strip()
 
+    import re as _re
+    if not _re.match(r'^[a-zA-Z0-9._:\-\[\]]+$', target):
+        return jsonify({"error": "Invalid 'target' parameter: contains disallowed characters"}), 400
+
     if protocol not in {"icmp", "tcp"}:
         return jsonify({"error": "Invalid 'protocol', expected one of: icmp, tcp"}), 400
 
@@ -185,7 +189,9 @@ def readiness_check():
 
 def run():
     port = int(os.environ.get("TRACER_PORT", 8000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    host = os.environ.get("TRACER_HOST", "127.0.0.1")
+    debug = os.environ.get("TRACER_DEBUG", "false").lower() == "true"
+    app.run(host=host, port=port, debug=debug)
 
 
 if __name__ == "__main__":
