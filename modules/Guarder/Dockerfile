@@ -1,100 +1,34 @@
-FROM ubuntu:24.04
+# ============================================================
+# Stage 1 — 编译
+# ============================================================
+FROM golang:1.22-alpine AS builder
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
 ENV CGO_ENABLED=1
-
-# Go proxy configuration (can be overridden at build time)
-# ARG GOPROXY=https://proxy.golang.org,direct
-# ARG GOSUMDB=sum.golang.org
-# ENV GOPROXY=${GOPROXY}
-# ENV GOSUMDB=${GOSUMDB}
-# 配置 Go 代理
 ENV GOPROXY=https://goproxy.cn,direct
-ENV GOSUMDB=sum.golang.google.cn
-# ARG GOSUMDB=sum.golang.org
-# ENV GOPROXY=${GOPROXY}
-# ENV GOSUMDB=${GOSUMDB}
 
-# Keep default Ubuntu sources (no mirror changes for other dependencies)
+RUN apk add --no-cache clang llvm libbpf-dev libelf-dev zlib-dev pkgconfig make gcc musl-dev linux-headers
 
-# Update package lists and install system dependencies
-RUN apt-get update && apt-get install -y \
-    # Basic tools
-    curl \
-    wget \
-    git \
-    make \
-    build-essential \
-    # Go programming language
-    golang-go \
-    # C/C++ development
-    gcc \
-    g++ \
-    clang \
-    llvm \
-    # eBPF/XDP dependencies
-    libbpf-dev \
-    linux-headers-generic \
-    linux-tools-generic \
-    linux-tools-common \
-    # Additional eBPF tools
-    bpfcc-tools \
-    libbpf-tools \
-    # Network tools
-    iproute2 \
-    net-tools \
-    tcpdump \
-    # Development libraries
-    libelf-dev \
-    zlib1g-dev \
-    pkg-config \
-    # Clean up
-    && rm -rf /var/lib/apt/lists/*
-
-# Verify Go installation
-RUN go version
-
-# Set working directory
-WORKDIR /app
-
-# Copy go module files
-COPY go.mod go.sum ./
-
-# Download Go dependencies
-RUN go mod download
-
-# Install bpf2go tool for eBPF code generation
 RUN go install github.com/cilium/ebpf/cmd/bpf2go@latest
 
-# Copy source code
-COPY . .
+COPY go.mod go.sum ./
+RUN go mod download
 
-# Install project dependencies and build
+COPY . .
 RUN make deps && make
 
-# Ensure eBPF is available by checking kernel version and capabilities
-RUN echo "Checking kernel version and eBPF support..." \
-    && uname -r || echo "Kernel version check skipped in container" \
-    && ls -la /sys/fs/bpf || echo "BPF filesystem not mounted (normal in build stage)" \
-    && which clang && clang --version \
-    && which llc || echo "llc not found, using clang for BPF compilation"
+# ============================================================
+# Stage 2 — 运行时（~40MB）
+# ============================================================
+FROM alpine:3.21
 
-# Create non-root user for security (optional)
-RUN groupadd -r guarder && useradd -r -g guarder guarder
+RUN apk add --no-cache libbpf libelf zlib libc6-compat iproute2 curl ca-certificates
 
-# Set proper permissions
-RUN chown -R guarder:guarder /app
+COPY --from=builder /app/conn-tracker /app/conn-tracker
 
-# Expose API port
+WORKDIR /app
 EXPOSE 8080
 
-# Add health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -sf http://localhost:8080/api/stats || exit 1
 
-# Run as non-root user (commented out as eBPF typically requires root)
-# USER guarder
-
-# Default command
 CMD ["./conn-tracker", "-iface", "eth0", "-interval", "5", "-api", ":8080"]

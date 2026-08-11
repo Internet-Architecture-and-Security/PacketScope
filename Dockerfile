@@ -1,23 +1,29 @@
-# 基础镜像
-FROM node:20-slim
+# ============================================================
+# Stage 1 — 构建前端
+# ============================================================
+FROM node:20-alpine AS build
 
-# 设置工作目录
 WORKDIR /app
 
-# 设置国内 npm 源
 RUN npm config set registry https://registry.npmmirror.com
 
-# 复制 package.json 和 package-lock.json
 COPY package*.json ./
-
-# 安装依赖
 RUN npm install
 
-# 复制项目文件
 COPY . .
+RUN npm run build
 
-# 暴露端口
-EXPOSE 4173
+# ============================================================
+# Stage 2 — 运行时（nginx + 静态文件 + 反向代理）
+# ============================================================
+FROM nginx:alpine
 
-# 启动应用
-CMD ["npm", "run", "preview"]
+# 前端静态文件
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# nginx 配置（反向代理到后端服务）
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
