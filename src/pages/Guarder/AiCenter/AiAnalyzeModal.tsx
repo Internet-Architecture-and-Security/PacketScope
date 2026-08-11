@@ -139,7 +139,10 @@ const AiAnalyzeModal: React.FC = () => {
     }, 400);
 
     try {
-      const response = await fetch('http://localhost:8080/api/pcap/analyze', {
+      const guarderBase = import.meta.env.DEV
+      ? 'http://localhost:8080'
+      : `${window.location.protocol}//${window.location.host}/api/guarder`;
+    const response = await fetch(`${guarderBase}/api/pcap/analyze`, {
         method: 'POST',
         body: formData,
       });
