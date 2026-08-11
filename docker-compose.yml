@@ -2,6 +2,19 @@
 # 部署只需开放一个端口 80；后端服务通过 host 网络互访，无需额外端口映射。
 
 services:
+  # ======================== PostgreSQL（独立服务）========================
+  postgres:
+    image: postgres:16-alpine
+    container_name: packetscope-postgres
+    network_mode: host
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    volumes:
+      - packetscope-pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
   # ======================== 统一入口（nginx + 前端）========================
   nginx:
     build:
@@ -12,6 +25,7 @@ services:
     ports:
       - "80:80"
     depends_on:
+      - postgres
       - analyzer-monitor
       - analyzer-calculator
       - guarder

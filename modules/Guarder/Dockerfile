@@ -1,35 +1,27 @@
 # ============================================================
 # Stage 1 — 编译
 # ============================================================
-FROM golang:1.22 AS builder
+FROM golang:1.22-alpine AS builder
 
 ENV CGO_ENABLED=1
 ENV GOPROXY=https://goproxy.cn,direct
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    clang llvm libbpf-dev libelf-dev zlib1g-dev pkg-config \
-    linux-headers-generic make gcc g++ \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache clang llvm libbpf-dev libelf-dev zlib-dev pkgconfig make gcc musl-dev linux-headers
 
-WORKDIR /app
+RUN go install github.com/cilium/ebpf/cmd/bpf2go@latest
 
 COPY go.mod go.sum ./
 RUN go mod download
-
-RUN go install github.com/cilium/ebpf/cmd/bpf2go@latest
 
 COPY . .
 RUN make deps && make
 
 # ============================================================
-# Stage 2 — 运行时（只带二进制 + 必要 .so）
+# Stage 2 — 运行时（~40MB）
 # ============================================================
-FROM ubuntu:24.04
+FROM alpine:3.21
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libbpf1 libelf1t64 zlib1g iproute2 net-tools tcpdump curl \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache libbpf libelf zlib libc6-compat iproute2 curl ca-certificates
 
 COPY --from=builder /app/conn-tracker /app/conn-tracker
 
