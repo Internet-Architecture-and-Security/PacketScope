@@ -6,7 +6,7 @@ FROM golang:1.22-alpine AS builder
 ENV CGO_ENABLED=1
 ENV GOPROXY=https://goproxy.cn,direct
 
-RUN apk add --no-cache clang llvm libbpf-dev elfutils-dev zlib-dev pkgconfig make gcc musl-dev linux-headers
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && apk add --no-cache clang llvm libbpf-dev elfutils-dev zlib-dev pkgconfig make gcc musl-dev linux-headers
 
 RUN go install github.com/cilium/ebpf/cmd/bpf2go@latest
 
