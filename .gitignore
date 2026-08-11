@@ -69,3 +69,10 @@ modules/Tracer/data/history/*.json
 
 # Third-party BCC library (large)
 modules/Analyzer/Monitor/bcc/
+
+# Python bytecode (never commit)
+*.pyc
+__pycache__/
+
+# Note: bpf2go .o files under Analyzer are NOT gitignored — they are
+# required by //go:embed at build time and must be tracked.
