@@ -19,5 +19,8 @@ COPY . .
 # 暴露端口
 EXPOSE 4173
 
+# 构建生产版本
+RUN npm run build
+
 # 启动应用
 CMD ["npm", "run", "preview"]
