@@ -32,7 +32,7 @@ COPY ./ /app
 # 安装 Python 依赖
 RUN if [ -f requirements.txt ]; then \
         pip install --no-cache-dir -r requirements.txt \
-            -i https://pypi.org/simple/; \
+            -i https://pypi.tuna.tsinghua.edu.cn/simple/; \
     fi
 
 # 暴露端口
