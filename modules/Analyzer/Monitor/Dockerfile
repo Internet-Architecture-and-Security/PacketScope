@@ -1,7 +1,7 @@
 # ============================================================
 # Stage 1 — 编译
 # ============================================================
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 ENV CGO_ENABLED=1
 ENV GOPROXY=https://goproxy.cn,direct
