@@ -54,35 +54,47 @@ docker compose version
 
 ### One-Click Deployment
 
+**International users:**
 ```bash
 git clone https://github.com/Internet-Architecture-and-Security/PacketScope.git
 cd PacketScope
 sudo bash starter.sh
 ```
 
-The script will automatically check Docker, build all containers in order, and start all services.
+**China mainland VPS users (with mirror acceleration):**
+```bash
+git clone https://github.com/Internet-Architecture-and-Security/PacketScope.git
+cd PacketScope
+bash install-cn.sh
+```
+
+The script will automatically install Docker (if needed), configure mirror acceleration, build all containers, and start services. **Only port 80 needs to be open** in your firewall/security group.
 
 ### Access the Application
 
-Open your browser: `http://localhost:4173/`
+Open your browser: `http://localhost`
+
+All services are served through a single nginx reverse proxy on **port 80** — no need to open multiple ports.
 
 ### Service Endpoints
 
-| Service | Endpoint | Description |
-|---------|----------|-------------|
-| Web UI | `http://localhost:4173` | Frontend dashboard |
-| Guarder API | `http://localhost:8080` | Security & filtering API |
-| Tracer API | `http://localhost:8000` | Route tracing API |
-| Monitor API | `http://localhost:8010` | Packet capture & function call API |
-| Calculator WS | `ws://localhost:8020` | Cross-layer metrics WebSocket |
+Backend APIs are proxied through nginx at the following path prefixes:
+
+| Prefix | Backend | Description |
+|--------|---------|-------------|
+| `/` | nginx (frontend) | React SPA dashboard |
+| `/api/guarder/` | Guarder | Security & filtering API |
+| `/api/tracer/` | Tracer | Route tracing API |
+| `/api/monitor/` | Analyzer-Monitor | Packet capture & function call API |
+| `/api/analyzer/` | Analyzer-Calculator | Cross-layer metrics (REST + WebSocket) |
 
 ### Managing Services
 
 ```bash
-sudo docker compose ps              # View status
-sudo docker compose logs -f         # View logs
-sudo docker compose down            # Stop all
-sudo docker compose restart <name>  # Restart a service
+sudo docker compose -f docker-compose.yml ps              # View status
+sudo docker compose -f docker-compose.yml logs -f         # View logs
+sudo docker compose -f docker-compose.yml down            # Stop all
+sudo docker compose -f docker-compose.yml restart <name>  # Restart a service
 ```
 
 ## 📁 Project Structure
@@ -97,13 +109,16 @@ PacketScope/
 │   │   └── README-zh.md       # Chinese docs
 │   ├── Guarder/               # Security defense (Go + eBPF/XDP)
 │   └── Tracer/                # Route tracing & risk analysis (Python + MCP)
+├── nginx/                      # Nginx reverse proxy configuration
 ├── skills/                     # MCP skill packages for LLM agents
 │   ├── monitor/               # Monitor MCP server & client
 │   ├── tracer/                # Tracer MCP server & client
 │   └── guarder/               # Guarder MCP client
 ├── src/                        # Frontend source (React + TypeScript)
-├── docker-compose.yml          # Docker Compose configuration
+├── docker-compose.yml          # Docker Compose (6 services)
+├── Dockerfile                  # Multi-stage: node build → nginx serve
 ├── starter.sh                  # One-click deployment script
+├── install-cn.sh               # China-friendly deployment (with mirrors)
 ├── README.md                   # This file
 └── README-zh_CN.md             # Chinese docs
 ```
@@ -197,16 +212,17 @@ Each backend module provides an MCP (Model Context Protocol) server, enabling LL
 
 | Module | Language | eBPF Loading | Communication | Data Storage |
 |--------|----------|-------------|---------------|-------------|
-| Analyzer-Monitor | Go | cilium/ebpf (bpf2go, CO-RE) | HTTP REST (8010) | PostgreSQL |
-| Analyzer-Calculator | Go | cilium/ebpf (bpf2go, CO-RE) | WebSocket (8020) | BPF map aggregation |
-| Guarder | Go | cilium/ebpf + XDP | HTTP REST (8080) | In-kernel maps |
-| Tracer | Python | nexttrace (external) | HTTP REST (8000) | File-based cache |
+| nginx | — | — | HTTP (80, unified entry) | — |
+| Analyzer-Monitor | Go | cilium/ebpf (bpf2go, CO-RE) | HTTP REST (8010, internal) | PostgreSQL |
+| Analyzer-Calculator | Go | cilium/ebpf (bpf2go, CO-RE) | WebSocket (8020, internal) | BPF map aggregation |
+| Guarder | Go | cilium/ebpf + XDP | HTTP REST (8080, internal) | In-kernel maps |
+| Tracer | Python | nexttrace (external) | HTTP REST (8000, internal) | File-based cache |
+| PostgreSQL | — | — | 5432 (internal) | Persistent volumes |
 
-**Lightweight redesign highlights (Analyzer → Go):**
-- Removed BCC runtime dependency — no Python, no BCC installation required
-- Pre-compiled eBPF via bpf2go (CO-RE) — portable across kernel versions
-- Single binary deployment — no external script dependencies
-- Lower resource footprint — Go vs Python runtime overhead
+**Deployment highlights:**
+- **Single port**: nginx reverse proxy on port 80 — all APIs proxied via path prefixes
+- **Multi-stage builds**: Docker images use alpine runtime (~7 MB) — total image footprint ~1 GB (vs ~13 GB before)
+- **Separated PostgreSQL**: dedicated `postgres:16-alpine` container instead of embedded in Monitor
 
 ## 🧰 Use Cases
 

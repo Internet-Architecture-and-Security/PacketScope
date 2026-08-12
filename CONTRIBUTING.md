@@ -8,8 +8,7 @@ Welcome to contribute to PacketScope! Please take a few minutes to read this gui
 
 | Tool | Version | Used By |
 |------|---------|---------|
-| Go | >= 1.24 | Analyzer (Monitor, Calculator) |
-| Go | >= 1.22 | Guarder |
+| Go | >= 1.25 | Analyzer (Monitor, Calculator), Guarder |
 | Python | >= 3.10 | Tracer, MCP Skills |
 | Docker | >= 20.10 | All modules |
 | Linux Kernel | >= 6.8 | Analyzer (eBPF fentry/bpf2go) |
