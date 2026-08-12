@@ -91,7 +91,7 @@ services:
       - /sys/kernel/btf:/sys/kernel/btf:ro
       - /sys/kernel/debug:/sys/kernel/debug:ro
     command: >
-      bash -c '
+      sh -c '
       IFACE="$${IFACE:-$$(ip -br route show default | awk "{for(i=1;i<=NF;i++) if($$i==\"dev\") print $$(i+1)}")}";
       IFACE="$${IFACE:-eth0}";
       echo "Using network interface: $$IFACE";
