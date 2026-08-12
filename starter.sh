@@ -21,7 +21,8 @@ SERVICES=(
     "analyzer-calculator"
     "guarder"
     "tracer"
-    "app"
+    "postgres"
+    "nginx"
 )
 
 # 打印分隔线
@@ -165,11 +166,9 @@ show_services() {
     print_separator
     log_info "服务端点："
     print_separator
-    echo -e "  ${CYAN}Web UI:${NC}                       http://localhost:4173"
-    echo -e "  ${CYAN}Guarder API:${NC}                  http://localhost:8080"
-    echo -e "  ${CYAN}Tracer API:${NC}                   http://localhost:8000"
-    echo -e "  ${CYAN}Analyzer-Monitor API:${NC}         http://localhost:8010"
-    echo -e "  ${CYAN}Analyzer-Calculator API:${NC}   http://localhost:8020"
+    echo -e "  ${CYAN}Web UI:${NC}                       http://localhost"
+    echo -e "  ${CYAN}Nginx proxy:${NC}                  http://localhost:80 (single entry)"
+    echo -e "  ${CYAN}API routing:${NC}                  /api/guarder/ /api/tracer/ /api/monitor/ /api/analyzer/"
     
     echo ""
     print_separator
