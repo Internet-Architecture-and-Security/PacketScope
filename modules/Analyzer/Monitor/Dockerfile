@@ -35,6 +35,8 @@ COPY --from=builder /Monitor/entrypoint.sh /Monitor/entrypoint.sh
 
 RUN chmod +x /Monitor/entrypoint.sh /Monitor/analyzer /Monitor/qserver /Monitor/baserun
 
+WORKDIR /Monitor
+
 ENV PG_HOST=localhost \
     PG_PORT=5432 \
     PG_USER=postgres \
