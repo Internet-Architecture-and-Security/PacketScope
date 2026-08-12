@@ -34,7 +34,7 @@ sudo systemctl restart docker 2>/dev/null || true
 sleep 1
 
 # ---- 3. 获取源码 ----
-REPO_DIR="/opt/PacketScope"
+REPO_DIR="$HOME/PacketScope"
 echo -e "${GREEN}[3/4] 获取源码...${NC}"
 
 if [ -d "$REPO_DIR/.git" ]; then
