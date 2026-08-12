@@ -54,35 +54,47 @@ docker compose version
 
 ### 一键部署
 
+**国际用户：**
 ```bash
 git clone https://github.com/Internet-Architecture-and-Security/PacketScope.git
 cd PacketScope
 sudo bash starter.sh
 ```
 
-脚本将自动检查 Docker 环境、按顺序构建所有容器并启动服务。
+**国内 VPS（已配置镜像加速）：**
+```bash
+git clone https://github.com/Internet-Architecture-and-Security/PacketScope.git
+cd PacketScope
+bash install-cn.sh
+```
+
+脚本将自动安装 Docker（如未安装）、配置镜像加速、构建所有容器并启动服务。**只需在防火墙/安全组放行端口 80**。
 
 ### 访问应用
 
-打开浏览器访问：`http://localhost:4173/`
+打开浏览器访问：`http://localhost`
+
+所有服务通过 nginx 反向代理统一在 **80 端口**——无需开放多个端口。
 
 ### 服务端点
 
-| 服务 | 端点 | 说明 |
-|------|------|------|
-| Web UI | `http://localhost:4173` | 前端控制台 |
-| Guarder API | `http://localhost:8080` | 安全防护 API |
-| Tracer API | `http://localhost:8000` | 路由追踪 API |
-| Monitor API | `http://localhost:8010` | 数据包捕获与函数调用 API |
-| Calculator WS | `ws://localhost:8020` | 跨层指标 WebSocket |
+后端 API 通过 nginx 以路径前缀代理：
+
+| 路径前缀 | 后端 | 说明 |
+|---------|------|------|
+| `/` | nginx（前端） | React SPA 控制台 |
+| `/api/guarder/` | Guarder | 安全防护 API |
+| `/api/tracer/` | Tracer | 路由追踪 API |
+| `/api/monitor/` | Analyzer-Monitor | 数据包捕获与函数调用 API |
+| `/api/analyzer/` | Analyzer-Calculator | 跨层指标（REST + WebSocket） |
 
 ### 管理服务
 
 ```bash
-sudo docker compose ps              # 查看状态
-sudo docker compose logs -f         # 查看日志
-sudo docker compose down            # 停止所有
-sudo docker compose restart <name>  # 重启指定服务
+sudo docker compose -f docker-compose.yml ps              # 查看状态
+sudo docker compose -f docker-compose.yml logs -f         # 查看日志
+sudo docker compose -f docker-compose.yml down            # 停止所有
+sudo docker compose -f docker-compose.yml restart <name>  # 重启指定服务
 ```
 
 ## 📁 项目结构
@@ -97,13 +109,16 @@ PacketScope/
 │   │   └── README-zh.md       # 中文文档
 │   ├── Guarder/               # 安全防护（Go + eBPF/XDP）
 │   └── Tracer/                # 路由追踪与风险分析（Python + MCP）
+├── nginx/                      # Nginx 反向代理配置
 ├── skills/                     # MCP 技能包，供 LLM 智能体调用
 │   ├── monitor/               # Monitor MCP 服务器与客户端
 │   ├── tracer/                # Tracer MCP 服务器与客户端
 │   └── guarder/               # Guarder MCP 客户端
 ├── src/                        # 前端源码（React + TypeScript）
-├── docker-compose.yml          # Docker Compose 配置
+├── docker-compose.yml          # Docker Compose 配置（6 个服务）
+├── Dockerfile                  # 多阶段构建：node 编译 → nginx 托管
 ├── starter.sh                  # 一键部署脚本
+├── install-cn.sh               # 国内部署脚本（含镜像加速）
 ├── README.md                   # 英文文档
 └── README-zh_CN.md             # 中文文档
 ```
@@ -197,16 +212,17 @@ HTTP API 端口 8080，支持 OpenAI 兼容与 Anthropic 兼容端点。
 
 | 模块 | 语言 | eBPF 加载 | 通信方式 | 数据存储 |
 |------|------|----------|---------|---------|
-| Analyzer-Monitor | Go | cilium/ebpf (bpf2go, CO-RE) | HTTP REST（8010） | PostgreSQL |
-| Analyzer-Calculator | Go | cilium/ebpf (bpf2go, CO-RE) | WebSocket（8020） | BPF map 聚合 |
-| Guarder | Go | cilium/ebpf + XDP | HTTP REST（8080） | 内核 map |
-| Tracer | Python | nexttrace（外部） | HTTP REST（8000） | 文件缓存 |
+| nginx | — | — | HTTP（80，统一入口） | — |
+| Analyzer-Monitor | Go | cilium/ebpf (bpf2go, CO-RE) | HTTP REST（8010，内部） | PostgreSQL |
+| Analyzer-Calculator | Go | cilium/ebpf (bpf2go, CO-RE) | WebSocket（8020，内部） | BPF map 聚合 |
+| Guarder | Go | cilium/ebpf + XDP | HTTP REST（8080，内部） | 内核 map |
+| Tracer | Python | nexttrace（外部） | HTTP REST（8000，内部） | 文件缓存 |
+| PostgreSQL | — | — | 5432（内部） | 持久化卷 |
 
-**Analyzer Go 重构亮点：**
-- 移除 BCC 运行时依赖 — 无需 Python、无需安装 BCC
-- bpf2go 预编译 eBPF（CO-RE）— 跨内核版本可移植
-- 单二进制部署 — 无外部脚本依赖
-- 更低资源占用 — Go vs Python 运行时开销
+**部署亮点：**
+- **单端口**：nginx 反向代理统一在 80 端口，API 通过路径前缀路由
+- **多阶段构建**：运行时采用 alpine 镜像（~7 MB），总镜像约 1 GB（此前约 13 GB）
+- **独立 PostgreSQL**：专用 `postgres:16-alpine` 容器，不再内嵌于 Monitor 中
 
 ## 🧰 使用场景
 
