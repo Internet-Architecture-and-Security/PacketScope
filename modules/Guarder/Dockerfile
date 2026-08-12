@@ -10,6 +10,7 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 RUN go install github.com/cilium/ebpf/cmd/bpf2go@latest
 
+WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
