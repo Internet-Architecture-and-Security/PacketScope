@@ -1,3 +1,8 @@
+---
+name: packetscope-guarder
+description: Query PacketScope Guarder for live TCP, UDP and ICMP connections, create and toggle packet filter rules, and run AI analysis over captured traffic or an uploaded PCAP. Use when investigating connections on a host running the Guarder module.
+---
+
 # PacketScope Guarder API Skill
 
 This skill enables LLM to interact with the PacketScope Guarder module API for network connection tracking, filtering, and AI-powered analysis.

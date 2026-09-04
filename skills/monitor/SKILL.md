@@ -1,3 +1,8 @@
+---
+name: packetscope-monitor
+description: Query PacketScope Monitor for recent network packets, kernel function call tracking, and live socket state. Use when investigating network traffic, tracing which kernel functions handled a connection, or inspecting sockets on a host running the Monitor module.
+---
+
 # PacketScope Monitor API Skill & MCP Server
 
 This skill enables LLM to interact with the PacketScope Monitor module API for network packet analysis, function call tracking, and socket monitoring.
