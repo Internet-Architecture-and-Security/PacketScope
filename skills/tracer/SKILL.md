@@ -1,3 +1,8 @@
+---
+name: packetscope-tracer
+description: Trace network routes to a target IP or domain, get hop-by-hop path with geographic and ASN info, run anomaly analysis and risk scoring, and query traceroute history. Use when investigating network paths, latency, packet loss, or whether a route looks suspicious or hits a malicious IP.
+---
+
 # PacketScope Tracer API Skill & MCP Server
 
 This skill enables LLM to interact with the PacketScope Tracer module API for route tracing, risk analysis, and history queries.
